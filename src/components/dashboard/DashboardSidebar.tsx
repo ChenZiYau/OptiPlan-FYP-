@@ -1,26 +1,33 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutGrid, Users, MessageSquare, FileEdit, LogOut, X } from 'lucide-react';
+import {
+  LayoutGrid, DollarSign, CheckSquare, CalendarDays,
+  Users, Bot, LogOut, X, Plus,
+} from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import type { AdminNavItem } from '@/types/admin';
+import { useDashboard } from '@/contexts/DashboardContext';
+import type { DashboardNavItem } from '@/types/dashboard';
 
-const navItems: AdminNavItem[] = [
-  { label: 'Overview', href: '/admin', icon: LayoutGrid },
-  { label: 'User Database', href: '/admin/users', icon: Users },
-  { label: 'Feedback', href: '/admin/feedback', icon: MessageSquare },
-  { label: 'Website Content', href: '/admin/content', icon: FileEdit },
+const navItems: DashboardNavItem[] = [
+  { label: 'Overview', href: '/dashboard', icon: LayoutGrid },
+  { label: 'Finance Tracker', href: '/dashboard/finance', icon: DollarSign },
+  { label: 'Tasks', href: '/dashboard/tasks', icon: CheckSquare },
+  { label: 'Schedules', href: '/dashboard/schedules', icon: CalendarDays },
+  { label: 'Collaboration', href: '/dashboard/collab', icon: Users },
+  { label: 'AI ChatBot', href: '/dashboard/chatbot', icon: Bot },
 ];
 
-interface AdminSidebarProps {
+interface DashboardSidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
+export function DashboardSidebar({ isOpen, onClose }: DashboardSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
+  const { openModal } = useDashboard();
 
-  const displayName = profile?.display_name ?? 'Admin User';
+  const displayName = profile?.display_name ?? 'User';
   const initials = (() => {
     const name = profile?.display_name;
     if (name) {
@@ -28,11 +35,11 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
       if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
       return name.substring(0, 2).toUpperCase();
     }
-    return 'AD';
+    return 'U';
   })();
 
   const isActive = (href: string) => {
-    if (href === '/admin') return location.pathname === '/admin';
+    if (href === '/dashboard') return location.pathname === '/dashboard';
     return location.pathname.startsWith(href);
   };
 
@@ -43,7 +50,6 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
 
   return (
     <>
-      {/* Mobile overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
@@ -51,7 +57,6 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`fixed top-0 left-0 z-50 h-screen w-[250px] bg-[#0B0A1A] border-r border-white/10 flex flex-col transition-transform duration-300 lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
@@ -61,10 +66,10 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
         <div className="flex items-center justify-between px-5 h-16 shrink-0">
           <Link to="/" className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">A</span>
+              <span className="text-white font-bold text-sm">O</span>
             </div>
             <span className="font-display font-semibold text-lg text-white tracking-tight">
-              AdminPlan
+              OptiPlan
             </span>
           </Link>
           <button
@@ -75,10 +80,21 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
           </button>
         </div>
 
+        {/* Quick action */}
+        <div className="px-3 pb-2">
+          <button
+            onClick={openModal}
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            New Task
+          </button>
+        </div>
+
         {/* Navigation */}
-        <nav className="flex-1 px-3 pt-6 overflow-y-auto">
+        <nav className="flex-1 px-3 pt-4 overflow-y-auto">
           <p className="px-3 mb-3 text-[10px] font-semibold tracking-[0.15em] text-gray-600 uppercase">
-            Main Menu
+            Menu
           </p>
           <div className="space-y-1">
             {navItems.map((item) => {
@@ -102,7 +118,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
           </div>
         </nav>
 
-        {/* User Profile Widget */}
+        {/* User profile */}
         <div className="px-3 pb-4 shrink-0">
           <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
             <div className="flex items-center gap-3">
@@ -111,7 +127,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate">{displayName}</p>
-                <p className="text-xs text-gray-500">Administrator</p>
+                <p className="text-xs text-gray-500">Free Plan</p>
               </div>
               <button
                 onClick={handleSignOut}

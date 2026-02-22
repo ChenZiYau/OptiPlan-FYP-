@@ -16,7 +16,9 @@
       "mcp__supabase__get_publishable_keys",
       "mcp__supabase__get_logs",
       "Bash(head:*)",
-      "Bash(cd /c/Users/chenz/OptiPlan-FYP- && npx tsc --noEmit 2>&1)"
+      "Bash(cd /c/Users/chenz/OptiPlan-FYP- && npx tsc --noEmit 2>&1)",
+      "Bash(git mv:*)",
+      "Bash(python:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

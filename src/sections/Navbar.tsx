@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, ChevronDown, ArrowRight, LayoutDashboard, Settings, LogOut, Shield } from 'lucide-react';
+import { Menu, X, ChevronDown, ArrowRight, LayoutDashboard, Settings, LogOut } from 'lucide-react';
 import { useSmoothScroll } from '@/hooks/useSmoothScroll';
 import { useAuth } from '@/hooks/useAuth';
 import { navEntries } from '@/constants/navigation';
@@ -269,15 +269,6 @@ function ProfileDropdown({ name, initials, role, onNavigate, onSignOut }: Profil
             >
               <div className="h-px bg-gradient-to-r from-transparent via-opti-accent/30 to-transparent" />
               <div className="p-1.5">
-                {role === 'admin' && (
-                  <button
-                    onClick={() => { onNavigate('/admin'); setIsOpen(false); }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors hover:bg-purple-500/10 group"
-                  >
-                    <Shield className="w-4 h-4 text-gray-400 group-hover:text-purple-400 transition-colors" />
-                    <span className="text-[13px] font-medium text-gray-200 group-hover:text-purple-300 transition-colors">Admin Panel</span>
-                  </button>
-                )}
                 <button
                   onClick={() => { onNavigate('/dashboard'); setIsOpen(false); }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors hover:bg-white/[0.05] group"
@@ -285,6 +276,15 @@ function ProfileDropdown({ name, initials, role, onNavigate, onSignOut }: Profil
                   <LayoutDashboard className="w-4 h-4 text-gray-400 group-hover:text-opti-accent transition-colors" />
                   <span className="text-[13px] font-medium text-gray-200 group-hover:text-white transition-colors">Dashboard</span>
                 </button>
+                {role === 'admin' && (
+                  <button
+                    onClick={() => { onNavigate('/admin'); setIsOpen(false); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors hover:bg-white/[0.05] group"
+                  >
+                    <Settings className="w-4 h-4 text-gray-400 group-hover:text-opti-accent transition-colors" />
+                    <span className="text-[13px] font-medium text-gray-200 group-hover:text-white transition-colors">Admin Panel</span>
+                  </button>
+                )}
                 <button
                   onClick={() => { onNavigate('/settings'); setIsOpen(false); }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors hover:bg-white/[0.05] group"
@@ -562,20 +562,20 @@ export function Navbar() {
                         </div>
                         <span className="text-sm font-medium text-gray-200 truncate">{displayName}</span>
                       </div>
-                      {profile?.role === 'admin' && (
-                        <button
-                          onClick={() => { navigate('/admin'); setIsMobileOpen(false); }}
-                          className="w-full flex items-center gap-3 py-3 px-4 rounded-xl border border-purple-500/20 text-sm font-medium text-purple-300 hover:text-purple-200 hover:border-purple-500/30 hover:bg-purple-500/10 transition-colors"
-                        >
-                          <Shield className="w-4 h-4" /> Admin Panel
-                        </button>
-                      )}
                       <button
                         onClick={() => { navigate('/dashboard'); setIsMobileOpen(false); }}
                         className="w-full flex items-center gap-3 py-3 px-4 rounded-xl border border-white/[0.08] text-sm font-medium text-gray-300 hover:text-white hover:border-white/[0.15] transition-colors"
                       >
                         <LayoutDashboard className="w-4 h-4" /> Dashboard
                       </button>
+                      {profile?.role === 'admin' && (
+                        <button
+                          onClick={() => { navigate('/admin'); setIsMobileOpen(false); }}
+                          className="w-full flex items-center gap-3 py-3 px-4 rounded-xl border border-white/[0.08] text-sm font-medium text-gray-300 hover:text-white hover:border-white/[0.15] transition-colors"
+                        >
+                          <Settings className="w-4 h-4" /> Admin Panel
+                        </button>
+                      )}
                       <button
                         onClick={() => { navigate('/settings'); setIsMobileOpen(false); }}
                         className="w-full flex items-center gap-3 py-3 px-4 rounded-xl border border-white/[0.08] text-sm font-medium text-gray-300 hover:text-white hover:border-white/[0.15] transition-colors"
