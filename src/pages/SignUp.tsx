@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Loader2, ArrowLeft, CheckCircle2, Mail } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -41,6 +41,7 @@ export function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [signUpSuccess, setSignUpSuccess] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -90,7 +91,7 @@ export function SignUp() {
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
         options: {
@@ -102,12 +103,17 @@ export function SignUp() {
       });
       if (error) {
         setErrors({ form: error.message });
-      } else {
-        // Auto-signed-in after signup, redirect to home
+      } else if (data.session) {
+        // Email confirmation disabled — user is auto-signed-in
         navigate('/');
+      } else {
+        // Email confirmation required — show success message
+        setSignUpSuccess(true);
       }
-    } catch {
-      setErrors({ form: 'Something went wrong. Please try again.' });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      setErrors({ form: message });
     } finally {
       setIsSubmitting(false);
     }
@@ -192,6 +198,30 @@ export function SignUp() {
             </motion.div>
 
             <motion.div custom={1} variants={fadeIn} className="glass-card p-8">
+              {signUpSuccess ? (
+                <div className="text-center py-6">
+                  <div className="mx-auto w-16 h-16 rounded-full bg-emerald-400/10 border border-emerald-400/20 flex items-center justify-center mb-5">
+                    <Mail className="w-8 h-8 text-emerald-400" />
+                  </div>
+                  <h2 className="font-display font-bold text-2xl text-opti-text-primary mb-2">
+                    Check your email
+                  </h2>
+                  <p className="text-opti-text-secondary text-sm leading-relaxed mb-6 max-w-sm mx-auto">
+                    Account created! Please check your email to verify your OptiPlan account before logging in.
+                  </p>
+                  <div className="flex items-center gap-2 justify-center text-xs text-opti-text-secondary/60 mb-6">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    Confirmation email sent to <span className="text-opti-text-primary font-medium">{form.email}</span>
+                  </div>
+                  <Link
+                    to="/login"
+                    className="btn-primary py-2.5 px-8 inline-flex items-center"
+                  >
+                    Go to Sign In
+                  </Link>
+                </div>
+              ) : (
+              <>
               <div className="mb-6">
                 <h2 className="font-display font-bold text-2xl text-opti-text-primary">
                   Create your account
@@ -376,6 +406,8 @@ export function SignUp() {
                   GitHub
                 </button>
               </div>
+              </>
+              )}
             </motion.div>
           </motion.div>
         </div>

@@ -63,12 +63,20 @@ export function Login() {
         password: form.password,
       });
       if (error) {
-        setErrors({ form: error.message });
+        if (error.message === 'Email not confirmed') {
+          setErrors({
+            form: 'Your email address has not been verified. Please check your inbox and click the confirmation link before signing in.',
+          });
+        } else {
+          setErrors({ form: error.message });
+        }
       } else {
         navigate('/');
       }
-    } catch {
-      setErrors({ form: 'Invalid email or password. Please try again.' });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      setErrors({ form: message });
     } finally {
       setIsSubmitting(false);
     }
