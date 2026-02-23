@@ -18,7 +18,8 @@
       "Bash(head:*)",
       "Bash(cd /c/Users/chenz/OptiPlan-FYP- && npx tsc --noEmit 2>&1)",
       "Bash(git mv:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "mcp__supabase__generate_typescript_types"
     ]
   },
   "enableAllProjectMcpServers": true,

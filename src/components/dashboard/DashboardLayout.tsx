@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { DashboardProvider } from '@/contexts/DashboardContext';
+import { FinanceProvider } from '@/contexts/FinanceContext';
 import { DashboardSidebar } from './DashboardSidebar';
 import { DashboardHeader } from './DashboardHeader';
 import { TaskModal } from './TaskModal';
@@ -36,18 +37,20 @@ export function DashboardLayout() {
 
   return (
     <DashboardProvider>
-      <div className="min-h-screen bg-[#0B0A1A]">
-        <DashboardSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <FinanceProvider>
+        <div className="min-h-screen bg-[#0B0A1A]">
+          <DashboardSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-        <div className="lg:ml-[250px] min-h-screen flex flex-col">
-          <DashboardHeader title={title} onMenuToggle={() => setSidebarOpen(true)} />
-          <main className="flex-1 p-6">
-            <Outlet />
-          </main>
+          <div className="lg:ml-[250px] min-h-screen flex flex-col">
+            <DashboardHeader title={title} onMenuToggle={() => setSidebarOpen(true)} />
+            <main className="flex-1 p-6">
+              <Outlet />
+            </main>
+          </div>
+
+          <TaskModal />
         </div>
-
-        <TaskModal />
-      </div>
+      </FinanceProvider>
     </DashboardProvider>
   );
 }
