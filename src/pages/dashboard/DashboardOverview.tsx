@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { CheckSquare, Clock, TrendingUp, DollarSign, Wallet, Save, Plus } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { CheckSquare, Clock, TrendingUp, DollarSign, Wallet, Save, Plus, PenLine, X, Droplets, BookOpen, BrainCircuit } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { StatCard } from '@/components/admin/StatCard';
 import { Progress } from '@/components/ui/progress';
@@ -9,6 +9,7 @@ import { useDashboard } from '@/contexts/DashboardContext';
 import { useFinance } from '@/contexts/FinanceContext';
 import { AddTransactionModal } from '@/components/dashboard/AddTransactionModal';
 import { mockAchievements, userXP } from '@/constants/dashboardData';
+import { HoverTip } from '@/components/HoverTip';
 
 const priorityColors = {
   high: 'bg-red-500/20 text-red-400',
@@ -115,14 +116,16 @@ export function DashboardOverview() {
               <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                 <Wallet className="w-4 h-4 text-purple-400" /> Income & Balance
               </h3>
-              <button
-                onClick={handleSaveSettings}
-                disabled={saving || financeLoading}
-                className="flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30 transition-colors disabled:opacity-50"
-              >
-                <Save className="w-3 h-3" />
-                {saving ? 'Saving...' : 'Save'}
-              </button>
+              <HoverTip label="Save your income & balance settings">
+                <button
+                  onClick={handleSaveSettings}
+                  disabled={saving || financeLoading}
+                  className="flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30 transition-colors disabled:opacity-50"
+                >
+                  <Save className="w-3 h-3" />
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
+              </HoverTip>
             </div>
 
             <div className="space-y-3">
@@ -168,12 +171,14 @@ export function DashboardOverview() {
           >
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-white">Finance</h3>
-              <button
-                onClick={() => setModalOpen(true)}
-                className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold rounded-md bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 transition"
-              >
-                <Plus className="w-3 h-3" /> Add Expense
-              </button>
+              <HoverTip label="Record a new expense">
+                <button
+                  onClick={() => setModalOpen(true)}
+                  className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold rounded-md bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 transition"
+                >
+                  <Plus className="w-3 h-3" /> Add Expense
+                </button>
+              </HoverTip>
             </div>
 
             <div className="grid grid-cols-2 gap-3 mb-4">
@@ -238,14 +243,19 @@ export function DashboardOverview() {
                       <p className="text-sm font-medium text-white truncate">{item.title}</p>
                       <p className="text-xs text-gray-500 capitalize">{item.type}{item.type !== 'task' && 'startTime' in item ? ` · ${item.startTime}` : ''}</p>
                     </div>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${priorityColors[importanceToLegacy[item.importance]]}`}>
-                      {importanceToLegacy[item.importance]}
-                    </span>
+                    <HoverTip label={`Priority: ${importanceToLegacy[item.importance]}`}>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${priorityColors[importanceToLegacy[item.importance]]}`}>
+                        {importanceToLegacy[item.importance]}
+                      </span>
+                    </HoverTip>
                   </div>
                 ))}
               </div>
             )}
           </div>
+
+          {/* Daily Wellness & Habits */}
+          <WellnessCard />
 
           {/* Gamification */}
           <div className="rounded-xl bg-[#18162e] border border-white/10 p-4">
@@ -278,5 +288,187 @@ export function DashboardOverview() {
 
       <AddTransactionModal open={modalOpen} onOpenChange={setModalOpen} />
     </div>
+  );
+}
+
+// ── Wellness & Journal ──────────────────────────────────────────────────────
+
+const MOODS = [
+  { emoji: '\uD83D\uDE22', label: 'Awful' },
+  { emoji: '\uD83D\uDE15', label: 'Meh' },
+  { emoji: '\uD83D\uDE10', label: 'Okay' },
+  { emoji: '\uD83D\uDE42', label: 'Good' },
+  { emoji: '\uD83E\uDD29', label: 'Great' },
+];
+
+const DEFAULT_HABITS = [
+  { id: 'h1', label: 'Drink Water', icon: Droplets },
+  { id: 'h2', label: 'Read 10 mins', icon: BookOpen },
+  { id: 'h3', label: 'Deep Work', icon: BrainCircuit },
+];
+
+function WellnessCard() {
+  const [selectedMood, setSelectedMood] = useState<number | null>(null);
+  const [completedHabits, setCompletedHabits] = useState<Set<string>>(new Set());
+  const [journalOpen, setJournalOpen] = useState(false);
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const [journalText, setJournalText] = useState(() => localStorage.getItem(`wellness-journal-${todayKey}`) ?? '');
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const journalTextRef = useRef(journalText);
+
+  function toggleHabit(id: string) {
+    setCompletedHabits(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  // Auto-save debounce
+  const handleJournalChange = useCallback((value: string) => {
+    setJournalText(value);
+    journalTextRef.current = value;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      localStorage.setItem(`wellness-journal-${todayKey}`, value);
+      console.log('[auto-save] journal entry saved');
+    }, 1500);
+  }, [todayKey]);
+
+  // Save immediately on unmount so navigation doesn't lose unsaved text
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      localStorage.setItem(`wellness-journal-${todayKey}`, journalTextRef.current);
+    };
+  }, [todayKey]);
+
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 }}
+        className="rounded-xl bg-[#18162e] border border-white/10 p-4"
+      >
+        <h3 className="text-sm font-semibold text-white mb-3">Daily Wellness</h3>
+
+        {/* Mood Selector */}
+        <p className="text-xs text-gray-400 mb-2">How are you feeling today?</p>
+        <div className="flex gap-2 mb-4">
+          {MOODS.map((mood, i) => (
+            <HoverTip key={i} label={`Log as ${mood.label}`}>
+              <button
+                onClick={() => setSelectedMood(i)}
+                className={`w-10 h-10 rounded-full text-lg flex items-center justify-center transition-all ${
+                  selectedMood === i
+                    ? 'ring-2 ring-purple-500 ring-offset-2 ring-offset-[#18162e] scale-110 bg-purple-500/20'
+                    : 'bg-white/5 hover:bg-white/10'
+                }`}
+                title={mood.label}
+              >
+                {mood.emoji}
+              </button>
+            </HoverTip>
+          ))}
+        </div>
+
+        {/* Habit Row */}
+        <p className="text-xs text-gray-400 mb-2">Daily habits</p>
+        <div className="space-y-2 mb-4">
+          {DEFAULT_HABITS.map(habit => {
+            const done = completedHabits.has(habit.id);
+            return (
+              <HoverTip key={habit.id} label={habit.label}>
+              <button
+                onClick={() => toggleHabit(habit.id)}
+                className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-white/[0.03] transition-colors"
+              >
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                  done ? 'border-green-400 bg-green-400' : 'border-gray-600'
+                }`}>
+                  {done && (
+                    <svg className="w-3 h-3 text-[#18162e]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+                <habit.icon className={`w-4 h-4 ${done ? 'text-green-400' : 'text-gray-500'}`} />
+                <span className={`text-xs ${done ? 'text-green-400 line-through' : 'text-gray-300'}`}>{habit.label}</span>
+              </button>
+              </HoverTip>
+            );
+          })}
+        </div>
+
+        {/* Journal trigger */}
+        <HoverTip label="Write a private journal entry">
+          <button
+            onClick={() => setJournalOpen(true)}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-semibold hover:bg-purple-500/20 transition-colors"
+          >
+            <PenLine className="w-3.5 h-3.5" /> Open Daily Journal
+          </button>
+        </HoverTip>
+      </motion.div>
+
+      {/* ── Journal Slide-Over ─────────────────────────────────────────── */}
+      <AnimatePresence>
+        {journalOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setJournalOpen(false)}
+              className="fixed inset-0 bg-black/50 z-50"
+            />
+            {/* Drawer */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="fixed right-0 top-0 h-full w-full max-w-lg bg-[#0B0A1A] border-l border-white/10 z-50 flex flex-col shadow-2xl"
+            >
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+                <div>
+                  <h2 className="text-lg font-bold text-white">Daily Journal</h2>
+                  <p className="text-xs text-gray-500">{today}</p>
+                </div>
+                <button
+                  onClick={() => setJournalOpen(false)}
+                  className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Journal Body */}
+              <div className="flex-1 p-6 overflow-y-auto">
+                <div className="prose prose-invert max-w-none">
+                  <textarea
+                    value={journalText}
+                    onChange={e => handleJournalChange(e.target.value)}
+                    placeholder="What's on your mind today? Brain dump your thoughts, stress, or wins..."
+                    className="w-full h-full min-h-[400px] bg-transparent text-gray-200 text-sm leading-relaxed placeholder:text-gray-600 outline-none resize-none"
+                  />
+                </div>
+              </div>
+
+              {/* Auto-save indicator */}
+              <div className="px-6 py-3 border-t border-white/10 flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                <span className="text-[10px] text-gray-500">Auto-saves as you type</span>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

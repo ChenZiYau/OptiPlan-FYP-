@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, Trash2 } from 'lucide-react';
+import { HoverTip } from '@/components/HoverTip';
 import { useDashboard } from '@/contexts/DashboardContext';
 import { InteractiveCalendar } from '@/components/dashboard/InteractiveCalendar';
 
@@ -112,13 +113,15 @@ export function SchedulesPage() {
           <h2 className="text-lg font-display font-semibold text-white">Weekly Schedule</h2>
           <p className="text-sm text-gray-500 mt-0.5">{schedules.length} subject{schedules.length !== 1 ? 's' : ''} scheduled</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Add Subject
-        </button>
+        <HoverTip label="Add a new class or event">
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Add Subject
+          </button>
+        </HoverTip>
       </div>
 
       {/* Add subject form */}
@@ -156,12 +159,13 @@ export function SchedulesPage() {
                 <label className="block text-xs font-medium text-gray-400 mb-1.5">Color</label>
                 <div className="flex gap-2">
                   {PRESET_COLORS.map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => setColor(c)}
-                      className={`w-7 h-7 rounded-full transition-all ${color === c ? 'ring-2 ring-white ring-offset-2 ring-offset-[#18162e] scale-110' : 'hover:scale-110'}`}
-                      style={{ backgroundColor: c }}
-                    />
+                    <HoverTip key={c} label="Choose a color for this entry">
+                      <button
+                        onClick={() => setColor(c)}
+                        className={`w-7 h-7 rounded-full transition-all ${color === c ? 'ring-2 ring-white ring-offset-2 ring-offset-[#18162e] scale-110' : 'hover:scale-110'}`}
+                        style={{ backgroundColor: c }}
+                      />
+                    </HoverTip>
                   ))}
                 </div>
               </div>

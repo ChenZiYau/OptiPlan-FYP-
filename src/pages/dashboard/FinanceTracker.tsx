@@ -39,6 +39,7 @@ import {
   spendingByCategory,
   spendingTrends,
 } from '@/hooks/useFinanceData';
+import { HoverTip } from '@/components/HoverTip';
 import { AddTransactionModal } from '@/components/dashboard/AddTransactionModal';
 import { SetBudgetModal } from '@/components/dashboard/SetBudgetModal';
 import type { LucideIcon } from 'lucide-react';
@@ -210,18 +211,22 @@ export function FinanceTracker() {
           <p className="text-sm text-gray-400">Track spending, manage budgets, and plan finances</p>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setBudgetModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 hover:text-white transition-colors"
-          >
-            <Wallet className="w-4 h-4" /> Set Budget
-          </button>
-          <button
-            onClick={() => setModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl bg-purple-500/80 hover:bg-purple-500 text-white transition-colors"
-          >
-            <Plus className="w-4 h-4" /> Add Expense
-          </button>
+          <HoverTip label="Set monthly budget limits">
+            <button
+              onClick={() => setBudgetModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 hover:text-white transition-colors"
+            >
+              <Wallet className="w-4 h-4" /> Set Budget
+            </button>
+          </HoverTip>
+          <HoverTip label="Record income or expense">
+            <button
+              onClick={() => setModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl bg-purple-500/80 hover:bg-purple-500 text-white transition-colors"
+            >
+              <Plus className="w-4 h-4" /> Add Expense
+            </button>
+          </HoverTip>
         </div>
       </div>
 

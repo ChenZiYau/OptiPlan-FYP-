@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutGrid, DollarSign, CheckSquare, CalendarDays,
-  Users, Bot, BookOpen, LogOut, X, Plus,
+  Users, Bot, BookOpen, LogOut, X, Plus, Sparkles, Heart,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { HoverTip } from '@/components/HoverTip';
 import { useDashboard } from '@/contexts/DashboardContext';
 import type { DashboardNavItem } from '@/types/dashboard';
 
@@ -16,6 +17,8 @@ const navItems: DashboardNavItem[] = [
   { label: 'Collaboration', href: '/dashboard/collab', icon: Users },
   { label: 'AI ChatBot', href: '/dashboard/chatbot', icon: Bot },
   { label: 'Study Hub', href: '/dashboard/studyhub', icon: BookOpen },
+  { label: 'Wellness', href: '/dashboard/wellness', icon: Heart },
+  { label: 'Wrapped', href: '/dashboard/wrapped', icon: Sparkles },
 ];
 
 interface DashboardSidebarProps {
@@ -86,13 +89,15 @@ export function DashboardSidebar({ isOpen, onClose }: DashboardSidebarProps) {
 
         {/* Quick action */}
         <div className="px-3 pb-2">
-          <button
-            onClick={openModal}
-            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            New Task
-          </button>
+          <HoverTip label="Create a new task">
+            <button
+              onClick={openModal}
+              className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              New Task
+            </button>
+          </HoverTip>
         </div>
 
         {/* Navigation */}
@@ -133,14 +138,16 @@ export function DashboardSidebar({ isOpen, onClose }: DashboardSidebarProps) {
                 <p className="text-sm font-medium text-white truncate">{displayName}</p>
                 <p className="text-xs text-gray-500">Free Plan</p>
               </div>
-              <button
-                onClick={() => setShowLogoutConfirm(true)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                aria-label="Log out"
-                title="Log out"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
+              <HoverTip label="Log out" side="right">
+                <button
+                  onClick={() => setShowLogoutConfirm(true)}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                  aria-label="Log out"
+                  title="Log out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </HoverTip>
             </div>
 
             {/* Logout confirmation */}

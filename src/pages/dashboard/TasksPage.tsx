@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { Plus } from 'lucide-react';
+import { HoverTip } from '@/components/HoverTip';
 import { motion } from 'framer-motion';
 import { useDashboard } from '@/contexts/DashboardContext';
 import type { DashboardItem, TaskStatus, Importance } from '@/types/dashboard';
@@ -96,12 +97,14 @@ export function TasksPage() {
           </p>
         </div>
 
-        <button
-          onClick={openModal}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition-colors shrink-0"
-        >
-          <Plus className="w-4 h-4" /> New Task
-        </button>
+        <HoverTip label="Create a new task">
+          <button
+            onClick={openModal}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition-colors shrink-0"
+          >
+            <Plus className="w-4 h-4" /> New Task
+          </button>
+        </HoverTip>
       </div>
 
       {/* Filters */}

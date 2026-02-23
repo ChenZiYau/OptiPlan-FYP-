@@ -17,6 +17,8 @@ const pageTitles: Record<string, string> = {
   '/dashboard/collab': 'Collaboration',
   '/dashboard/chatbot': 'AI ChatBot',
   '/dashboard/studyhub': 'Study Hub',
+  '/dashboard/wellness': 'Wellness & Journal',
+  '/dashboard/wrapped': 'Wrapped',
 };
 
 export function DashboardLayout() {

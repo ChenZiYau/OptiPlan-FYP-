@@ -16,6 +16,8 @@ import { SchedulesPage } from '@/pages/dashboard/SchedulesPage';
 import { CollabPage } from '@/pages/dashboard/CollabPage';
 import { ChatBotPage } from '@/pages/dashboard/ChatBotPage';
 import { StudyHubPage } from '@/pages/dashboard/StudyHubPage';
+import { WrappedPage } from '@/pages/dashboard/WrappedPage';
+import { WellnessPage } from '@/pages/dashboard/WellnessPage';
 
 function App() {
   return (
@@ -35,6 +37,8 @@ function App() {
             <Route path="collab" element={<CollabPage />} />
             <Route path="chatbot" element={<ChatBotPage />} />
             <Route path="studyhub" element={<StudyHubPage />} />
+            <Route path="wrapped" element={<WrappedPage />} />
+            <Route path="wellness" element={<WellnessPage />} />
           </Route>
 
           {/* Admin routes — protected by AdminLayout */}
