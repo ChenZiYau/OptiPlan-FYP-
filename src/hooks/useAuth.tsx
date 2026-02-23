@@ -49,12 +49,16 @@ function buildProfile(user: User, avatarUrl?: string | null): Profile {
 }
 
 async function fetchAvatarUrl(userId: string): Promise<string | null> {
-  const { data } = await supabase
-    .from('profiles')
-    .select('avatar_url')
-    .eq('id', userId)
-    .single();
-  return data?.avatar_url ?? null;
+  try {
+    const { data } = await supabase
+      .from('profiles')
+      .select('avatar_url')
+      .eq('id', userId)
+      .single();
+    return data?.avatar_url ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -73,7 +77,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        await initProfile(s.user);
+        try {
+          await initProfile(s.user);
+        } catch {
+          setProfile(buildProfile(s.user));
+        }
       } else {
         setProfile(null);
       }
@@ -88,7 +96,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        await initProfile(s.user);
+        try {
+          await initProfile(s.user);
+        } catch {
+          setProfile(buildProfile(s.user));
+        }
       } else {
         setProfile(null);
       }
