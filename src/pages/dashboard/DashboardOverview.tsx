@@ -21,6 +21,20 @@ function fmt(n: number) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function fmtCompact(n: number) {
+  const abs = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+  if (abs >= 1_000_000) {
+    const v = abs / 1_000_000;
+    return `${sign}$${v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)}m`;
+  }
+  if (abs >= 1_000) {
+    const v = abs / 1_000;
+    return `${sign}$${v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)}k`;
+  }
+  return `${sign}$${abs.toFixed(2)}`;
+}
+
 export function DashboardOverview() {
   const { items } = useDashboard();
   const {
@@ -72,7 +86,7 @@ export function DashboardOverview() {
         <StatCard title="Tasks Today" value={todayTasks.length} subtitle={`${todayItems.length} total items`} icon={CheckSquare} />
         <StatCard title="Focus Time" value="0h" subtitle="Start a session to track" icon={Clock} />
         <StatCard title="Productivity" value="0%" subtitle="Complete tasks to build up" icon={TrendingUp} />
-        <StatCard title="Spending Today" value={`$${fmt(todaySpending)}`} subtitle={todaySpending > 0 ? 'Keep tracking!' : 'No expenses yet'} icon={DollarSign} />
+        <StatCard title="Spending Today" value={fmtCompact(todaySpending)} subtitle={todaySpending > 0 ? 'Keep tracking!' : 'No expenses yet'} icon={DollarSign} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -132,7 +146,7 @@ export function DashboardOverview() {
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-400">Total Balance</span>
                 <span className={`text-lg font-bold ${totalBalance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  ${fmt(totalBalance)}
+                  {fmtCompact(totalBalance)}
                 </span>
               </div>
             </div>
@@ -159,16 +173,16 @@ export function DashboardOverview() {
               <div className="rounded-lg bg-white/[0.03] border border-white/5 p-3">
                 <p className="text-[10px] text-gray-500 uppercase tracking-wider">Budget Remaining</p>
                 <p className={`text-base font-bold mt-0.5 ${budgetRemaining >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  ${fmt(budgetRemaining)}
+                  {fmtCompact(budgetRemaining)}
                 </p>
               </div>
               <div className="rounded-lg bg-white/[0.03] border border-white/5 p-3">
                 <p className="text-[10px] text-gray-500 uppercase tracking-wider">This Month</p>
-                <p className="text-base font-bold text-purple-400 mt-0.5">${fmt(monthSpending)}</p>
+                <p className="text-base font-bold text-purple-400 mt-0.5">{fmtCompact(monthSpending)}</p>
               </div>
               <div className="col-span-2 rounded-lg bg-white/[0.03] border border-white/5 p-3">
                 <p className="text-[10px] text-gray-500 uppercase tracking-wider">Today</p>
-                <p className="text-base font-bold text-white mt-0.5">${fmt(todaySpending)}</p>
+                <p className="text-base font-bold text-white mt-0.5">{fmtCompact(todaySpending)}</p>
               </div>
             </div>
 

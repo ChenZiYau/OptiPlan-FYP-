@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutGrid, DollarSign, CheckSquare, CalendarDays,
@@ -26,6 +27,7 @@ export function DashboardSidebar({ isOpen, onClose }: DashboardSidebarProps) {
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
   const { openModal } = useDashboard();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const displayName = profile?.display_name ?? 'User';
   const initials = (() => {
@@ -74,6 +76,7 @@ export function DashboardSidebar({ isOpen, onClose }: DashboardSidebarProps) {
           </Link>
           <button
             onClick={onClose}
+            aria-label="Close menu"
             className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
           >
             <X className="w-4 h-4" />
@@ -130,13 +133,35 @@ export function DashboardSidebar({ isOpen, onClose }: DashboardSidebarProps) {
                 <p className="text-xs text-gray-500">Free Plan</p>
               </div>
               <button
-                onClick={handleSignOut}
+                onClick={() => setShowLogoutConfirm(true)}
                 className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                aria-label="Log out"
                 title="Log out"
               >
                 <LogOut className="w-4 h-4" />
               </button>
             </div>
+
+            {/* Logout confirmation */}
+            {showLogoutConfirm && (
+              <div className="mt-3 pt-3 border-t border-white/10">
+                <p className="text-xs text-gray-400 mb-2">Are you sure you want to log out?</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowLogoutConfirm(false)}
+                    className="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSignOut}
+                    className="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition"
+                  >
+                    Log out
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </aside>

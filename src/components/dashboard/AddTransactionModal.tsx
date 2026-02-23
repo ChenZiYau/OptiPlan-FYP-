@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +16,6 @@ import {
   Tag,
   Repeat,
   TrendingDown,
-  TrendingUp,
   Loader2,
 } from 'lucide-react';
 
@@ -24,22 +24,11 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
-type TxType = 'expense' | 'income';
 type DatePreset = 'today' | 'yesterday' | 'custom';
-
-const INCOME_CATEGORIES = [
-  'Salary',
-  'Freelance',
-  'Investment',
-  'Gift',
-  'Refund',
-  'Other',
-];
 
 export function AddTransactionModal({ open, onOpenChange }: Props) {
   const { addTransaction } = useFinance();
 
-  const [txType, setTxType] = useState<TxType>('expense');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [datePreset, setDatePreset] = useState<DatePreset>('today');
@@ -48,9 +37,6 @@ export function AddTransactionModal({ open, onOpenChange }: Props) {
   const [isRecurring, setIsRecurring] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-
-  const categories =
-    txType === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
 
   function getDate() {
     if (datePreset === 'today') return new Date().toISOString().slice(0, 10);
@@ -95,12 +81,15 @@ export function AddTransactionModal({ open, onOpenChange }: Props) {
 
     try {
       await addTransaction({
-        type: txType,
+        type: 'expense',
         amount: parsedAmount,
         category,
         transaction_date: txDate,
         description: description.trim() || null,
         is_recurring: isRecurring,
+      });
+      toast.success(`Expense of $${parsedAmount.toFixed(2)} added`, {
+        description: `${category} · ${txDate}`,
       });
       reset();
       onOpenChange(false);
@@ -115,49 +104,11 @@ export function AddTransactionModal({ open, onOpenChange }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-[#131127] border-white/10 text-white sm:max-w-[480px] p-0 gap-0 overflow-hidden">
         <DialogHeader className="p-6 pb-0">
-          <DialogTitle className="text-lg font-semibold">
-            Add Transaction
+          <DialogTitle className="text-lg font-semibold flex items-center gap-2">
+            <TrendingDown className="w-5 h-5 text-red-400" />
+            Add Expense
           </DialogTitle>
         </DialogHeader>
-
-        {/* Expense / Income toggle */}
-        <div className="px-6 pt-4">
-          <div className="flex rounded-lg bg-white/5 p-1">
-            {(['expense', 'income'] as TxType[]).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => {
-                  setTxType(t);
-                  setCategory('');
-                }}
-                className={`relative flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                  txType === t ? 'text-white' : 'text-gray-400 hover:text-gray-300'
-                }`}
-              >
-                {txType === t && (
-                  <motion.div
-                    layoutId="txTypeTab"
-                    className={`absolute inset-0 rounded-md ${
-                      t === 'expense'
-                        ? 'bg-red-500/20 border border-red-500/30'
-                        : 'bg-green-500/20 border border-green-500/30'
-                    }`}
-                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                  />
-                )}
-                <span className="relative z-10 flex items-center gap-1.5">
-                  {t === 'expense' ? (
-                    <TrendingDown className="w-4 h-4" />
-                  ) : (
-                    <TrendingUp className="w-4 h-4" />
-                  )}
-                  {t === 'expense' ? 'Expense' : 'Income'}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           {/* Amount */}
@@ -188,7 +139,7 @@ export function AddTransactionModal({ open, onOpenChange }: Props) {
               <Tag className="w-3.5 h-3.5" /> Category
             </label>
             <div className="grid grid-cols-4 gap-2">
-              {categories.map((c) => (
+              {EXPENSE_CATEGORIES.map((c) => (
                 <button
                   key={c}
                   type="button"
@@ -293,22 +244,14 @@ export function AddTransactionModal({ open, onOpenChange }: Props) {
           <button
             type="submit"
             disabled={submitting}
-            className={`w-full py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
-              txType === 'expense'
-                ? 'bg-red-500/80 hover:bg-red-500 text-white'
-                : 'bg-green-500/80 hover:bg-green-500 text-white'
-            } disabled:opacity-50 disabled:cursor-not-allowed`}
+            className="w-full py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 bg-red-500/80 hover:bg-red-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? (
               <Loader2 className="w-4 h-4 animate-spin" />
-            ) : txType === 'expense' ? (
-              <TrendingDown className="w-4 h-4" />
             ) : (
-              <TrendingUp className="w-4 h-4" />
+              <TrendingDown className="w-4 h-4" />
             )}
-            {submitting
-              ? 'Saving...'
-              : `Add ${txType === 'expense' ? 'Expense' : 'Income'}`}
+            {submitting ? 'Saving...' : 'Add Expense'}
           </button>
         </form>
       </DialogContent>

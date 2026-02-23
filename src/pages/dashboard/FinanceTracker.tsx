@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   DollarSign,
   TrendingDown,
@@ -43,8 +44,24 @@ import type { LucideIcon } from 'lucide-react';
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
+/** Full precision: $1,234.56 */
 function fmt(n: number) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** Compact: $1.2k, $10k, $1.5m — used on stat cards */
+function fmtCompact(n: number) {
+  const abs = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+  if (abs >= 1_000_000) {
+    const v = abs / 1_000_000;
+    return `${sign}$${v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)}m`;
+  }
+  if (abs >= 1_000) {
+    const v = abs / 1_000;
+    return `${sign}$${v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)}k`;
+  }
+  return `${sign}$${abs.toFixed(2)}`;
 }
 
 type TimeRange = 'week' | 'month' | 'year';
@@ -69,6 +86,7 @@ const DONUT_COLORS = [
 
 export function FinanceTracker() {
   const {
+    settings,
     transactions,
     budgets,
     totalBalance,
@@ -78,12 +96,17 @@ export function FinanceTracker() {
     monthSpending,
     deleteTransaction,
     upsertBudgetLimit,
+    saveSettings,
   } = useFinance();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [pieRange, setPieRange] = useState<TimeRange>('month');
   const [trendRange, setTrendRange] = useState<TimeRange>('month');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [balancePopover, setBalancePopover] = useState(false);
+  const [balanceInput, setBalanceInput] = useState('');
+  const [mainIncomeInput, setMainIncomeInput] = useState('');
+  const [sideIncomeInput, setSideIncomeInput] = useState('');
 
   // ── Computed chart data ───────────────────────────────────────────────
 
@@ -102,7 +125,6 @@ export function FinanceTracker() {
     [transactions],
   );
 
-  // Budget data with spent amounts for current month
   const monthStart = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`;
   const categorySpending = useMemo(() => {
     const map: Record<string, number> = {};
@@ -114,12 +136,12 @@ export function FinanceTracker() {
     return map;
   }, [transactions, monthStart]);
 
-  // ── Stat card colors ──────────────────────────────────────────────────
+  // ── Stat cards ────────────────────────────────────────────────────────
 
   const statCards = [
     {
       title: "Today's Spending",
-      value: `$${fmt(todaySpending)}`,
+      value: fmtCompact(todaySpending),
       subtitle: 'Today',
       color: 'from-red-500/20 to-red-500/5',
       borderColor: 'border-red-500/20',
@@ -129,7 +151,7 @@ export function FinanceTracker() {
     },
     {
       title: 'This Week',
-      value: `$${fmt(weekSpending)}`,
+      value: fmtCompact(weekSpending),
       subtitle: 'Mon – Sun',
       color: 'from-yellow-500/20 to-yellow-500/5',
       borderColor: 'border-yellow-500/20',
@@ -139,7 +161,7 @@ export function FinanceTracker() {
     },
     {
       title: 'This Month',
-      value: `$${fmt(monthSpending)}`,
+      value: fmtCompact(monthSpending),
       subtitle: new Date().toLocaleString('en-US', { month: 'long' }),
       color: 'from-purple-500/20 to-purple-500/5',
       borderColor: 'border-purple-500/20',
@@ -147,20 +169,28 @@ export function FinanceTracker() {
       icon: DollarSign,
       iconColor: 'text-purple-400',
     },
-    {
-      title: 'Total Balance',
-      value: `$${fmt(totalBalance)}`,
-      subtitle: `Budget remaining: $${fmt(budgetRemaining)}`,
-      color: 'from-green-500/20 to-green-500/5',
-      borderColor: 'border-green-500/20',
-      valueColor: 'text-green-400',
-      icon: Wallet,
-      iconColor: 'text-green-400',
-    },
   ];
+
+  function openBalancePopover() {
+    setBalanceInput(String(settings?.starting_balance ?? 0));
+    setMainIncomeInput(String(settings?.main_income ?? 0));
+    setSideIncomeInput(String(settings?.side_income ?? 0));
+    setBalancePopover(true);
+  }
+
+  async function saveBalancePopover() {
+    await saveSettings({
+      starting_balance: parseFloat(balanceInput) || 0,
+      main_income: parseFloat(mainIncomeInput) || 0,
+      side_income: parseFloat(sideIncomeInput) || 0,
+    });
+    toast.success('Balance & income updated');
+    setBalancePopover(false);
+  }
 
   async function handleDelete(id: string) {
     await deleteTransaction(id);
+    toast.success('Expense deleted');
     setDeleteConfirm(null);
   }
 
@@ -204,6 +234,88 @@ export function FinanceTracker() {
             </div>
           </motion.div>
         ))}
+
+        {/* Total Balance — clickable, opens popout */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="relative rounded-xl bg-gradient-to-br from-green-500/20 to-green-500/5 border border-green-500/20 p-5 cursor-pointer hover:border-green-500/40 transition-colors"
+          onClick={() => !balancePopover && openBalancePopover()}
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-medium tracking-wider text-gray-400 uppercase">
+                Total Balance
+              </p>
+              <p className="mt-2 text-2xl font-bold text-green-400">
+                {fmtCompact(totalBalance)}
+              </p>
+              <p className="mt-1 text-xs text-gray-500">
+                Remaining: {fmtCompact(budgetRemaining)}
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
+              <Wallet className="w-5 h-5 text-green-400" />
+            </div>
+          </div>
+
+          {/* Popout edit card */}
+          <AnimatePresence>
+            {balancePopover && (
+              <PopoverCard onClose={() => setBalancePopover(false)}>
+                <h4 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+                  <Wallet className="w-4 h-4 text-green-400" /> Edit Balance & Income
+                </h4>
+                <div className="space-y-3">
+                  {[
+                    { label: 'Starting Balance', value: balanceInput, setter: setBalanceInput },
+                    { label: 'Main Income', value: mainIncomeInput, setter: setMainIncomeInput },
+                    { label: 'Side Income', value: sideIncomeInput, setter: setSideIncomeInput },
+                  ].map(({ label, value, setter }) => (
+                    <div key={label}>
+                      <label className="text-xs text-gray-400 mb-1 block">{label}</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={value}
+                          onChange={(e) => setter(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && saveBalancePopover()}
+                          className="w-full pl-7 pr-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500/40 transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
+                  <span className="text-xs text-gray-400">
+                    Total: <span className="text-green-400 font-semibold">${fmt(
+                      (parseFloat(balanceInput) || 0) +
+                      (parseFloat(mainIncomeInput) || 0) +
+                      (parseFloat(sideIncomeInput) || 0)
+                    )}</span>
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setBalancePopover(false); }}
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); saveBalancePopover(); }}
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 transition"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              </PopoverCard>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </div>
 
       {/* ── Middle Section (2 columns) ────────────────────────────────────── */}
@@ -326,7 +438,6 @@ export function FinanceTracker() {
                         -${fmt(Number(tx.amount))}
                       </span>
 
-                      {/* Delete */}
                       {deleteConfirm === tx.id ? (
                         <div className="flex items-center gap-1">
                           <button
@@ -425,32 +536,54 @@ export function FinanceTracker() {
       </div>
 
       {/* ── Budget Overview ───────────────────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.35 }}
-      >
-        <h3 className="text-sm font-semibold text-white mb-4">Budget Overview</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          {EXPENSE_CATEGORIES.map((cat) => {
-            const budget = budgets.find((b) => b.category === cat);
-            const limit = budget?.limit_amount ?? 500;
-            const spent = categorySpending[cat] ?? 0;
-            return (
-              <BudgetCard
-                key={cat}
-                category={cat}
-                spent={spent}
-                limit={limit}
-                onUpdateLimit={(newLimit) => upsertBudgetLimit(cat, newLimit)}
-              />
-            );
-          })}
-        </div>
-      </motion.div>
+      <BudgetOverviewCard
+        budgets={budgets}
+        categorySpending={categorySpending}
+        onUpdateLimit={upsertBudgetLimit}
+      />
 
       <AddTransactionModal open={modalOpen} onOpenChange={setModalOpen} />
     </div>
+  );
+}
+
+// ── Popover Card (click-away to close) ──────────────────────────────────────
+
+function PopoverCard({
+  children,
+  onClose,
+}: {
+  children: React.ReactNode;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        onClose();
+      }
+    }
+    // Delay so the opening click doesn't immediately close it
+    const timer = setTimeout(() => document.addEventListener('mousedown', handleClick), 0);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClick);
+    };
+  }, [onClose]);
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 8, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 8, scale: 0.95 }}
+      transition={{ duration: 0.15 }}
+      onClick={(e) => e.stopPropagation()}
+      className="absolute z-50 top-full left-0 right-0 mt-2 rounded-xl bg-[#1a1735] border border-white/10 p-5 shadow-2xl shadow-black/40"
+    >
+      {children}
+    </motion.div>
   );
 }
 
@@ -488,103 +621,199 @@ function PillToggle({
   );
 }
 
-// ── Budget Card ─────────────────────────────────────────────────────────────
+// ── Budget Overview Card ────────────────────────────────────────────────────
 
-function BudgetCard({
-  category,
-  spent,
-  limit,
+function BudgetOverviewCard({
+  budgets,
+  categorySpending,
   onUpdateLimit,
 }: {
-  category: string;
-  spent: number;
-  limit: number;
-  onUpdateLimit: (n: number) => void;
+  budgets: { category: string; limit_amount: number }[];
+  categorySpending: Record<string, number>;
+  onUpdateLimit: (category: string, limit: number) => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState(String(limit));
+  const [setAllValue, setSetAllValue] = useState('');
+  const [applyingAll, setApplyingAll] = useState(false);
+  const [editingCat, setEditingCat] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
 
-  const pct = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0;
-  const barColor = pct >= 90 ? '#ef4444' : pct >= 60 ? '#f59e0b' : '#10b981';
-  const Icon = CATEGORY_ICONS[category] ?? DollarSign;
+  async function handleSetAll() {
+    const val = parseFloat(setAllValue);
+    if (!val || val <= 0) return;
+    setApplyingAll(true);
+    await Promise.all(EXPENSE_CATEGORIES.map((cat) => onUpdateLimit(cat, val)));
+    setApplyingAll(false);
+    setSetAllValue('');
+  }
 
-  function handleSave() {
+  function openEditPopover(cat: string, currentLimit: number) {
+    setEditingCat(cat);
+    setEditValue(String(currentLimit));
+  }
+
+  function saveEdit() {
+    if (!editingCat) return;
     const val = parseFloat(editValue);
-    if (val > 0) onUpdateLimit(val);
-    setEditing(false);
+    if (val > 0) onUpdateLimit(editingCat, val);
+    setEditingCat(null);
   }
 
   return (
-    <div className="rounded-xl bg-[#18162e] border border-white/10 p-4 group">
-      <div className="flex items-center justify-between mb-3">
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.35 }}
+      className="rounded-xl bg-[#18162e] border border-white/10 p-5"
+    >
+      {/* Header + Set All */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+        <h3 className="text-sm font-semibold text-white">Budget Overview</h3>
         <div className="flex items-center gap-2">
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: `${CATEGORY_COLORS[category]}20` }}
-          >
-            <Icon className="w-4 h-4" style={{ color: CATEGORY_COLORS[category] }} />
+          <span className="text-xs text-gray-400 whitespace-nowrap">Set all limits:</span>
+          <div className="relative">
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-500">$</span>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={setAllValue}
+              onChange={(e) => setSetAllValue(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSetAll()}
+              placeholder="500.00"
+              className="w-28 pl-6 pr-2 py-1.5 text-xs bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            />
           </div>
-          <span className="text-sm font-medium text-white">{category}</span>
+          <button
+            onClick={handleSetAll}
+            disabled={applyingAll || !setAllValue}
+            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+          >
+            {applyingAll ? 'Applying...' : 'Apply All'}
+          </button>
         </div>
-        <AnimatePresence mode="wait">
-          {editing ? (
+      </div>
+
+      {/* Category rows */}
+      <div className="space-y-3">
+        {EXPENSE_CATEGORIES.map((cat, i) => {
+          const budget = budgets.find((b) => b.category === cat);
+          const limit = budget?.limit_amount ?? 500;
+          const spent = categorySpending[cat] ?? 0;
+          const pct = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0;
+          const barColor = pct >= 90 ? '#ef4444' : pct >= 60 ? '#f59e0b' : '#10b981';
+          const Icon = CATEGORY_ICONS[cat] ?? DollarSign;
+          const isEditing = editingCat === cat;
+
+          return (
             <motion.div
-              key="editing"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="flex items-center gap-1"
+              key={cat}
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.35 + i * 0.03 }}
+              className="relative group"
             >
-              <input
-                type="number"
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                className="w-20 px-2 py-1 text-xs bg-white/5 border border-white/10 rounded text-white focus:outline-none focus:ring-1 focus:ring-purple-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                autoFocus
-                onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-              />
-              <button onClick={handleSave} className="p-1 rounded bg-green-500/20 text-green-400 hover:bg-green-500/30">
-                <Check className="w-3 h-3" />
-              </button>
-              <button onClick={() => setEditing(false)} className="p-1 rounded bg-white/5 text-gray-400 hover:bg-white/10">
-                <X className="w-3 h-3" />
-              </button>
+              <div
+                className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-white/[0.03] transition-colors"
+                onClick={() => !isEditing && openEditPopover(cat, limit)}
+              >
+                {/* Icon + name */}
+                <div
+                  className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: `${CATEGORY_COLORS[cat]}20` }}
+                >
+                  <Icon className="w-3.5 h-3.5" style={{ color: CATEGORY_COLORS[cat] }} />
+                </div>
+                <span className="text-sm font-medium text-white w-28 truncate">{cat}</span>
+
+                {/* Progress bar */}
+                <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${pct}%` }}
+                    transition={{ duration: 0.6, ease: 'easeOut' }}
+                    className="h-full rounded-full"
+                    style={{ backgroundColor: barColor }}
+                  />
+                </div>
+
+                {/* Spent / Limit */}
+                <span className="text-xs text-gray-300 tabular-nums text-right shrink-0">
+                  <span className="text-white font-semibold">{fmtCompact(spent)}</span>
+                  <span className="text-gray-500"> / {fmtCompact(limit)}</span>
+                </span>
+
+                <Pencil className="w-3 h-3 text-gray-600 group-hover:text-purple-400 shrink-0 transition-colors" />
+
+                <span
+                  className="text-[10px] font-medium w-8 text-right tabular-nums shrink-0"
+                  style={{ color: barColor }}
+                >
+                  {Math.round(pct)}%
+                </span>
+              </div>
+
+              {/* Popout edit card */}
+              <AnimatePresence>
+                {isEditing && (
+                  <PopoverCard onClose={() => setEditingCat(null)}>
+                    <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                      <div
+                        className="w-6 h-6 rounded-md flex items-center justify-center"
+                        style={{ backgroundColor: `${CATEGORY_COLORS[cat]}20` }}
+                      >
+                        <Icon className="w-3 h-3" style={{ color: CATEGORY_COLORS[cat] }} />
+                      </div>
+                      {cat} Budget
+                    </h4>
+
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <label className="text-xs text-gray-400 mb-1 block">Monthly Limit</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">$</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') saveEdit();
+                              if (e.key === 'Escape') setEditingCat(null);
+                            }}
+                            autoFocus
+                            className="w-full pl-7 pr-3 py-2.5 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between">
+                      <span className="text-xs text-gray-500">
+                        Spent: <span className="text-white font-medium">${fmt(spent)}</span>
+                      </span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setEditingCat(null)}
+                          className="px-3 py-1.5 text-xs font-medium rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 transition"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={saveEdit}
+                          className="px-3 py-1.5 text-xs font-medium rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30 hover:bg-purple-500/30 transition"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  </PopoverCard>
+                )}
+              </AnimatePresence>
             </motion.div>
-          ) : (
-            <motion.button
-              key="edit-btn"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              onClick={() => {
-                setEditValue(String(limit));
-                setEditing(true);
-              }}
-              className="p-1 rounded text-gray-600 hover:text-purple-400 hover:bg-purple-500/10 opacity-0 group-hover:opacity-100 transition-all"
-              title="Edit limit"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </motion.button>
-          )}
-        </AnimatePresence>
+          );
+        })}
       </div>
-
-      <p className="text-xs text-gray-400 mb-2">
-        <span className="text-white font-semibold">${fmt(spent)}</span>{' '}
-        of ${fmt(limit)}
-      </p>
-
-      {/* Progress bar */}
-      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="h-full rounded-full"
-          style={{ backgroundColor: barColor }}
-        />
-      </div>
-
-      <p className="text-[10px] text-gray-500 mt-1.5 text-right">{Math.round(pct)}% used</p>
-    </div>
+    </motion.div>
   );
 }
