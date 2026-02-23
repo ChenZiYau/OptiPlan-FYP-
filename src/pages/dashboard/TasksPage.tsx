@@ -1,45 +1,146 @@
-import { CheckSquare, Columns3, Tag, Clock } from 'lucide-react';
+import { useState, useMemo, useCallback } from 'react';
+import { Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-const previewFeatures = [
-  { icon: Columns3, label: 'Kanban Boards', desc: 'Drag-and-drop task organization' },
-  { icon: Tag, label: 'Labels & Priorities', desc: 'Color-coded urgency levels' },
-  { icon: Clock, label: 'Due Dates & Reminders', desc: 'Never miss a deadline' },
-];
+import { useDashboard } from '@/contexts/DashboardContext';
+import type { DashboardItem, TaskStatus, Importance } from '@/types/dashboard';
+import { TaskFilters } from '@/components/dashboard/tasks/TaskFilters';
+import type { ViewMode } from '@/components/dashboard/tasks/TaskFilters';
+import { KanbanBoard } from '@/components/dashboard/tasks/KanbanBoard';
+import { ListView } from '@/components/dashboard/tasks/ListView';
+import { TaskDetailDrawer } from '@/components/dashboard/tasks/TaskDetailDrawer';
 
 export function TasksPage() {
+  const { items, updateItem, removeItem, openModal } = useDashboard();
+
+  // View & filter state
+  const [viewMode, setViewMode] = useState<ViewMode>('kanban');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
+  const [importanceFilter, setImportanceFilter] = useState<Importance | 'all'>('all');
+
+  // Drawer state
+  const [drawerItem, setDrawerItem] = useState<DashboardItem | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Only show task-type items (not events/study)
+  const taskItems = useMemo(() => items.filter((i) => i.type === 'task'), [items]);
+
+  // Apply filters
+  const filteredItems = useMemo(() => {
+    let result = taskItems;
+
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (i) => i.title.toLowerCase().includes(q) || i.description.toLowerCase().includes(q),
+      );
+    }
+
+    if (statusFilter !== 'all') {
+      result = result.filter((i) => (i.status ?? 'todo') === statusFilter);
+    }
+
+    if (importanceFilter !== 'all') {
+      result = result.filter((i) => i.importance === importanceFilter);
+    }
+
+    return result;
+  }, [taskItems, search, statusFilter, importanceFilter]);
+
+  const handleStatusChange = useCallback(
+    (id: string, status: TaskStatus) => {
+      updateItem(id, { status });
+    },
+    [updateItem],
+  );
+
+  const handleCardClick = useCallback((item: DashboardItem) => {
+    setDrawerItem(item);
+    setDrawerOpen(true);
+  }, []);
+
+  const handleDrawerClose = useCallback(() => {
+    setDrawerOpen(false);
+    // Delay clearing item so exit animation plays with content
+    setTimeout(() => setDrawerItem(null), 300);
+  }, []);
+
+  const handleDelete = useCallback(
+    (id: string) => {
+      removeItem(id);
+      if (drawerItem?.id === id) {
+        handleDrawerClose();
+      }
+    },
+    [removeItem, drawerItem, handleDrawerClose],
+  );
+
+  // Stats
+  const todoCount = taskItems.filter((i) => (i.status ?? 'todo') === 'todo').length;
+  const inProgressCount = taskItems.filter((i) => i.status === 'in-progress').length;
+  const completedCount = taskItems.filter((i) => i.status === 'completed').length;
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3 }}
-      >
-        <div className="w-16 h-16 rounded-2xl bg-purple-900/20 border border-purple-500/30 flex items-center justify-center mb-4 mx-auto">
-          <CheckSquare className="w-8 h-8 text-purple-400" />
-        </div>
-        <h2 className="text-xl font-display font-semibold text-white mb-2">Tasks</h2>
-        <p className="text-gray-400 text-sm max-w-md mb-6">
-          Full task management with drag-and-drop boards, priorities, and deadlines is coming soon.
-        </p>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-lg mx-auto">
-          {previewFeatures.map((f) => (
-            <div
-              key={f.label}
-              className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 text-left"
-            >
-              <f.icon className="w-5 h-5 text-purple-400 mb-2" />
-              <p className="text-xs font-semibold text-white">{f.label}</p>
-              <p className="text-[10px] text-gray-500 mt-0.5">{f.desc}</p>
-            </div>
-          ))}
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-6"
+    >
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-display font-bold text-white">Tasks</h1>
+          <p className="text-sm text-gray-400 mt-1">
+            {todoCount} to do · {inProgressCount} in progress · {completedCount} completed
+          </p>
         </div>
 
-        <span className="inline-block mt-6 px-3 py-1.5 rounded-full bg-purple-900/30 border border-purple-500/20 text-[10px] font-semibold text-purple-300 uppercase tracking-wider">
-          Coming Soon
-        </span>
-      </motion.div>
-    </div>
+        <button
+          onClick={openModal}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition-colors shrink-0"
+        >
+          <Plus className="w-4 h-4" /> New Task
+        </button>
+      </div>
+
+      {/* Filters */}
+      <TaskFilters
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        search={search}
+        onSearchChange={setSearch}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        importanceFilter={importanceFilter}
+        onImportanceFilterChange={setImportanceFilter}
+      />
+
+      {/* Content */}
+      {viewMode === 'kanban' ? (
+        <KanbanBoard
+          items={filteredItems}
+          onStatusChange={handleStatusChange}
+          onCardClick={handleCardClick}
+          onDelete={handleDelete}
+        />
+      ) : (
+        <ListView
+          items={filteredItems}
+          onStatusChange={handleStatusChange}
+          onCardClick={handleCardClick}
+          onDelete={handleDelete}
+        />
+      )}
+
+      {/* Task Detail Drawer */}
+      <TaskDetailDrawer
+        item={drawerItem}
+        open={drawerOpen}
+        onClose={handleDrawerClose}
+        onUpdate={updateItem}
+        onDelete={handleDelete}
+      />
+    </motion.div>
   );
 }

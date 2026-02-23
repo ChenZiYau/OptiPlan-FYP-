@@ -58,6 +58,14 @@ export type Importance = 1 | 2 | 3;
 
 export type ItemType = 'task' | 'event' | 'study';
 
+export type TaskStatus = 'todo' | 'in-progress' | 'completed';
+
+export interface TaskNote {
+  id: string;
+  text: string;
+  createdAt: string;
+}
+
 interface BasePayload {
   id: string;
   title: string;
@@ -66,6 +74,8 @@ interface BasePayload {
   importance: Importance;
   type: ItemType;
   color: string;         // display color derived from type
+  status?: TaskStatus;
+  notes?: TaskNote[];
 }
 
 export interface TaskPayload extends BasePayload {

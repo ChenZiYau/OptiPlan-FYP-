@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { DashboardItem, ScheduleEntry } from '@/types/dashboard';
 import { supabase } from '@/lib/supabase';
@@ -13,6 +13,8 @@ interface DashboardContextValue {
   // Items (tasks, events, study)
   items: DashboardItem[];
   addItem: (item: DashboardItem) => void;
+  updateItem: (id: string, updates: Partial<DashboardItem>) => void;
+  removeItem: (id: string) => void;
 
   // Schedule entries (timetable)
   schedules: ScheduleEntry[];
@@ -31,6 +33,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<DashboardItem[]>([]);
   const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
 
   // Fetch data from Supabase when user is available
   useEffect(() => {
@@ -76,6 +80,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         date: item.date,
         importance: item.importance,
         color: item.color,
+        status: item.status ?? 'todo',
+        notes: item.notes ?? [],
       };
 
       if (item.type === 'event' || item.type === 'study') {
@@ -90,6 +96,47 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       if (error) {
         // Rollback on failure
         setItems((prev) => prev.filter((i) => i.id !== item.id));
+      }
+    },
+    [user],
+  );
+
+  const updateItem = useCallback(
+    async (id: string, updates: Partial<DashboardItem>) => {
+      const snapshot = itemsRef.current;
+      setItems((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, ...updates } as DashboardItem : item)),
+      );
+
+      if (!user) return;
+
+      const row: Record<string, unknown> = {};
+      if (updates.title !== undefined) row.title = updates.title;
+      if (updates.description !== undefined) row.description = updates.description;
+      if (updates.date !== undefined) row.date = updates.date;
+      if (updates.importance !== undefined) row.importance = updates.importance;
+      if (updates.color !== undefined) row.color = updates.color;
+      if (updates.status !== undefined) row.status = updates.status;
+      if (updates.notes !== undefined) row.notes = updates.notes;
+
+      const { error } = await supabase.from('dashboard_items').update(row).eq('id', id);
+      if (error) {
+        setItems(snapshot);
+      }
+    },
+    [user],
+  );
+
+  const removeItem = useCallback(
+    async (id: string) => {
+      const snapshot = itemsRef.current;
+      setItems((prev) => prev.filter((item) => item.id !== id));
+
+      if (!user) return;
+
+      const { error } = await supabase.from('dashboard_items').delete().eq('id', id);
+      if (error) {
+        setItems(snapshot);
       }
     },
     [user],
@@ -134,7 +181,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <DashboardContext.Provider value={{ isModalOpen, openModal, closeModal, items, addItem, schedules, addSchedule, removeSchedule, loading }}>
+    <DashboardContext.Provider value={{ isModalOpen, openModal, closeModal, items, addItem, updateItem, removeItem, schedules, addSchedule, removeSchedule, loading }}>
       {children}
     </DashboardContext.Provider>
   );
@@ -156,6 +203,8 @@ function rowToItem(row: Record<string, unknown>): DashboardItem {
     date: row.date as string,
     importance: row.importance as 1 | 2 | 3,
     color: row.color as string,
+    status: (row.status as 'todo' | 'in-progress' | 'completed') ?? 'todo',
+    notes: (row.notes as { id: string; text: string; createdAt: string }[]) ?? [],
   };
 
   const type = row.type as string;
