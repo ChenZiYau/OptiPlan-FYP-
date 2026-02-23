@@ -2,10 +2,11 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
-  PenLine, X, Droplets, BookOpen, BrainCircuit, Heart, Calendar,
-  Smile, TrendingUp,
+  PenLine, X, Heart, Smile, TrendingUp,
 } from 'lucide-react';
 import { HoverTip } from '@/components/HoverTip';
+import { HabitManagerModal } from '@/components/dashboard/wellness/HabitManagerModal';
+import { useHabits } from '@/hooks/useHabits';
 
 // ── Types & Data ────────────────────────────────────────────────────────────
 
@@ -15,14 +16,6 @@ const MOODS = [
   { emoji: '\uD83D\uDE10', label: 'Okay', color: 'from-yellow-500 to-amber-400' },
   { emoji: '\uD83D\uDE42', label: 'Good', color: 'from-emerald-500 to-green-400' },
   { emoji: '\uD83E\uDD29', label: 'Great', color: 'from-purple-500 to-pink-500' },
-];
-
-const DEFAULT_HABITS = [
-  { id: 'h1', label: 'Drink Water', icon: Droplets, desc: 'Stay hydrated throughout the day' },
-  { id: 'h2', label: 'Read 10 mins', icon: BookOpen, desc: 'Read something non-academic' },
-  { id: 'h3', label: 'Deep Work', icon: BrainCircuit, desc: '1 focused block with no distractions' },
-  { id: 'h4', label: 'Move Your Body', icon: Heart, desc: 'Walk, stretch, or exercise' },
-  { id: 'h5', label: 'Plan Tomorrow', icon: Calendar, desc: 'Set your top 3 tasks for tomorrow' },
 ];
 
 interface JournalEntry {
@@ -50,22 +43,24 @@ const MOCK_ENTRIES: JournalEntry[] = [];
 // ── Component ───────────────────────────────────────────────────────────────
 
 export function WellnessPage() {
-  const [selectedMood, setSelectedMood] = useState<number | null>(null);
-  const [completedHabits, setCompletedHabits] = useState<Set<string>>(new Set());
-  const [journalOpen, setJournalOpen] = useState(false);
+  const { habits, addHabit, removeHabit, completedHabits, toggleHabit } = useHabits();
   const todayKey = new Date().toISOString().slice(0, 10);
+  const [selectedMood, setSelectedMood] = useState<number | null>(() => {
+    const stored = localStorage.getItem(`wellness-mood-${todayKey}`);
+    return stored ? parseInt(stored, 10) : null;
+  });
+  const [journalOpen, setJournalOpen] = useState(false);
+  const [managerOpen, setManagerOpen] = useState(false);
   const [journalText, setJournalText] = useState(() => localStorage.getItem(`wellness-journal-${todayKey}`) ?? '');
   const [entries] = useState<JournalEntry[]>(MOCK_ENTRIES);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const journalTextRef = useRef(journalText);
 
-  function toggleHabit(id: string) {
-    setCompletedHabits(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  }
+  useEffect(() => {
+    if (selectedMood !== null) {
+      localStorage.setItem(`wellness-mood-${todayKey}`, selectedMood.toString());
+    }
+  }, [selectedMood, todayKey]);
 
   const handleJournalChange = useCallback((value: string) => {
     setJournalText(value);
@@ -87,8 +82,7 @@ export function WellnessPage() {
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   const habitsComplete = completedHabits.size;
-  const habitsTotal = DEFAULT_HABITS.length;
-
+  const habitsTotal = habits.length;
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -244,10 +238,18 @@ export function WellnessPage() {
             transition={{ delay: 0.2 }}
             className="rounded-xl bg-[#18162e] border border-white/10 p-5"
           >
-            <h3 className="text-sm font-semibold text-white mb-1">Daily Habits</h3>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-sm font-semibold text-white">Daily Habits</h3>
+              <button
+                onClick={() => setManagerOpen(true)}
+                className="text-[10px] text-purple-400 hover:text-purple-300 font-medium transition-colors"
+              >
+                Manage
+              </button>
+            </div>
             <p className="text-xs text-gray-500 mb-4">{habitsComplete} of {habitsTotal} completed</p>
             <div className="space-y-2">
-              {DEFAULT_HABITS.map(habit => {
+              {habits.map(habit => {
                 const done = completedHabits.has(habit.id);
                 return (
                   <HoverTip key={habit.id} label={habit.desc} side="right">
@@ -406,6 +408,14 @@ export function WellnessPage() {
           </>
         )}
       </AnimatePresence>
+      {/* ── Habit Manager Modal ────────────────────────────────────────── */}
+      <HabitManagerModal
+        isOpen={managerOpen}
+        onClose={() => setManagerOpen(false)}
+        habits={habits}
+        onAddHabit={addHabit}
+        onRemoveHabit={removeHabit}
+      />
     </motion.div>
   );
 }

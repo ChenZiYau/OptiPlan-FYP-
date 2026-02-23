@@ -147,9 +147,13 @@ export function DashboardSidebar({ isOpen, onClose }: DashboardSidebarProps) {
         <div className="px-3 pb-4 shrink-0">
           <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-xs shrink-0">
-                {initials}
-              </div>
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="Avatar" className="w-9 h-9 rounded-full object-cover shrink-0" />
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-xs shrink-0">
+                  {initials}
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate">{displayName}</p>
                 <p className="text-xs text-gray-500">Free Plan</p>

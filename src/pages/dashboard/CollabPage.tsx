@@ -8,6 +8,7 @@ import {
   Github, Figma, Globe, File, Upload,
 } from 'lucide-react';
 import { HoverTip } from '@/components/HoverTip';
+import { useAuth } from '@/hooks/useAuth';
 
 // ── Interfaces ──────────────────────────────────────────────
 
@@ -127,15 +128,70 @@ const fadeUp = {
 
 // ── Component ───────────────────────────────────────────────
 
+function MemberAvatar({ member, size = 'md' }: { member: GroupMember; size?: 'sm' | 'md' }) {
+  const { profile } = useAuth();
+  const isMe = member.userId === 'me';
+  const avatarUrl = isMe ? profile?.avatar_url : null;
+  const displayInitials = isMe && profile?.display_name
+    ? (() => {
+        const parts = profile.display_name.trim().split(/\s+/);
+        if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+        return profile.display_name.substring(0, 2).toUpperCase();
+      })()
+    : member.initials;
+  const sizeClasses = size === 'sm' ? 'w-4 h-4 text-[6px]' : 'w-9 h-9 text-[11px]';
+
+  if (avatarUrl) {
+    return <img src={avatarUrl} alt={member.name} className={`${size === 'sm' ? 'w-4 h-4' : 'w-9 h-9'} rounded-full object-cover`} />;
+  }
+  return (
+    <div className={`rounded-full ${member.color} flex items-center justify-center font-bold text-white ${sizeClasses}`}>
+      {displayInitials}
+    </div>
+  );
+}
+
 export function CollabPage() {
-  const [selectedProject, setSelectedProject] = useState<GroupProject | null>(PROJECTS[0] ?? null);
+  const [selectedProject, setSelectedProject] = useState<GroupProject | null>(() => {
+    const stored = localStorage.getItem('collab-project');
+    if (stored) {
+      try { return JSON.parse(stored); } catch (e) {}
+    }
+    return PROJECTS[0] ?? null;
+  });
   const [showDropdown, setShowDropdown] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
-  const [tasks, setTasks] = useState<SharedTask[]>(INITIAL_TASKS);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    const stored = localStorage.getItem('collab-messages');
+    if (stored) {
+      try { 
+        return JSON.parse(stored).map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) }));
+      } catch (e) {}
+    }
+    return INITIAL_MESSAGES;
+  });
+  const [tasks, setTasks] = useState<SharedTask[]>(() => {
+    const stored = localStorage.getItem('collab-tasks');
+    if (stored) {
+      try { return JSON.parse(stored); } catch (e) {}
+    }
+    return INITIAL_TASKS;
+  });
   const [chatInput, setChatInput] = useState('');
   const [showNewTask, setShowNewTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (selectedProject !== undefined) localStorage.setItem('collab-project', JSON.stringify(selectedProject));
+  }, [selectedProject]);
+
+  useEffect(() => {
+    localStorage.setItem('collab-messages', JSON.stringify(messages));
+  }, [messages]);
+
+  useEffect(() => {
+    localStorage.setItem('collab-tasks', JSON.stringify(tasks));
+  }, [tasks]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -281,8 +337,8 @@ export function CollabPage() {
         <div className="flex -space-x-2">
           {MEMBERS.map(m => (
             <div key={m.userId} className="relative" title={m.name}>
-              <div className={`w-9 h-9 rounded-full ${m.color} flex items-center justify-center text-[11px] font-bold text-white border-2 border-[#0B0A1A]`}>
-                {m.initials}
+              <div className="border-2 border-[#0B0A1A] rounded-full">
+                <MemberAvatar member={m} />
               </div>
               {m.isOnline && (
                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-[#0B0A1A]" />
@@ -436,8 +492,8 @@ export function CollabPage() {
                         >
                           <p className="text-xs text-gray-200 mb-2">{task.title}</p>
                           <div className="flex items-center justify-between">
-                            <div className={`w-5 h-5 rounded-full ${assignee.color} flex items-center justify-center text-[8px] font-bold text-white`} title={assignee.name}>
-                              {assignee.initials}
+                            <div title={assignee.name}>
+                              <MemberAvatar member={assignee} size="sm" />
                             </div>
                             {task.status !== 'done' && (
                               <HoverTip label="Move to next column">
@@ -549,10 +605,30 @@ function getResourceIcon(icon: VaultResource['icon']) {
 }
 
 function ResourceVault() {
-  const [resources, setResources] = useState<VaultResource[]>(INITIAL_RESOURCES);
+  const [resources, setResources] = useState<VaultResource[]>(() => {
+    const stored = localStorage.getItem('collab-resources');
+    if (stored) {
+      try { return JSON.parse(stored); } catch (e) {}
+    }
+    return INITIAL_RESOURCES;
+  });
   const [showAddModal, setShowAddModal] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
+  const [revealedIds, setRevealedIds] = useState<Set<string>>(() => {
+    const stored = localStorage.getItem('collab-revealed');
+    if (stored) {
+      try { return new Set(JSON.parse(stored)); } catch (e) {}
+    }
+    return new Set();
+  });
+
+  useEffect(() => {
+    localStorage.setItem('collab-resources', JSON.stringify(resources));
+  }, [resources]);
+
+  useEffect(() => {
+    localStorage.setItem('collab-revealed', JSON.stringify(Array.from(revealedIds)));
+  }, [revealedIds]);
 
   // Add resource form state
   const [formTitle, setFormTitle] = useState('');
@@ -678,9 +754,7 @@ function ResourceVault() {
                                 <p className="text-[10px] text-gray-500 mt-0.5 truncate">{resource.url}</p>
                               )}
                               <div className="flex items-center gap-1.5 mt-1.5">
-                                <div className={`w-4 h-4 rounded-full ${member.color} flex items-center justify-center text-[6px] font-bold text-white`}>
-                                  {member.initials}
-                                </div>
+                                <MemberAvatar member={member} size="sm" />
                                 <span className="text-[10px] text-gray-600">Added by {member.name}</span>
                               </div>
                             </div>
@@ -866,9 +940,7 @@ function ResourceVault() {
 
                   {/* Added by tag */}
                   <div className="flex items-center gap-2 pt-1">
-                    <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center text-[7px] font-bold text-white">
-                      YO
-                    </div>
+                    <MemberAvatar member={DEFAULT_MEMBER} size="sm" />
                     <span className="text-[11px] text-gray-500">Added by You</span>
                   </div>
                 </div>

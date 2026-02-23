@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, createContext } from 'react';
+import { useState, useEffect, useContext, createContext, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { User, Session } from '@supabase/supabase-js';
@@ -7,6 +7,7 @@ export interface Profile {
   id: string;
   email: string;
   display_name: string | null;
+  avatar_url: string | null;
   role: string;
   created_at: string;
 }
@@ -20,6 +21,9 @@ export interface AuthState {
 
 interface AuthContextValue extends AuthState {
   signOut: () => Promise<void>;
+  updateProfile: (updates: { display_name?: string }) => Promise<void>;
+  updatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  uploadAvatar: (file: File) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -29,7 +33,7 @@ const ADMIN_UIDS = new Set([
   'a63e2d07-a368-4c46-adc7-08276dd24a33', // admin4optiplan@gmail.com
 ]);
 
-function buildProfile(user: User): Profile {
+function buildProfile(user: User, avatarUrl?: string | null): Profile {
   const meta = user.user_metadata ?? {};
   const firstName = meta.first_name ?? '';
   const lastName = meta.last_name ?? '';
@@ -38,9 +42,19 @@ function buildProfile(user: User): Profile {
     id: user.id,
     email: user.email ?? meta.email ?? '',
     display_name: fullName ?? meta.display_name ?? meta.full_name ?? null,
+    avatar_url: avatarUrl ?? null,
     role: ADMIN_UIDS.has(user.id) ? 'admin' : 'user',
     created_at: user.created_at,
   };
+}
+
+async function fetchAvatarUrl(userId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from('profiles')
+    .select('avatar_url')
+    .eq('id', userId)
+    .single();
+  return data?.avatar_url ?? null;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -49,11 +63,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const initProfile = useCallback(async (u: User) => {
+    const avatarUrl = await fetchAvatarUrl(u.id);
+    setProfile(buildProfile(u, avatarUrl));
+  }, []);
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
+    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
-      setProfile(s?.user ? buildProfile(s.user) : null);
+      if (s?.user) {
+        await initProfile(s.user);
+      } else {
+        setProfile(null);
+      }
       setLoading(false);
     }).catch(() => {
       setLoading(false);
@@ -61,15 +84,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, s) => {
+    } = supabase.auth.onAuthStateChange(async (_event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
-      setProfile(s?.user ? buildProfile(s.user) : null);
+      if (s?.user) {
+        await initProfile(s.user);
+      } else {
+        setProfile(null);
+      }
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [initProfile]);
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -78,8 +105,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
   }
 
+  async function updateProfile(updates: { display_name?: string }) {
+    if (!user) throw new Error('Not authenticated');
+
+    if (updates.display_name !== undefined) {
+      const { error } = await supabase.auth.updateUser({
+        data: { display_name: updates.display_name },
+      });
+      if (error) throw error;
+    }
+
+    // Refresh profile
+    const { data: { user: refreshed } } = await supabase.auth.getUser();
+    if (refreshed) {
+      const avatarUrl = await fetchAvatarUrl(refreshed.id);
+      setUser(refreshed);
+      setProfile(buildProfile(refreshed, avatarUrl));
+    }
+  }
+
+  async function updatePassword(_currentPassword: string, newPassword: string) {
+    if (!user) throw new Error('Not authenticated');
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+  }
+
+  async function uploadAvatar(file: File) {
+    if (!user) throw new Error('Not authenticated');
+
+    const ext = file.name.split('.').pop() ?? 'png';
+    const path = `${user.id}/avatar.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(path, file, { upsert: true });
+    if (uploadError) throw uploadError;
+
+    const { data: urlData } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(path);
+
+    const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ avatar_url: publicUrl })
+      .eq('id', user.id);
+    if (updateError) throw updateError;
+
+    setProfile(prev => prev ? { ...prev, avatar_url: publicUrl } : prev);
+  }
+
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, signOut, updateProfile, updatePassword, uploadAvatar }}>
       {children}
     </AuthContext.Provider>
   );
@@ -91,6 +169,9 @@ const defaultValue: AuthContextValue = {
   profile: null,
   loading: false,
   signOut: async () => {},
+  updateProfile: async () => {},
+  updatePassword: async () => {},
+  uploadAvatar: async () => {},
 };
 
 export function useAuth(): AuthContextValue {

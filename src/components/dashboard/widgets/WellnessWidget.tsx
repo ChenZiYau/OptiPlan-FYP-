@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, PenLine, X, Droplets, BookOpen, BrainCircuit } from 'lucide-react';
+import { Heart, PenLine, X } from 'lucide-react';
 import { HoverTip } from '@/components/HoverTip';
 import { Link } from 'react-router-dom';
+import { useHabits } from '@/hooks/useHabits';
 
 const MOODS = [
   { emoji: '\uD83D\uDE22', label: 'Awful' },
@@ -12,28 +13,23 @@ const MOODS = [
   { emoji: '\uD83E\uDD29', label: 'Great' },
 ];
 
-const DEFAULT_HABITS = [
-  { id: 'h1', label: 'Hydrate', icon: Droplets },
-  { id: 'h2', label: 'Read', icon: BookOpen },
-  { id: 'h3', label: 'Deep Work', icon: BrainCircuit },
-];
-
 export function WellnessWidget() {
-  const [selectedMood, setSelectedMood] = useState<number | null>(null);
-  const [completedHabits, setCompletedHabits] = useState<Set<string>>(new Set());
-  const [journalOpen, setJournalOpen] = useState(false);
+  const { habits, completedHabits, toggleHabit } = useHabits();
   const todayKey = new Date().toISOString().slice(0, 10);
+  const [selectedMood, setSelectedMood] = useState<number | null>(() => {
+    const stored = localStorage.getItem(`wellness-mood-${todayKey}`);
+    return stored ? parseInt(stored, 10) : null;
+  });
+  const [journalOpen, setJournalOpen] = useState(false);
   const [journalText, setJournalText] = useState(() => localStorage.getItem(`wellness-journal-${todayKey}`) ?? '');
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const journalTextRef = useRef(journalText);
 
-  function toggleHabit(id: string) {
-    setCompletedHabits(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  }
+  useEffect(() => {
+    if (selectedMood !== null) {
+      localStorage.setItem(`wellness-mood-${todayKey}`, selectedMood.toString());
+    }
+  }, [selectedMood, todayKey]);
 
   const handleJournalChange = useCallback((value: string) => {
     setJournalText(value);
@@ -88,8 +84,12 @@ export function WellnessWidget() {
         </div>
 
         {/* Habit Checkboxes */}
-        <div className="flex gap-2 mb-4">
-          {DEFAULT_HABITS.map(habit => {
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[10px] text-gray-500">Daily Habits</p>
+          <Link to="/dashboard/wellness" className="text-[10px] text-purple-400 hover:text-purple-300">Edit</Link>
+        </div>
+        <div className="flex flex-wrap gap-2 mb-4">
+          {habits.slice(0, 4).map(habit => {
             const done = completedHabits.has(habit.id);
             return (
               <button

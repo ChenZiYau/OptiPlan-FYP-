@@ -53,29 +53,31 @@ export function DashboardLayout() {
   return (
     <DashboardProvider>
       <FinanceProvider>
-        <div className={`min-h-screen bg-[#0B0A1A] dashboard-shell dashboard-text-scale-${settings.textScale}`}>
-          <DashboardSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <div className={`dashboard-shell dashboard-text-scale-${settings.textScale}`}>
+          <div className="min-h-screen bg-[#0B0A1A]">
+            <DashboardSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-          <div className="lg:ml-[250px] min-h-screen flex flex-col">
-            <DashboardHeader title={title} onMenuToggle={() => setSidebarOpen(true)} />
-            <main className="flex-1 p-4 sm:p-6">
-              <Outlet />
-            </main>
+            <div className="lg:ml-[250px] min-h-screen flex flex-col">
+              <DashboardHeader title={title} onMenuToggle={() => setSidebarOpen(true)} />
+              <main className="flex-1 p-4 sm:p-6">
+                <Outlet />
+              </main>
+            </div>
+
+            <TaskModal />
+            <FloatingAIAssistant />
+            <Toaster
+              theme="dark"
+              position="bottom-right"
+              toastOptions={{
+                style: {
+                  background: '#1a1735',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: '#fff',
+                },
+              }}
+            />
           </div>
-
-          <TaskModal />
-          <FloatingAIAssistant />
-          <Toaster
-            theme="dark"
-            position="bottom-right"
-            toastOptions={{
-              style: {
-                background: '#1a1735',
-                border: '1px solid rgba(255,255,255,0.1)',
-                color: '#fff',
-              },
-            }}
-          />
         </div>
       </FinanceProvider>
     </DashboardProvider>

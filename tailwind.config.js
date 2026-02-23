@@ -48,13 +48,39 @@ module.exports = {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        purple: {
+          50: 'hsl(var(--color-primary-h) var(--color-primary-s) calc(var(--color-primary-l) + 40%))',
+          100: 'hsl(var(--color-primary-h) var(--color-primary-s) calc(var(--color-primary-l) + 30%))',
+          200: 'hsl(var(--color-primary-h) var(--color-primary-s) calc(var(--color-primary-l) + 20%))',
+          300: 'hsl(var(--color-primary-h) var(--color-primary-s) calc(var(--color-primary-l) + 10%))',
+          400: 'hsl(var(--color-primary-h) var(--color-primary-s) calc(var(--color-primary-l) + 5%))',
+          500: 'hsl(var(--color-primary-h) var(--color-primary-s) var(--color-primary-l))',
+          600: 'hsl(var(--color-primary-h) var(--color-primary-s) calc(var(--color-primary-l) - 5%))',
+          700: 'hsl(var(--color-primary-h) var(--color-primary-s) calc(var(--color-primary-l) - 15%))',
+          800: 'hsl(var(--color-primary-h) var(--color-primary-s) calc(var(--color-primary-l) - 25%))',
+          900: 'hsl(var(--color-primary-h) var(--color-primary-s) calc(var(--color-primary-l) - 35%))',
+          950: 'hsl(var(--color-primary-h) var(--color-primary-s) calc(var(--color-primary-l) - 45%))',
+        },
+        pink: {
+          50: 'hsl(var(--color-accent-h) var(--color-accent-s) calc(var(--color-accent-l) + 40%))',
+          100: 'hsl(var(--color-accent-h) var(--color-accent-s) calc(var(--color-accent-l) + 30%))',
+          200: 'hsl(var(--color-accent-h) var(--color-accent-s) calc(var(--color-accent-l) + 20%))',
+          300: 'hsl(var(--color-accent-h) var(--color-accent-s) calc(var(--color-accent-l) + 10%))',
+          400: 'hsl(var(--color-accent-h) var(--color-accent-s) calc(var(--color-accent-l) + 5%))',
+          500: 'hsl(var(--color-accent-h) var(--color-accent-s) var(--color-accent-l))',
+          600: 'hsl(var(--color-accent-h) var(--color-accent-s) calc(var(--color-accent-l) - 5%))',
+          700: 'hsl(var(--color-accent-h) var(--color-accent-s) calc(var(--color-accent-l) - 15%))',
+          800: 'hsl(var(--color-accent-h) var(--color-accent-s) calc(var(--color-accent-l) - 25%))',
+          900: 'hsl(var(--color-accent-h) var(--color-accent-s) calc(var(--color-accent-l) - 35%))',
+          950: 'hsl(var(--color-accent-h) var(--color-accent-s) calc(var(--color-accent-l) - 45%))',
+        },
         // Custom OptiPlan colors
         opti: {
           bg: '#07040A',
           'bg-secondary': '#120B1D',
           surface: '#1a1625',
-          accent: '#A78BFA',
-          'accent-light': '#C4B5FD',
+          accent: 'var(--color-accent)', // Replaced hardcoded purple with css variable
+          'accent-light': 'hsl(var(--color-accent-h) var(--color-accent-s) calc(var(--color-accent-l) + 15%))',
           'text-primary': '#F6F3FB',
           'text-secondary': '#B8B0C8',
         },
@@ -75,8 +101,8 @@ module.exports = {
       boxShadow: {
         xs: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
         'card': '0 24px 80px rgba(0, 0, 0, 0.55)',
-        'glow': '0 0 60px rgba(167, 139, 250, 0.18)',
-        'glow-strong': '0 0 80px rgba(167, 139, 250, 0.3)',
+        'glow': '0 0 60px var(--color-primary-018)', // Swapped static purple with var
+        'glow-strong': '0 0 80px var(--color-primary-030)', // Swapped static purple with var
       },
       keyframes: {
         "accordion-down": {
@@ -113,8 +139,8 @@ module.exports = {
         "float": "float 6s ease-in-out infinite",
       },
       backgroundImage: {
-        'gradient-radial': 'radial-gradient(circle at 50% 0%, rgba(167, 139, 250, 0.14), rgba(0, 0, 0, 0) 60%)',
-        'gradient-accent': 'linear-gradient(135deg, #A78BFA 0%, #8B5CF6 100%)',
+        'gradient-radial': 'radial-gradient(circle at 50% 0%, var(--color-primary-014), rgba(0, 0, 0, 0) 60%)',
+        'gradient-accent': 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%)',
       },
     },
   },

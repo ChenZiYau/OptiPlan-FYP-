@@ -156,8 +156,16 @@ type Tab = 'notes' | 'flashcards' | 'quiz' | 'gpa';
 export function StudyHubPage() {
   const [subject, setSubject] = useState('All Subjects');
   const [subjectOpen, setSubjectOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<Tab>('notes');
-  const [hasContent, setHasContent] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>(() => (localStorage.getItem('studyhub-tab') as Tab) || 'notes');
+  const [hasContent, setHasContent] = useState(() => localStorage.getItem('studyhub-hasContent') === 'true');
+
+  useEffect(() => {
+    localStorage.setItem('studyhub-tab', activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    localStorage.setItem('studyhub-hasContent', String(hasContent));
+  }, [hasContent]);
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'notes', label: 'Notes & Import' },
@@ -380,14 +388,23 @@ function PomodoroTimer() {
 // ── Tab 1: Notes & Import ────────────────────────────────────────────────────
 
 function NotesTab({ onContentGenerated }: { onContentGenerated: () => void }) {
-  const [stage, setStage] = useState<'upload' | 'processing' | 'done' | 'error'>('upload');
+  const [stage, setStage] = useState<'upload' | 'processing' | 'done' | 'error'>(() => (localStorage.getItem('studyhub-notes-stage') as any) || 'upload');
   const [urlInput, setUrlInput] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [generatedNotes, setGeneratedNotes] = useState('');
-  const [notesMetadata, setNotesMetadata] = useState<{ filename: string; extractedChars: number } | null>(null);
+  const [generatedNotes, setGeneratedNotes] = useState(() => localStorage.getItem('studyhub-notes-content') || '');
+  const [notesMetadata, setNotesMetadata] = useState<{ filename: string; extractedChars: number } | null>(() => {
+    const stored = localStorage.getItem('studyhub-notes-meta');
+    return stored ? JSON.parse(stored) : null;
+  });
   const [errorMessage, setErrorMessage] = useState('');
   const lastFileRef = useRef<File | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('studyhub-notes-stage', stage);
+    localStorage.setItem('studyhub-notes-content', generatedNotes);
+    localStorage.setItem('studyhub-notes-meta', JSON.stringify(notesMetadata));
+  }, [stage, generatedNotes, notesMetadata]);
 
   const handleUpload = useCallback(async (file: File) => {
     lastFileRef.current = file;
@@ -641,10 +658,23 @@ function NotesTab({ onContentGenerated }: { onContentGenerated: () => void }) {
 // ── Tab 2: Flashcards ────────────────────────────────────────────────────────
 
 function FlashcardsTab() {
-  const [cards, setCards] = useState<Flashcard[]>(GENERATED_FLASHCARDS);
+  const [cards, setCards] = useState<Flashcard[]>(() => {
+    const stored = localStorage.getItem('studyhub-flashcards');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return GENERATED_FLASHCARDS;
+  });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [showActions, setShowActions] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('studyhub-flashcards', JSON.stringify(cards));
+  }, [cards]);
 
   const card = cards[currentIndex];
   const mastered = cards.filter((c) => c.masteryLevel === 'mastered').length;
