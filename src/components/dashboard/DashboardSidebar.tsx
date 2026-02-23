@@ -64,7 +64,7 @@ export function DashboardSidebar({ isOpen, onClose }: DashboardSidebarProps) {
       )}
 
       <aside
-        className={`fixed top-0 left-0 z-50 h-screen w-[250px] bg-[#0B0A1A] border-r border-white/10 flex flex-col transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed top-0 left-0 z-50 h-screen w-[250px] bg-[#0B0A1A] dm-sidebar border-r border-white/10 flex flex-col transition-transform duration-300 lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

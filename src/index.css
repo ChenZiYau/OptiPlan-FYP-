@@ -80,12 +80,12 @@
   }
 
   .btn-primary {
-    @apply px-6 py-3 bg-gradient-to-r from-opti-accent to-[#8B5CF6] text-opti-bg font-semibold rounded-xl 
+    @apply px-6 py-3 bg-gradient-to-r from-opti-accent to-[#8B5CF6] text-opti-bg font-semibold rounded-xl
            transition-all duration-300 hover:shadow-glow hover:scale-[1.02] active:scale-[0.98];
   }
 
   .btn-secondary {
-    @apply px-6 py-3 bg-white/5 border border-white/10 text-opti-text-primary font-medium rounded-xl 
+    @apply px-6 py-3 bg-white/5 border border-white/10 text-opti-text-primary font-medium rounded-xl
            transition-all duration-300 hover:bg-white/10 hover:border-white/20;
   }
 
@@ -120,7 +120,130 @@
   }
 }
 
-/* Custom scrollbar */
+/* ═══════════════════════════════════════════════════════════════════════════
+   DASHBOARD TEXT SCALING
+   Uses a CSS variable to scale all Tailwind text-size classes within the
+   dashboard shell. This keeps the landing page unaffected.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.dashboard-shell {
+  --dm-text-scale: 1;
+}
+
+.dashboard-text-scale-sm { --dm-text-scale: 0.875; }
+.dashboard-text-scale-md { --dm-text-scale: 1; }
+.dashboard-text-scale-lg { --dm-text-scale: 1.125; }
+.dashboard-text-scale-xl { --dm-text-scale: 1.25; }
+
+/* Override common Tailwind text sizes inside dashboard */
+.dashboard-shell .text-\[10px\] { font-size: calc(10px * var(--dm-text-scale)) !important; }
+.dashboard-shell .text-\[11px\] { font-size: calc(11px * var(--dm-text-scale)) !important; }
+.dashboard-shell .text-xs  { font-size: calc(0.75rem * var(--dm-text-scale)) !important; }
+.dashboard-shell .text-sm  { font-size: calc(0.875rem * var(--dm-text-scale)) !important; }
+.dashboard-shell .text-base { font-size: calc(1rem * var(--dm-text-scale)) !important; }
+.dashboard-shell .text-lg  { font-size: calc(1.125rem * var(--dm-text-scale)) !important; }
+.dashboard-shell .text-xl  { font-size: calc(1.25rem * var(--dm-text-scale)) !important; }
+.dashboard-shell .text-2xl { font-size: calc(1.5rem * var(--dm-text-scale)) !important; }
+.dashboard-shell .text-3xl { font-size: calc(1.875rem * var(--dm-text-scale)) !important; }
+.dashboard-shell .text-4xl { font-size: calc(2.25rem * var(--dm-text-scale)) !important; }
+
+/* Elements without explicit text-size classes inherit from the wrapper */
+.dashboard-shell {
+  font-size: calc(1rem * var(--dm-text-scale));
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIGHT MODE — Global Dashboard Overrides
+   Overrides all common Tailwind classes within .dashboard-shell so every
+   dashboard page gets proper light-mode colors automatically.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Text colors ───────────────────────────────────────────────────────── */
+html.color-mode-light .dashboard-shell .text-white      { color: #1A1A2E !important; }
+html.color-mode-light .dashboard-shell .text-gray-200   { color: #374151 !important; }
+html.color-mode-light .dashboard-shell .text-gray-300   { color: #4B5563 !important; }
+html.color-mode-light .dashboard-shell .text-gray-400   { color: #6B7280 !important; }
+html.color-mode-light .dashboard-shell .text-gray-500   { color: #6B7280 !important; }
+html.color-mode-light .dashboard-shell .text-gray-600   { color: #9CA3AF !important; }
+
+/* ── Backgrounds ───────────────────────────────────────────────────────── */
+html.color-mode-light .dashboard-shell .bg-\[\#0B0A1A\]     { background-color: #F8F9FA !important; }
+html.color-mode-light .dashboard-shell .bg-\[\#0B0A1A\]\/80 { background-color: rgba(248, 249, 250, 0.8) !important; }
+html.color-mode-light .dashboard-shell .bg-\[\#18162e\]     { background-color: #FFFFFF !important; }
+html.color-mode-light .dashboard-shell .bg-\[\#1a1735\]     { background-color: #FFFFFF !important; }
+html.color-mode-light .dashboard-shell .bg-white\/5          { background-color: rgba(0, 0, 0, 0.03) !important; }
+html.color-mode-light .dashboard-shell .bg-white\/10         { background-color: rgba(0, 0, 0, 0.05) !important; }
+html.color-mode-light .dashboard-shell .bg-white\/\[0\.02\]  { background-color: rgba(0, 0, 0, 0.02) !important; }
+html.color-mode-light .dashboard-shell .bg-white\/\[0\.03\]  { background-color: rgba(0, 0, 0, 0.02) !important; }
+html.color-mode-light .dashboard-shell .bg-white\/\[0\.04\]  { background-color: rgba(0, 0, 0, 0.03) !important; }
+html.color-mode-light .dashboard-shell .bg-white\/\[0\.06\]  { background-color: rgba(0, 0, 0, 0.04) !important; }
+html.color-mode-light .dashboard-shell .bg-black\/60         { background-color: rgba(0, 0, 0, 0.35) !important; }
+
+/* ── Borders ───────────────────────────────────────────────────────────── */
+html.color-mode-light .dashboard-shell .border-white\/5          { border-color: rgba(0, 0, 0, 0.06) !important; }
+html.color-mode-light .dashboard-shell .border-white\/10         { border-color: rgba(0, 0, 0, 0.1) !important; }
+html.color-mode-light .dashboard-shell .border-white\/\[0\.06\]  { border-color: rgba(0, 0, 0, 0.06) !important; }
+html.color-mode-light .dashboard-shell .border-white\/20         { border-color: rgba(0, 0, 0, 0.12) !important; }
+html.color-mode-light .dashboard-shell .border-white\/30         { border-color: rgba(0, 0, 0, 0.15) !important; }
+html.color-mode-light .dashboard-shell .border-white\/40         { border-color: rgba(0, 0, 0, 0.2) !important; }
+
+/* ── Hover states ──────────────────────────────────────────────────────── */
+html.color-mode-light .dashboard-shell .hover\:text-white:hover       { color: #1A1A2E !important; }
+html.color-mode-light .dashboard-shell .hover\:bg-white\/5:hover      { background-color: rgba(0, 0, 0, 0.04) !important; }
+html.color-mode-light .dashboard-shell .hover\:bg-white\/10:hover     { background-color: rgba(0, 0, 0, 0.06) !important; }
+html.color-mode-light .dashboard-shell .hover\:border-white\/20:hover { border-color: rgba(0, 0, 0, 0.12) !important; }
+
+/* ── Placeholder text ──────────────────────────────────────────────────── */
+html.color-mode-light .dashboard-shell .placeholder\:text-gray-600::placeholder { color: #9CA3AF !important; }
+html.color-mode-light .dashboard-shell input::placeholder   { color: #9CA3AF !important; }
+html.color-mode-light .dashboard-shell textarea::placeholder { color: #9CA3AF !important; }
+
+/* ── Input fields ──────────────────────────────────────────────────────── */
+html.color-mode-light .dashboard-shell input,
+html.color-mode-light .dashboard-shell textarea {
+  color: #1A1A2E !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GREY MODE — Global Dashboard Overrides
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Text colors ───────────────────────────────────────────────────────── */
+html.color-mode-grey .dashboard-shell .text-white      { color: #E5E5E5 !important; }
+html.color-mode-grey .dashboard-shell .text-gray-200   { color: #D1D5DB !important; }
+html.color-mode-grey .dashboard-shell .text-gray-300   { color: #C0C0C8 !important; }
+html.color-mode-grey .dashboard-shell .text-gray-400   { color: #A0A0B0 !important; }
+html.color-mode-grey .dashboard-shell .text-gray-500   { color: #8A8A9A !important; }
+html.color-mode-grey .dashboard-shell .text-gray-600   { color: #6A6A7A !important; }
+
+/* ── Backgrounds ───────────────────────────────────────────────────────── */
+html.color-mode-grey .dashboard-shell .bg-\[\#0B0A1A\]     { background-color: #2D2D3A !important; }
+html.color-mode-grey .dashboard-shell .bg-\[\#0B0A1A\]\/80 { background-color: rgba(45, 45, 58, 0.8) !important; }
+html.color-mode-grey .dashboard-shell .bg-\[\#18162e\]     { background-color: #3A3A4A !important; }
+html.color-mode-grey .dashboard-shell .bg-\[\#1a1735\]     { background-color: #3A3A4A !important; }
+html.color-mode-grey .dashboard-shell .bg-white\/5          { background-color: rgba(255, 255, 255, 0.05) !important; }
+html.color-mode-grey .dashboard-shell .bg-white\/10         { background-color: rgba(255, 255, 255, 0.08) !important; }
+
+/* ── Borders ───────────────────────────────────────────────────────────── */
+html.color-mode-grey .dashboard-shell .border-white\/5  { border-color: rgba(255, 255, 255, 0.08) !important; }
+html.color-mode-grey .dashboard-shell .border-white\/10 { border-color: rgba(255, 255, 255, 0.12) !important; }
+
+/* ── Input fields ──────────────────────────────────────────────────────── */
+html.color-mode-grey .dashboard-shell input,
+html.color-mode-grey .dashboard-shell textarea {
+  color: #E5E5E5 !important;
+  background-color: #353545 !important;
+}
+
+html.color-mode-grey .dashboard-shell input::placeholder,
+html.color-mode-grey .dashboard-shell textarea::placeholder {
+  color: #8A8A9A !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCROLLBAR
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -138,13 +261,49 @@
   background: #2a2535;
 }
 
-/* Selection color */
+html.color-mode-light ::-webkit-scrollbar-track {
+  background: #e8e8ee;
+}
+
+html.color-mode-light ::-webkit-scrollbar-thumb {
+  background: #c0c0cc;
+}
+
+html.color-mode-light ::-webkit-scrollbar-thumb:hover {
+  background: #a0a0b0;
+}
+
+html.color-mode-grey ::-webkit-scrollbar-track {
+  background: #25252f;
+}
+
+html.color-mode-grey ::-webkit-scrollbar-thumb {
+  background: #48485a;
+}
+
+html.color-mode-grey ::-webkit-scrollbar-thumb:hover {
+  background: #5a5a6e;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SELECTION
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 ::selection {
   background: rgba(167, 139, 250, 0.3);
   color: #f6f3fb;
 }
 
-/* ── Accessibility: High Contrast ────────────────────────────────────────── */
+html.color-mode-light ::selection {
+  background: rgba(107, 79, 200, 0.25);
+  color: #1A1A2E;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ACCESSIBILITY
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── High Contrast ─────────────────────────────────────────────────────── */
 
 html.high-contrast * {
   border-color: rgba(255, 255, 255, 0.3) !important;
@@ -161,7 +320,17 @@ html.high-contrast .border-white\/5 {
   border-color: rgba(255, 255, 255, 0.35) !important;
 }
 
-/* ── Accessibility: Reduce Motion ────────────────────────────────────────── */
+html.high-contrast.color-mode-light .text-gray-400,
+html.high-contrast.color-mode-light .text-gray-500,
+html.high-contrast.color-mode-light .text-gray-600 {
+  color: #111111 !important;
+}
+
+html.high-contrast.color-mode-light * {
+  border-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+/* ── Reduce Motion ─────────────────────────────────────────────────────── */
 
 html.reduce-motion *,
 html.reduce-motion *::before,
@@ -172,7 +341,7 @@ html.reduce-motion *::after {
   scroll-behavior: auto !important;
 }
 
-/* ── Accessibility: Dyslexia-Friendly Font ───────────────────────────────── */
+/* ── Dyslexia-Friendly Font ────────────────────────────────────────────── */
 
 html.dyslexia-font body,
 html.dyslexia-font h1,

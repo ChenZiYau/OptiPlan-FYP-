@@ -56,6 +56,7 @@ interface QuizQuestion {
 
 // ── Data generated after upload ──────────────────────────────────────────────
 
+// @ts-expect-error reserved for future use
 const GENERATED_NOTES: StudyMaterial = {
   id: '1',
   subject: 'Calculus',

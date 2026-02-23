@@ -2,11 +2,13 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
-export type ThemeKey = 'purple' | 'blue' | 'green' | 'orange' | 'rose' | 'cyan';
+export type ThemeKey = 'purple' | 'blue' | 'green' | 'orange' | 'rose' | 'cyan' | 'highVisibility' | 'warm' | 'monochrome';
 export type TextScale = 'sm' | 'md' | 'lg' | 'xl';
+export type ColorMode = 'dark' | 'light' | 'grey';
 
 export interface Settings {
   theme: ThemeKey;
+  colorMode: ColorMode;
   highContrast: boolean;
   textScale: TextScale;
   reduceMotion: boolean;
@@ -28,7 +30,13 @@ export const THEMES: Record<ThemeKey, { label: string; primary: string; accent: 
   orange: { label: 'Sunset Orange', primary: '#f97316', accent: '#eab308', primaryHSL: '25 95% 53%', accentHSL: '48 96% 47%' },
   rose:   { label: 'Rose', primary: '#f43f5e', accent: '#ec4899', primaryHSL: '350 89% 60%', accentHSL: '330 81% 60%' },
   cyan:   { label: 'Cyan', primary: '#06b6d4', accent: '#8b5cf6', primaryHSL: '189 94% 43%', accentHSL: '258 90% 66%' },
+  highVisibility: { label: 'High Visibility', primary: '#FACC15', accent: '#FFFFFF', primaryHSL: '48 97% 53%', accentHSL: '0 0% 100%' },
+  warm:   { label: 'Warm Tones', primary: '#F59E0B', accent: '#FB923C', primaryHSL: '38 92% 50%', accentHSL: '25 97% 61%' },
+  monochrome: { label: 'Monochrome', primary: '#E5E7EB', accent: '#9CA3AF', primaryHSL: '220 13% 91%', accentHSL: '218 11% 65%' },
 };
+
+export const STANDARD_THEME_KEYS: ThemeKey[] = ['purple', 'blue', 'green', 'orange', 'rose', 'cyan'];
+export const ACCESSIBILITY_THEME_KEYS: ThemeKey[] = ['highVisibility', 'warm', 'monochrome'];
 
 export const TEXT_SCALE_VALUES: Record<TextScale, number> = {
   sm: 14,
@@ -43,6 +51,7 @@ const STORAGE_KEY = 'optiplan-settings';
 
 const DEFAULT_SETTINGS: Settings = {
   theme: 'purple',
+  colorMode: 'dark',
   highContrast: false,
   textScale: 'md',
   reduceMotion: false,
@@ -98,6 +107,17 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     root.style.setProperty('--color-accent-hsl', theme.accentHSL);
   }, [settings.theme]);
 
+  // ── Apply color mode class ──────────────────────────────────────────
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove('color-mode-light', 'color-mode-grey');
+    if (settings.colorMode === 'light') {
+      root.classList.add('color-mode-light');
+    } else if (settings.colorMode === 'grey') {
+      root.classList.add('color-mode-grey');
+    }
+  }, [settings.colorMode]);
+
   // ── Apply accessibility classes ───────────────────────────────────────
   useEffect(() => {
     const root = document.documentElement;
@@ -105,15 +125,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     // High contrast
     root.classList.toggle('high-contrast', settings.highContrast);
 
-    // Text scale
-    root.style.fontSize = `${TEXT_SCALE_VALUES[settings.textScale]}px`;
-
     // Reduce motion
     root.classList.toggle('reduce-motion', settings.reduceMotion);
 
     // Dyslexia font
     root.classList.toggle('dyslexia-font', settings.dyslexiaFont);
-  }, [settings.highContrast, settings.textScale, settings.reduceMotion, settings.dyslexiaFont]);
+  }, [settings.highContrast, settings.reduceMotion, settings.dyslexiaFont]);
 
   return (
     <SettingsContext.Provider value={{ settings, updateSettings, resetSettings }}>

@@ -27,7 +27,7 @@ export function DashboardHeader({ title, onMenuToggle }: DashboardHeaderProps) {
   const nextLevel = 100;
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-[#0B0A1A]/80 backdrop-blur-xl border-b border-white/[0.06] flex items-center justify-between px-4 sm:px-6">
+    <header className="sticky top-0 z-30 h-16 bg-[#0B0A1A]/80 dm-surface backdrop-blur-xl border-b border-white/[0.06] flex items-center justify-between px-4 sm:px-6">
       <div className="flex items-center gap-3 sm:gap-4">
         <button
           onClick={onMenuToggle}

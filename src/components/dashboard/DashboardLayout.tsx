@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { useSettings } from '@/contexts/SettingsContext';
 import { DashboardProvider } from '@/contexts/DashboardContext';
 import { FinanceProvider } from '@/contexts/FinanceContext';
 import { DashboardSidebar } from './DashboardSidebar';
@@ -23,6 +24,7 @@ const pageTitles: Record<string, string> = {
 
 export function DashboardLayout() {
   const { user, loading } = useAuth();
+  const { settings } = useSettings();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
 
@@ -51,7 +53,7 @@ export function DashboardLayout() {
   return (
     <DashboardProvider>
       <FinanceProvider>
-        <div className="min-h-screen bg-[#0B0A1A]">
+        <div className={`min-h-screen bg-[#0B0A1A] dashboard-shell dashboard-text-scale-${settings.textScale}`}>
           <DashboardSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
           <div className="lg:ml-[250px] min-h-screen flex flex-col">

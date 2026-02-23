@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   User, Palette, Accessibility, Type,
-  Shield, Phone, Lock, Mail, Save, RotateCcw, Check,
+  Shield, Phone, Lock, Mail, Save, RotateCcw, Check, Sun, Moon, Monitor,
 } from 'lucide-react';
-import { useSettings, THEMES, type ThemeKey, type TextScale } from '@/contexts/SettingsContext';
+import { useSettings, THEMES, STANDARD_THEME_KEYS, ACCESSIBILITY_THEME_KEYS, type TextScale, type ColorMode } from '@/contexts/SettingsContext';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
@@ -85,7 +85,7 @@ export function SettingsPage() {
 function SectionCard({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
     <div className="rounded-2xl bg-[#18162e] border border-white/10 p-6 mb-6">
-      <h3 className="text-base font-semibold text-white mb-1">{title}</h3>
+      <h3 className="text-base font-bold text-white mb-1">{title}</h3>
       {description && <p className="text-sm text-gray-500 mb-5">{description}</p>}
       {!description && <div className="mb-5" />}
       {children}
@@ -97,7 +97,7 @@ function ToggleSwitch({ enabled, onChange, label, description }: { enabled: bool
   return (
     <div className="flex items-center justify-between py-3">
       <div>
-        <p className="text-sm font-medium text-white">{label}</p>
+        <p className="text-sm font-bold text-white">{label}</p>
         <p className="text-xs text-gray-500 mt-0.5">{description}</p>
       </div>
       <button
@@ -116,12 +116,48 @@ function ToggleSwitch({ enabled, onChange, label, description }: { enabled: bool
   );
 }
 
+function UnsavedChangesBar({ hasChanges, onSave, onDiscard }: { hasChanges: boolean; onSave: () => void; onDiscard: () => void }) {
+  return (
+    <AnimatePresence>
+      {hasChanges && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          transition={{ duration: 0.2 }}
+          className="sticky bottom-4 mt-6 flex items-center justify-between rounded-xl bg-[#1a1735] border border-purple-500/30 p-4 shadow-lg shadow-purple-500/10"
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
+            <p className="text-sm font-bold text-white">You have unsaved changes</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onDiscard}
+              className="px-4 py-2 text-sm font-medium rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+            >
+              Discard
+            </button>
+            <button
+              onClick={onSave}
+              className="flex items-center gap-2 px-5 py-2 text-sm font-bold rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white transition-all"
+            >
+              <Save className="w-4 h-4" />
+              Save Changes
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 function InputField({ label, icon: Icon, type = 'text', placeholder, value, onChange, disabled }: {
   label: string; icon: typeof Mail; type?: string; placeholder: string; value: string; onChange: (v: string) => void; disabled?: boolean;
 }) {
   return (
     <div className="mb-4">
-      <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">{label}</label>
+      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">{label}</label>
       <div className="relative">
         <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
         <input
@@ -160,7 +196,7 @@ function AccountTab() {
         <InputField label="Email" icon={Mail} type="email" placeholder="you@example.com" value={email} onChange={setEmail} />
         <button
           onClick={() => toast.success('Profile saved!', { description: 'Your changes have been applied.' })}
-          className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white transition-all"
+          className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white transition-all"
         >
           <Save className="w-4 h-4" /> Save Changes
         </button>
@@ -171,7 +207,7 @@ function AccountTab() {
         <InputField label="New Password" icon={Shield} type="password" placeholder="Enter new password" value={newPassword} onChange={setNewPassword} />
         <button
           onClick={() => { toast.success('Password updated!'); setCurrentPassword(''); setNewPassword(''); }}
-          className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all mb-6"
+          className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all mb-6"
         >
           <Lock className="w-4 h-4" /> Change Password
         </button>
@@ -190,11 +226,44 @@ function AccountTab() {
   );
 }
 
+// ── Color mode mockup data ───────────────────────────────────────────────────
+
+const COLOR_MODES: { key: ColorMode; label: string; icon: typeof Moon; bg: string; surface: string; text: string; border: string }[] = [
+  { key: 'dark', label: 'Dark', icon: Moon, bg: '#0B0A1A', surface: '#18162e', text: '#FFFFFF', border: 'rgba(255,255,255,0.1)' },
+  { key: 'light', label: 'Light', icon: Sun, bg: '#F8F9FA', surface: '#FFFFFF', text: '#1A1A2E', border: 'rgba(0,0,0,0.1)' },
+  { key: 'grey', label: 'Grey', icon: Monitor, bg: '#2D2D3A', surface: '#3A3A4A', text: '#E5E5E5', border: 'rgba(255,255,255,0.12)' },
+];
+
 // ── Tab: Appearance ─────────────────────────────────────────────────────────
 
 function AppearanceTab() {
   const { settings, updateSettings } = useSettings();
-  const currentTheme = THEMES[settings.theme];
+
+  // Draft state — changes are only applied when the user clicks Save
+  const [draftColorMode, setDraftColorMode] = useState<ColorMode>(settings.colorMode);
+  const [draftTheme, setDraftTheme] = useState(settings.theme);
+
+  // Sync draft when saved settings change externally (e.g. reset from another tab)
+  useEffect(() => {
+    setDraftColorMode(settings.colorMode);
+    setDraftTheme(settings.theme);
+  }, [settings.colorMode, settings.theme]);
+
+  const hasChanges = draftColorMode !== settings.colorMode || draftTheme !== settings.theme;
+
+  const handleSave = () => {
+    updateSettings({ colorMode: draftColorMode, theme: draftTheme });
+    toast.success('Appearance settings saved!', { description: 'Your theme and color mode have been applied.' });
+  };
+
+  const handleDiscard = () => {
+    setDraftColorMode(settings.colorMode);
+    setDraftTheme(settings.theme);
+  };
+
+  // Preview uses draft (unsaved) values so user can see before committing
+  const previewTheme = THEMES[draftTheme];
+  const previewMode = COLOR_MODES.find(m => m.key === draftColorMode) ?? COLOR_MODES[0];
 
   return (
     <motion.div
@@ -204,40 +273,42 @@ function AppearanceTab() {
       transition={{ duration: 0.2 }}
     >
       {/* Live Preview */}
-      <SectionCard title="Theme Preview" description="See how your chosen theme looks in real time">
-        <div className="rounded-xl bg-[#0B0A1A] border border-white/10 p-5">
+      <SectionCard title="Theme Preview" description="See how your chosen theme looks before saving">
+        <div
+          className="rounded-xl border p-5 transition-colors duration-300"
+          style={{ backgroundColor: previewMode.bg, borderColor: previewMode.border }}
+        >
           <div className="flex items-start gap-3">
-            {/* Avatar */}
             <div
-              className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
-              style={{ backgroundColor: currentTheme.primary }}
+              className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0"
+              style={{ backgroundColor: previewTheme.primary, color: previewMode.bg }}
             >
               AD
             </div>
-            {/* Message */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-white">Admin</span>
+                <span className="text-sm font-bold" style={{ color: previewMode.text }}>Admin</span>
                 <span
                   className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
-                  style={{ backgroundColor: `${currentTheme.primary}20`, color: currentTheme.primary }}
+                  style={{ backgroundColor: `${previewTheme.primary}20`, color: previewTheme.primary }}
                 >
                   ADMINISTRATOR
                 </span>
-                <span className="text-[10px] text-gray-600">Today at 10:30 PM</span>
+                <span className="text-[10px]" style={{ color: `${previewMode.text}66` }}>Today at 10:30 PM</span>
               </div>
-              <p className="text-sm text-gray-300 mt-1">This is an example of how this theme looks. The accent colors update across the entire dashboard.</p>
-              {/* Reaction bar */}
+              <p className="text-sm mt-1" style={{ color: `${previewMode.text}BB` }}>
+                This is an example of how this theme looks. The accent colors update across the entire dashboard.
+              </p>
               <div className="flex gap-2 mt-3">
                 <button
                   className="flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-colors"
-                  style={{ backgroundColor: `${currentTheme.primary}15`, color: currentTheme.primary }}
+                  style={{ backgroundColor: `${previewTheme.primary}15`, color: previewTheme.primary }}
                 >
                   👍 3
                 </button>
                 <button
                   className="flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-colors"
-                  style={{ backgroundColor: `${currentTheme.accent}15`, color: currentTheme.accent }}
+                  style={{ backgroundColor: `${previewTheme.accent}15`, color: previewTheme.accent }}
                 >
                   🎉 1
                 </button>
@@ -247,15 +318,58 @@ function AppearanceTab() {
         </div>
       </SectionCard>
 
-      {/* Theme Selector */}
+      {/* Color Mode Selector */}
+      <SectionCard title="Color Mode" description="Choose between dark, light, or grey dashboard background">
+        <div className="grid grid-cols-3 gap-3">
+          {COLOR_MODES.map(mode => {
+            const isActive = draftColorMode === mode.key;
+            const Icon = mode.icon;
+            return (
+              <button
+                key={mode.key}
+                onClick={() => setDraftColorMode(mode.key)}
+                className={`relative group rounded-xl border-2 transition-all duration-200 overflow-hidden ${
+                  isActive
+                    ? 'border-white/40'
+                    : 'border-white/5 hover:border-white/20'
+                }`}
+              >
+                {/* Mini mockup */}
+                <div className="p-3 pb-2" style={{ backgroundColor: mode.bg }}>
+                  <div className="flex gap-1.5 mb-2">
+                    <div className="w-6 h-full rounded" style={{ backgroundColor: mode.surface, border: `1px solid ${mode.border}`, minHeight: 28 }} />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-2 rounded-full w-3/4" style={{ backgroundColor: `${mode.text}22` }} />
+                      <div className="h-2 rounded-full w-1/2" style={{ backgroundColor: `${mode.text}15` }} />
+                    </div>
+                  </div>
+                </div>
+                {/* Label */}
+                <div className="flex items-center justify-center gap-2 py-2.5 bg-white/[0.03]">
+                  <Icon className="w-3.5 h-3.5 text-gray-400" />
+                  <span className="text-xs font-bold text-white">{mode.label}</span>
+                </div>
+                {isActive && (
+                  <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white flex items-center justify-center">
+                    <Check className="w-3 h-3 text-[#0B0A1A]" />
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </SectionCard>
+
+      {/* Standard Color Themes */}
       <SectionCard title="Color Theme" description="Choose your preferred color palette">
         <div className="grid grid-cols-3 gap-3">
-          {(Object.entries(THEMES) as [ThemeKey, typeof THEMES.purple][]).map(([key, theme]) => {
-            const isActive = settings.theme === key;
+          {STANDARD_THEME_KEYS.map(key => {
+            const theme = THEMES[key];
+            const isActive = draftTheme === key;
             return (
               <button
                 key={key}
-                onClick={() => updateSettings({ theme: key })}
+                onClick={() => setDraftTheme(key)}
                 className={`relative group rounded-xl p-4 border-2 transition-all duration-200 ${
                   isActive
                     ? 'border-white/40 bg-white/5'
@@ -271,13 +385,55 @@ function AppearanceTab() {
                   <div className="w-6 h-6 rounded-full" style={{ backgroundColor: theme.primary }} />
                   <div className="w-6 h-6 rounded-full" style={{ backgroundColor: theme.accent }} />
                 </div>
-                <p className="text-xs font-semibold text-white text-left">{theme.label}</p>
+                <p className="text-xs font-bold text-white text-left">{theme.label}</p>
                 <div className="h-1 rounded-full mt-2 overflow-hidden" style={{ background: `linear-gradient(to right, ${theme.primary}, ${theme.accent})` }} />
               </button>
             );
           })}
         </div>
       </SectionCard>
+
+      {/* Accessibility Themes */}
+      <SectionCard title="Accessibility Themes" description="Color palettes optimized for visual impairments">
+        <div className="grid grid-cols-3 gap-3">
+          {ACCESSIBILITY_THEME_KEYS.map(key => {
+            const theme = THEMES[key];
+            const isActive = draftTheme === key;
+            const descriptions: Record<string, string> = {
+              highVisibility: 'For low vision',
+              warm: 'Reduced blue light',
+              monochrome: 'Color-blind friendly',
+            };
+            return (
+              <button
+                key={key}
+                onClick={() => setDraftTheme(key)}
+                className={`relative group rounded-xl p-4 border-2 transition-all duration-200 ${
+                  isActive
+                    ? 'border-white/40 bg-white/5'
+                    : 'border-white/5 hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.04]'
+                }`}
+              >
+                {isActive && (
+                  <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white flex items-center justify-center">
+                    <Check className="w-3 h-3 text-[#0B0A1A]" />
+                  </div>
+                )}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 rounded-full" style={{ backgroundColor: theme.primary }} />
+                  <div className="w-6 h-6 rounded-full" style={{ backgroundColor: theme.accent }} />
+                </div>
+                <p className="text-xs font-bold text-white text-left">{theme.label}</p>
+                <p className="text-[10px] text-gray-500 text-left mt-0.5">{descriptions[key]}</p>
+                <div className="h-1 rounded-full mt-2 overflow-hidden" style={{ background: `linear-gradient(to right, ${theme.primary}, ${theme.accent})` }} />
+              </button>
+            );
+          })}
+        </div>
+      </SectionCard>
+
+      {/* Save bar */}
+      <UnsavedChangesBar hasChanges={hasChanges} onSave={handleSave} onDiscard={handleDiscard} />
     </motion.div>
   );
 }
@@ -286,6 +442,43 @@ function AppearanceTab() {
 
 function AccessibilityTab() {
   const { settings, updateSettings, resetSettings } = useSettings();
+
+  // Draft state — changes are only applied when the user clicks Save
+  const [draftHighContrast, setDraftHighContrast] = useState(settings.highContrast);
+  const [draftReduceMotion, setDraftReduceMotion] = useState(settings.reduceMotion);
+  const [draftDyslexiaFont, setDraftDyslexiaFont] = useState(settings.dyslexiaFont);
+  const [draftTextScale, setDraftTextScale] = useState<TextScale>(settings.textScale);
+
+  // Sync draft when saved settings change externally (e.g. reset)
+  useEffect(() => {
+    setDraftHighContrast(settings.highContrast);
+    setDraftReduceMotion(settings.reduceMotion);
+    setDraftDyslexiaFont(settings.dyslexiaFont);
+    setDraftTextScale(settings.textScale);
+  }, [settings.highContrast, settings.reduceMotion, settings.dyslexiaFont, settings.textScale]);
+
+  const hasChanges =
+    draftHighContrast !== settings.highContrast ||
+    draftReduceMotion !== settings.reduceMotion ||
+    draftDyslexiaFont !== settings.dyslexiaFont ||
+    draftTextScale !== settings.textScale;
+
+  const handleSave = () => {
+    updateSettings({
+      highContrast: draftHighContrast,
+      reduceMotion: draftReduceMotion,
+      dyslexiaFont: draftDyslexiaFont,
+      textScale: draftTextScale,
+    });
+    toast.success('Accessibility settings saved!', { description: 'Your changes have been applied.' });
+  };
+
+  const handleDiscard = () => {
+    setDraftHighContrast(settings.highContrast);
+    setDraftReduceMotion(settings.reduceMotion);
+    setDraftDyslexiaFont(settings.dyslexiaFont);
+    setDraftTextScale(settings.textScale);
+  };
 
   return (
     <motion.div
@@ -296,24 +489,24 @@ function AccessibilityTab() {
     >
       <SectionCard title="Visual Accessibility" description="Customize the display for your comfort and needs">
         <ToggleSwitch
-          enabled={settings.highContrast}
-          onChange={v => updateSettings({ highContrast: v })}
+          enabled={draftHighContrast}
+          onChange={setDraftHighContrast}
           label="High Contrast Mode"
           description="Increase border and text contrast for better visibility"
         />
         <div className="border-t border-white/5" />
 
         <ToggleSwitch
-          enabled={settings.reduceMotion}
-          onChange={v => updateSettings({ reduceMotion: v })}
+          enabled={draftReduceMotion}
+          onChange={setDraftReduceMotion}
           label="Reduce Motion"
           description="Disable animations and page transitions"
         />
         <div className="border-t border-white/5" />
 
         <ToggleSwitch
-          enabled={settings.dyslexiaFont}
-          onChange={v => updateSettings({ dyslexiaFont: v })}
+          enabled={draftDyslexiaFont}
+          onChange={setDraftDyslexiaFont}
           label="Dyslexia-Friendly Font"
           description="Switch to a more readable font with increased letter spacing"
         />
@@ -322,11 +515,11 @@ function AccessibilityTab() {
       <SectionCard title="Text Size" description="Adjust the base font size across the dashboard">
         <div className="flex bg-white/[0.03] rounded-xl p-1 gap-1">
           {TEXT_SCALE_OPTIONS.map(opt => {
-            const active = settings.textScale === opt.key;
+            const active = draftTextScale === opt.key;
             return (
               <button
                 key={opt.key}
-                onClick={() => updateSettings({ textScale: opt.key })}
+                onClick={() => setDraftTextScale(opt.key)}
                 className={`flex-1 relative px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                   active ? 'text-white' : 'text-gray-500 hover:text-gray-300'
                 }`}
@@ -349,14 +542,17 @@ function AccessibilityTab() {
 
         {/* Preview */}
         <div className="mt-4 rounded-xl bg-[#0B0A1A] border border-white/10 p-5">
-          <p className="text-gray-400" style={{ fontSize: `${({ sm: 14, md: 16, lg: 18, xl: 20 })[settings.textScale]}px` }}>
-            This is a preview of how your text will appear at the <strong className="text-white">{TEXT_SCALE_OPTIONS.find(o => o.key === settings.textScale)?.label}</strong> size setting. Readability is our top priority.
+          <p className="text-gray-400" style={{ fontSize: `${({ sm: 14, md: 16, lg: 18, xl: 20 })[draftTextScale]}px` }}>
+            This is a preview of how your text will appear at the <strong className="text-white font-bold">{TEXT_SCALE_OPTIONS.find(o => o.key === draftTextScale)?.label}</strong> size setting. Readability is our top priority.
           </p>
         </div>
       </SectionCard>
 
+      {/* Save bar */}
+      <UnsavedChangesBar hasChanges={hasChanges} onSave={handleSave} onDiscard={handleDiscard} />
+
       {/* Reset */}
-      <div className="flex justify-end">
+      <div className="flex justify-end mt-2">
         <button
           onClick={() => { resetSettings(); toast.success('Settings reset to defaults'); }}
           className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
