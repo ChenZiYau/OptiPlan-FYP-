@@ -67,21 +67,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const initProfile = useCallback(async (u: User) => {
-    const avatarUrl = await fetchAvatarUrl(u.id);
-    setProfile(buildProfile(u, avatarUrl));
+  // Set profile synchronously, then fetch avatar in background
+  const setProfileAndFetchAvatar = useCallback((u: User) => {
+    setProfile(buildProfile(u));
+    // Fire-and-forget: fetch avatar URL and update profile when ready
+    fetchAvatarUrl(u.id).then(avatarUrl => {
+      if (avatarUrl) {
+        setProfile(prev => prev && prev.id === u.id ? { ...prev, avatar_url: avatarUrl } : prev);
+      }
+    });
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        try {
-          await initProfile(s.user);
-        } catch {
-          setProfile(buildProfile(s.user));
-        }
+        setProfileAndFetchAvatar(s.user);
       } else {
         setProfile(null);
       }
@@ -92,15 +94,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, s) => {
+    } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        try {
-          await initProfile(s.user);
-        } catch {
-          setProfile(buildProfile(s.user));
-        }
+        setProfileAndFetchAvatar(s.user);
       } else {
         setProfile(null);
       }
@@ -108,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, [initProfile]);
+  }, [setProfileAndFetchAvatar]);
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -130,9 +128,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Refresh profile
     const { data: { user: refreshed } } = await supabase.auth.getUser();
     if (refreshed) {
-      const avatarUrl = await fetchAvatarUrl(refreshed.id);
       setUser(refreshed);
-      setProfile(buildProfile(refreshed, avatarUrl));
+      setProfileAndFetchAvatar(refreshed);
     }
   }
 
