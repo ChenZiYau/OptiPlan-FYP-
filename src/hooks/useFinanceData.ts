@@ -59,6 +59,11 @@ function startOfYearISO() {
 
 // ── Hook ────────────────────────────────────────────────────────────────────
 
+/** Default per-category budget when user hasn't set one */
+export const DEFAULT_CATEGORY_BUDGET = 500;
+/** Default total monthly budget = 8 categories × $500 */
+export const DEFAULT_MONTHLY_BUDGET = EXPENSE_CATEGORIES.length * DEFAULT_CATEGORY_BUDGET;
+
 export interface FinanceData {
   // Raw data
   settings: FinanceSettings | null;
@@ -68,6 +73,7 @@ export interface FinanceData {
 
   // Computed values
   totalBalance: number;
+  totalMonthlyBudget: number;
   budgetRemaining: number;
   todaySpending: number;
   weekSpending: number;
@@ -79,6 +85,7 @@ export interface FinanceData {
     starting_balance?: number;
     main_income?: number;
     side_income?: number;
+    monthly_budget?: number;
   }) => Promise<void>;
 
   // Transaction mutations
@@ -207,9 +214,22 @@ export function useFinanceData(): FinanceData {
     return base + totalOtherIncome - totalExpenses;
   }, [settings, totalOtherIncome, totalExpenses]);
 
+  // Total monthly budget: explicit setting > sum of category limits > default
+  const totalMonthlyBudget = useMemo(() => {
+    const explicit = Number(settings?.monthly_budget ?? 0);
+    if (explicit > 0) return explicit;
+    // Fall back to sum of per-category limits (with $500 default each)
+    const sumLimits = EXPENSE_CATEGORIES.reduce((sum, cat) => {
+      const b = budgets.find((r) => r.category === cat);
+      return sum + (b?.limit_amount ?? DEFAULT_CATEGORY_BUDGET);
+    }, 0);
+    return sumLimits;
+  }, [settings, budgets]);
+
+  // Budget remaining = monthly budget - this month's spending
   const budgetRemaining = useMemo(
-    () => totalBalance - monthSpending,
-    [totalBalance, monthSpending],
+    () => totalMonthlyBudget - monthSpending,
+    [totalMonthlyBudget, monthSpending],
   );
 
   // ── Mutations ───────────────────────────────────────────────────────────
@@ -219,6 +239,7 @@ export function useFinanceData(): FinanceData {
       starting_balance?: number;
       main_income?: number;
       side_income?: number;
+      monthly_budget?: number;
     }) => {
       if (!user) return;
 
@@ -231,6 +252,7 @@ export function useFinanceData(): FinanceData {
           starting_balance: 0,
           main_income: 0,
           side_income: 0,
+          monthly_budget: 0,
           ...updates,
         };
       });
@@ -351,6 +373,7 @@ export function useFinanceData(): FinanceData {
     budgets,
     loading,
     totalBalance,
+    totalMonthlyBudget,
     budgetRemaining,
     todaySpending,
     weekSpending,

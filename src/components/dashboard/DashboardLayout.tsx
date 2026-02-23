@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
 import { Toaster } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { DashboardProvider } from '@/contexts/DashboardContext';
@@ -8,6 +7,7 @@ import { FinanceProvider } from '@/contexts/FinanceContext';
 import { DashboardSidebar } from './DashboardSidebar';
 import { DashboardHeader } from './DashboardHeader';
 import { TaskModal } from './TaskModal';
+import { FloatingAIAssistant } from './FloatingAIAssistant';
 
 const pageTitles: Record<string, string> = {
   '/dashboard': 'Overview',
@@ -16,6 +16,7 @@ const pageTitles: Record<string, string> = {
   '/dashboard/schedules': 'Schedules',
   '/dashboard/collab': 'Collaboration',
   '/dashboard/chatbot': 'AI ChatBot',
+  '/dashboard/studyhub': 'Study Hub',
 };
 
 export function DashboardLayout() {
@@ -54,21 +55,12 @@ export function DashboardLayout() {
           <div className="lg:ml-[250px] min-h-screen flex flex-col">
             <DashboardHeader title={title} onMenuToggle={() => setSidebarOpen(true)} />
             <main className="flex-1 p-4 sm:p-6">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={location.pathname}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Outlet />
-                </motion.div>
-              </AnimatePresence>
+              <Outlet />
             </main>
           </div>
 
           <TaskModal />
+          <FloatingAIAssistant />
           <Toaster
             theme="dark"
             position="bottom-right"

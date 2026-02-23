@@ -1,0 +1,883 @@
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  Upload,
+  Link2,
+  FileText,
+  RefreshCw,
+  Download,
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  X,
+  Loader2,
+  ChevronDown,
+  Sparkles,
+  BookOpen,
+  Layers,
+  HelpCircle,
+} from 'lucide-react';
+
+// ── Types ────────────────────────────────────────────────────────────────────
+
+interface StudyMaterial {
+  id: string;
+  subject: string;
+  topic: string;
+  rawContentUrl?: string;
+  generatedNotes: string; // Markdown
+}
+
+interface Flashcard {
+  id: string;
+  front: string;
+  back: string;
+  masteryLevel: 'new' | 'learning' | 'mastered';
+}
+
+interface QuizQuestion {
+  id: string;
+  question: string;
+  options: string[]; // Length 4
+  correctIndex: number;
+  explanation: string;
+}
+
+// ── Data generated after upload ──────────────────────────────────────────────
+
+const GENERATED_NOTES: StudyMaterial = {
+  id: '1',
+  subject: 'Calculus',
+  topic: 'Limits & Continuity',
+  generatedNotes: `## Limits & Continuity
+
+### What is a Limit?
+A **limit** describes the value that a function approaches as the input approaches some value. We write this as:
+
+\`lim(x→a) f(x) = L\`
+
+This means as *x* gets closer and closer to *a*, \`f(x)\` gets closer and closer to *L*.
+
+### Key Properties
+- **Sum Rule:** The limit of a sum equals the sum of the limits
+- **Product Rule:** The limit of a product equals the product of the limits
+- **Quotient Rule:** The limit of a quotient equals the quotient of the limits (if denominator ≠ 0)
+
+### Continuity
+A function *f* is **continuous** at point *a* if:
+1. \`f(a)\` is defined
+2. \`lim(x→a) f(x)\` exists
+3. \`lim(x→a) f(x) = f(a)\`
+
+### Types of Discontinuity
+- **Removable** — a hole in the graph that can be "filled"
+- **Jump** — the function jumps from one value to another
+- **Infinite** — the function approaches ±∞ (vertical asymptote)
+
+### Key Theorems
+The **Intermediate Value Theorem** states that if *f* is continuous on [a, b] and *N* is between f(a) and f(b), then there exists at least one *c* in (a, b) such that f(c) = N.`,
+};
+
+const GENERATED_FLASHCARDS: Flashcard[] = [
+  { id: '1', front: 'What is a limit in calculus?', back: 'A limit describes the value a function approaches as the input approaches some value. Written as lim(x→a) f(x) = L.', masteryLevel: 'new' },
+  { id: '2', front: 'What are the 3 conditions for continuity?', back: '1) f(a) is defined\n2) lim(x→a) f(x) exists\n3) lim(x→a) f(x) = f(a)', masteryLevel: 'new' },
+  { id: '3', front: 'What is a removable discontinuity?', back: 'A "hole" in the graph where the limit exists but the function value is either undefined or different from the limit. It can be "filled" by redefining f(a).', masteryLevel: 'new' },
+  { id: '4', front: 'State the Intermediate Value Theorem', back: 'If f is continuous on [a, b] and N is between f(a) and f(b), then there exists at least one c in (a, b) such that f(c) = N.', masteryLevel: 'new' },
+  { id: '5', front: 'What is the Sum Rule for limits?', back: 'The limit of a sum equals the sum of the limits: lim(x→a) [f(x) + g(x)] = lim(x→a) f(x) + lim(x→a) g(x).', masteryLevel: 'new' },
+  { id: '6', front: 'What is an infinite discontinuity?', back: 'A discontinuity where the function approaches ±∞, creating a vertical asymptote in the graph.', masteryLevel: 'new' },
+  { id: '7', front: 'What is a jump discontinuity?', back: 'A discontinuity where the left-hand limit and right-hand limit both exist but are not equal, causing the function to "jump" between values.', masteryLevel: 'new' },
+  { id: '8', front: 'What is the Quotient Rule for limits?', back: 'lim(x→a) [f(x)/g(x)] = lim(x→a) f(x) / lim(x→a) g(x), provided the limit of the denominator is not zero.', masteryLevel: 'new' },
+];
+
+const GENERATED_QUIZ: QuizQuestion[] = [
+  {
+    id: '1',
+    question: 'Which of the following is NOT a condition for a function to be continuous at a point a?',
+    options: ['f(a) is defined', 'lim(x→a) f(x) exists', 'f\'(a) exists', 'lim(x→a) f(x) = f(a)'],
+    correctIndex: 2,
+    explanation: 'Continuity only requires that f(a) is defined, the limit exists, and they are equal. Differentiability (f\'(a) exists) is a stronger condition — a function can be continuous but not differentiable.',
+  },
+  {
+    id: '2',
+    question: 'What type of discontinuity can be "fixed" by redefining the function at a single point?',
+    options: ['Jump discontinuity', 'Infinite discontinuity', 'Removable discontinuity', 'Essential discontinuity'],
+    correctIndex: 2,
+    explanation: 'A removable discontinuity is a "hole" in the graph. The limit exists at that point, so you can redefine f(a) = lim(x→a) f(x) to make the function continuous.',
+  },
+  {
+    id: '3',
+    question: 'According to the Intermediate Value Theorem, if f is continuous on [a, b], then:',
+    options: [
+      'f must have a maximum on [a, b]',
+      'f takes every value between f(a) and f(b)',
+      'f must be differentiable on (a, b)',
+      'f must be bounded on [a, b]',
+    ],
+    correctIndex: 1,
+    explanation: 'The IVT states that a continuous function on a closed interval takes on every value between f(a) and f(b). This is fundamental for proving the existence of roots.',
+  },
+  {
+    id: '4',
+    question: 'What does lim(x→a) f(x) = L mean?',
+    options: [
+      'f(a) = L',
+      'f(x) equals L for all x near a',
+      'f(x) can be made arbitrarily close to L by taking x sufficiently close to a',
+      'f is continuous at a',
+    ],
+    correctIndex: 2,
+    explanation: 'The formal (ε-δ) definition states that for every ε > 0, there exists a δ > 0 such that if 0 < |x − a| < δ, then |f(x) − L| < ε. In plain language: f(x) gets as close to L as we want when x is close enough to a.',
+  },
+  {
+    id: '5',
+    question: 'Which limit rule states: lim[f(x) · g(x)] = lim f(x) · lim g(x)?',
+    options: ['Sum Rule', 'Product Rule', 'Chain Rule', 'Quotient Rule'],
+    correctIndex: 1,
+    explanation: 'The Product Rule for limits allows us to split the limit of a product into the product of the individual limits, provided both individual limits exist.',
+  },
+];
+
+// ── Main Component ───────────────────────────────────────────────────────────
+
+type Tab = 'notes' | 'flashcards' | 'quiz';
+
+export function StudyHubPage() {
+  const [subject, setSubject] = useState('All Subjects');
+  const [subjectOpen, setSubjectOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>('notes');
+  const [hasContent, setHasContent] = useState(false);
+
+  const tabs: { key: Tab; label: string }[] = [
+    { key: 'notes', label: 'Notes & Import' },
+    { key: 'flashcards', label: 'Flashcards' },
+    { key: 'quiz', label: 'Practice Quiz' },
+  ];
+
+  return (
+    <div className="space-y-8">
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+        <div className="flex items-center gap-5">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Study Hub</h1>
+            <p className="text-sm text-gray-500 mt-1">AI-powered notes, flashcards & quizzes</p>
+          </div>
+
+          {/* Subject Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setSubjectOpen(!subjectOpen)}
+              className="flex items-center gap-2 px-4 py-2.5 text-sm rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 transition-colors"
+            >
+              {subject}
+              <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${subjectOpen ? 'rotate-180' : ''}`} />
+            </button>
+            <AnimatePresence>
+              {subjectOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 4 }}
+                  className="absolute z-50 top-full left-0 mt-2 w-52 rounded-xl bg-[#1a1735] border border-white/10 py-1.5 shadow-2xl shadow-black/50"
+                >
+                  {['All Subjects', 'Calculus', 'Moral Education', 'Web Dev', 'Physics', 'Data Structures'].map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => { setSubject(s); setSubjectOpen(false); }}
+                      className={`w-full text-left px-5 py-2.5 text-sm transition-colors ${
+                        subject === s ? 'text-purple-400 bg-purple-500/10' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Pomodoro Timer */}
+        <PomodoroTimer />
+      </div>
+
+      {/* ── Tab Navigation ──────────────────────────────────────────────── */}
+      <div className="flex rounded-xl bg-white/5 p-1.5 w-fit">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`relative px-6 py-2.5 text-sm font-medium rounded-lg capitalize transition-colors ${
+              activeTab === tab.key ? 'text-white' : 'text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            {activeTab === tab.key && (
+              <motion.div
+                layoutId="studyTab"
+                className="absolute inset-0 bg-purple-500/20 border border-purple-500/30 rounded-lg"
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              />
+            )}
+            <span className="relative z-10">{tab.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ── Tab Content ─────────────────────────────────────────────────── */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.2 }}
+        >
+          {activeTab === 'notes' && <NotesTab onContentGenerated={() => setHasContent(true)} />}
+          {activeTab === 'flashcards' && (
+            hasContent
+              ? <FlashcardsTab />
+              : <EmptyState
+                  icon={Layers}
+                  title="No flashcards yet"
+                  description="Upload your study materials in the Notes & Import tab first. AI will generate flashcards from your content automatically."
+                  actionLabel="Go to Notes & Import"
+                  onAction={() => setActiveTab('notes')}
+                />
+          )}
+          {activeTab === 'quiz' && (
+            hasContent
+              ? <QuizTab />
+              : <EmptyState
+                  icon={HelpCircle}
+                  title="No quiz available"
+                  description="Upload your study materials in the Notes & Import tab first. AI will generate practice questions from your content automatically."
+                  actionLabel="Go to Notes & Import"
+                  onAction={() => setActiveTab('notes')}
+                />
+          )}
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ── Empty State ──────────────────────────────────────────────────────────────
+
+function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  actionLabel,
+  onAction,
+}: {
+  icon: typeof BookOpen;
+  title: string;
+  description: string;
+  actionLabel: string;
+  onAction: () => void;
+}) {
+  return (
+    <div className="rounded-xl bg-[#18162e] border border-white/10 p-16 flex flex-col items-center justify-center text-center">
+      <div className="w-16 h-16 rounded-2xl bg-purple-900/20 border border-purple-500/30 flex items-center justify-center mb-5">
+        <Icon className="w-8 h-8 text-purple-400" />
+      </div>
+      <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
+      <p className="text-sm text-gray-500 max-w-md leading-relaxed mb-8">{description}</p>
+      <button
+        onClick={onAction}
+        className="flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white transition-all"
+      >
+        <Upload className="w-4 h-4" />
+        {actionLabel}
+      </button>
+    </div>
+  );
+}
+
+// ── Pomodoro Timer ───────────────────────────────────────────────────────────
+
+function PomodoroTimer() {
+  const [seconds, setSeconds] = useState(25 * 60);
+  const [running, setRunning] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (running && seconds > 0) {
+      intervalRef.current = setInterval(() => setSeconds((s) => s - 1), 1000);
+    }
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [running, seconds]);
+
+  useEffect(() => {
+    if (seconds <= 0) {
+      setRunning(false);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    }
+  }, [seconds]);
+
+  const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
+  const secs = String(seconds % 60).padStart(2, '0');
+
+  function reset() {
+    setRunning(false);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setSeconds(25 * 60);
+  }
+
+  return (
+    <div
+      className={`flex items-center gap-4 px-5 py-3 rounded-xl border transition-all duration-300 ${
+        running
+          ? 'bg-purple-900/20 border-purple-500/40 shadow-[0_0_15px_rgba(168,85,247,0.15)]'
+          : 'bg-white/5 border-white/10'
+      }`}
+    >
+      <span className="text-xl font-mono font-semibold text-white tabular-nums tracking-wider">
+        {mins}:{secs}
+      </span>
+      <button
+        onClick={() => setRunning(!running)}
+        className="w-9 h-9 rounded-lg flex items-center justify-center bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors"
+        aria-label={running ? 'Pause' : 'Play'}
+      >
+        {running ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+      </button>
+      <button
+        onClick={reset}
+        className="w-9 h-9 rounded-lg flex items-center justify-center bg-white/5 text-gray-500 hover:text-white hover:bg-white/10 transition-colors"
+        aria-label="Reset timer"
+      >
+        <RotateCcw className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
+
+// ── Tab 1: Notes & Import ────────────────────────────────────────────────────
+
+function NotesTab({ onContentGenerated }: { onContentGenerated: () => void }) {
+  const [stage, setStage] = useState<'upload' | 'processing' | 'done'>('upload');
+  const [urlInput, setUrlInput] = useState('');
+  const [dragActive, setDragActive] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleUpload = useCallback(() => {
+    setStage('processing');
+    setTimeout(() => {
+      setStage('done');
+      onContentGenerated();
+    }, 3000);
+  }, [onContentGenerated]);
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragActive(false);
+    if (e.dataTransfer.files.length > 0) handleUpload();
+  }
+
+  if (stage === 'processing') {
+    return (
+      <div className="rounded-xl bg-[#18162e] border border-white/10 p-16 flex flex-col items-center justify-center gap-6">
+        <div className="relative">
+          <div className="w-20 h-20 rounded-2xl bg-purple-900/30 border border-purple-500/30 flex items-center justify-center">
+            <Sparkles className="w-10 h-10 text-purple-400" />
+          </div>
+          <Loader2 className="absolute -top-1 -right-1 w-6 h-6 text-purple-400 animate-spin" />
+        </div>
+        <div className="text-center space-y-2">
+          <p className="text-base font-semibold text-white">AI is reading your document...</p>
+          <p className="text-sm text-gray-500">Synthesizing notes, flashcards & quiz questions</p>
+        </div>
+        <div className="w-56 h-2 rounded-full bg-white/10 overflow-hidden">
+          <motion.div
+            className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
+            initial={{ width: '0%' }}
+            animate={{ width: '100%' }}
+            transition={{ duration: 3, ease: 'easeInOut' }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (stage === 'done') {
+    return (
+      <div className="rounded-xl bg-[#18162e] border border-white/10 p-8">
+        {/* Action bar */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h3 className="text-base font-semibold text-white">{GENERATED_NOTES.topic}</h3>
+            <p className="text-sm text-gray-500 mt-1">{GENERATED_NOTES.subject}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white transition-colors">
+              <Download className="w-4 h-4" /> Export PDF
+            </button>
+            <button
+              onClick={() => { setStage('processing'); setTimeout(() => setStage('done'), 3000); }}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" /> Regenerate
+            </button>
+          </div>
+        </div>
+
+        {/* Success banner */}
+        <div className="bg-green-900/15 border border-green-500/20 rounded-xl p-4 mb-8 flex items-center gap-3">
+          <Check className="w-5 h-5 text-green-400 shrink-0" />
+          <p className="text-sm text-green-300">
+            Notes generated! <span className="text-green-400/70">Flashcards and Practice Quiz are now available in their tabs.</span>
+          </p>
+        </div>
+
+        {/* Notes content */}
+        <div className="prose prose-invert prose-base max-w-none prose-headings:text-white prose-h2:text-xl prose-h2:font-bold prose-h2:mt-8 prose-h2:mb-4 prose-h3:text-lg prose-h3:font-semibold prose-h3:mt-6 prose-h3:mb-3 prose-p:text-gray-400 prose-p:leading-relaxed prose-p:mb-4 prose-strong:text-white prose-li:text-gray-400 prose-li:mb-1.5 prose-code:text-purple-300 prose-code:bg-purple-900/20 prose-code:px-2 prose-code:py-1 prose-code:rounded-md prose-code:text-sm prose-em:text-gray-300">
+          {GENERATED_NOTES.generatedNotes.split('\n').map((line, i) => {
+            if (line.startsWith('## ')) return <h2 key={i}>{line.slice(3)}</h2>;
+            if (line.startsWith('### ')) return <h3 key={i}>{line.slice(4)}</h3>;
+            if (line.startsWith('- **')) {
+              const match = line.match(/^- \*\*(.+?)\*\*\s*[—–-]\s*(.+)$/);
+              if (match) return <li key={i}><strong>{match[1]}</strong> — {match[2]}</li>;
+            }
+            if (line.startsWith('- ')) return <li key={i}>{line.slice(2)}</li>;
+            if (line.match(/^\d+\./)) return <li key={i}>{line.replace(/^\d+\.\s*/, '')}</li>;
+            if (line.trim() === '') return null;
+            return <p key={i}>{renderInlineCode(line)}</p>;
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // Upload stage
+  return (
+    <div className="space-y-6">
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+        onDragLeave={() => setDragActive(false)}
+        onDrop={handleDrop}
+        onClick={() => fileRef.current?.click()}
+        className={`rounded-xl border-2 border-dashed p-14 text-center cursor-pointer transition-all duration-200 ${
+          dragActive
+            ? 'border-purple-500 bg-purple-500/5'
+            : 'border-white/20 hover:border-purple-500/50 bg-[#18162e]'
+        }`}
+      >
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".pdf,.pptx,.ppt,.doc,.docx"
+          className="hidden"
+          onChange={(e) => { if (e.target.files?.length) handleUpload(); }}
+        />
+        <div className="w-16 h-16 rounded-2xl bg-purple-900/20 border border-purple-500/30 flex items-center justify-center mx-auto mb-5">
+          <Upload className="w-8 h-8 text-purple-400" />
+        </div>
+        <p className="text-base font-semibold text-white mb-2">
+          Drop your study materials here
+        </p>
+        <p className="text-sm text-gray-500 mb-1">
+          PDF, PPTX, DOC — or click to browse
+        </p>
+        <p className="text-xs text-gray-600">
+          AI will generate notes, flashcards & quiz questions from your content
+        </p>
+      </div>
+
+      {/* URL input */}
+      <div className="rounded-xl bg-[#18162e] border border-white/10 p-6">
+        <label className="text-sm text-gray-400 mb-3 block">
+          Or paste a YouTube URL / Article Link
+        </label>
+        <div className="flex gap-4">
+          <div className="relative flex-1">
+            <Link2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+            <input
+              type="url"
+              value={urlInput}
+              onChange={(e) => setUrlInput(e.target.value)}
+              placeholder="https://youtube.com/watch?v=..."
+              className="w-full pl-11 pr-4 py-3 text-sm bg-[#0B0A1A] border border-white/10 rounded-lg text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition"
+            />
+          </div>
+          <button
+            onClick={handleUpload}
+            disabled={!urlInput.trim()}
+            className="px-6 py-3 text-sm font-semibold rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <FileText className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Simple inline code renderer */
+function renderInlineCode(text: string): React.ReactNode {
+  const parts = text.split(/(`[^`]+`)/);
+  return parts.map((part, i) => {
+    if (part.startsWith('`') && part.endsWith('`')) {
+      return <code key={i}>{part.slice(1, -1)}</code>;
+    }
+    const boldParts = part.split(/(\*\*[^*]+\*\*)/);
+    return boldParts.map((bp, j) => {
+      if (bp.startsWith('**') && bp.endsWith('**')) {
+        return <strong key={`${i}-${j}`}>{bp.slice(2, -2)}</strong>;
+      }
+      const italicParts = bp.split(/(\*[^*]+\*)/);
+      return italicParts.map((ip, k) => {
+        if (ip.startsWith('*') && ip.endsWith('*')) {
+          return <em key={`${i}-${j}-${k}`}>{ip.slice(1, -1)}</em>;
+        }
+        return ip;
+      });
+    });
+  });
+}
+
+// ── Tab 2: Flashcards ────────────────────────────────────────────────────────
+
+function FlashcardsTab() {
+  const [cards, setCards] = useState<Flashcard[]>(GENERATED_FLASHCARDS);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+  const [showActions, setShowActions] = useState(false);
+
+  const card = cards[currentIndex];
+  const mastered = cards.filter((c) => c.masteryLevel === 'mastered').length;
+
+  function handleFlip() {
+    setFlipped(true);
+    setShowActions(true);
+  }
+
+  function handleRate(level: Flashcard['masteryLevel']) {
+    setCards((prev) =>
+      prev.map((c, i) => (i === currentIndex ? { ...c, masteryLevel: level } : c)),
+    );
+    goNext();
+  }
+
+  function goNext() {
+    setFlipped(false);
+    setShowActions(false);
+    setCurrentIndex((i) => (i + 1) % cards.length);
+  }
+
+  function goPrev() {
+    setFlipped(false);
+    setShowActions(false);
+    setCurrentIndex((i) => (i - 1 + cards.length) % cards.length);
+  }
+
+  const progressPct = cards.length > 0 ? (mastered / cards.length) * 100 : 0;
+
+  return (
+    <div className="space-y-8">
+      {/* Progress */}
+      <div className="rounded-xl bg-[#18162e] border border-white/10 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm text-gray-400">Mastery Progress</span>
+          <span className="text-sm font-semibold text-purple-400">
+            {mastered}/{cards.length} cards mastered
+          </span>
+        </div>
+        <div className="h-2.5 bg-white/10 rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-gradient-to-r from-purple-500 to-green-500 rounded-full"
+            animate={{ width: `${progressPct}%` }}
+            transition={{ duration: 0.5 }}
+          />
+        </div>
+      </div>
+
+      {/* Card */}
+      <div className="flex flex-col items-center py-4">
+        <div
+          className="relative w-full max-w-2xl aspect-video cursor-pointer"
+          style={{ perspective: '1200px' }}
+          onClick={() => !flipped && handleFlip()}
+        >
+          <motion.div
+            className="w-full h-full"
+            style={{ transformStyle: 'preserve-3d' }}
+            animate={{ rotateY: flipped ? 180 : 0 }}
+            transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+          >
+            {/* Front */}
+            <div
+              className="absolute inset-0 rounded-2xl bg-[#18162e] border border-white/10 p-10 sm:p-12 flex flex-col items-center justify-center text-center"
+              style={{ backfaceVisibility: 'hidden' }}
+            >
+              <span className="text-xs font-semibold uppercase tracking-wider text-purple-400 mb-5">
+                Question · Card {currentIndex + 1}/{cards.length}
+              </span>
+              <p className="text-xl sm:text-2xl font-semibold text-white leading-relaxed max-w-lg">
+                {card.front}
+              </p>
+              <p className="text-sm text-gray-600 mt-8">Click to reveal answer</p>
+            </div>
+
+            {/* Back */}
+            <div
+              className="absolute inset-0 rounded-2xl bg-[#18162e] border border-purple-500/20 p-10 sm:p-12 flex flex-col items-center justify-center text-center"
+              style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+            >
+              <span className="text-xs font-semibold uppercase tracking-wider text-green-400 mb-5">
+                Answer
+              </span>
+              <p className="text-base sm:text-lg text-gray-300 leading-relaxed max-w-lg whitespace-pre-line">
+                {card.back}
+              </p>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Navigation & SRS actions */}
+        <div className="flex items-center gap-5 mt-8">
+          <button
+            onClick={goPrev}
+            className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Previous card"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+
+          <AnimatePresence>
+            {showActions && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="flex items-center gap-4"
+              >
+                <button
+                  onClick={() => handleRate('new')}
+                  className="px-5 py-3 text-sm font-medium rounded-xl border border-red-500/30 text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+                >
+                  Need Review
+                </button>
+                <button
+                  onClick={() => handleRate('learning')}
+                  className="px-5 py-3 text-sm font-medium rounded-xl border border-yellow-500/30 text-yellow-400 bg-yellow-500/10 hover:bg-yellow-500/20 transition-colors"
+                >
+                  Almost
+                </button>
+                <button
+                  onClick={() => handleRate('mastered')}
+                  className="px-5 py-3 text-sm font-semibold rounded-xl bg-green-500/80 hover:bg-green-500 text-white transition-colors"
+                >
+                  Got It
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <button
+            onClick={goNext}
+            className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Next card"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Mastery indicator */}
+        <div className="mt-5">
+          <MasteryBadge level={card.masteryLevel} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MasteryBadge({ level }: { level: Flashcard['masteryLevel'] }) {
+  const config = {
+    new: { label: 'New', color: 'text-gray-400 bg-white/5 border-white/10' },
+    learning: { label: 'Learning', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' },
+    mastered: { label: 'Mastered', color: 'text-green-400 bg-green-500/10 border-green-500/30' },
+  }[level];
+
+  return (
+    <span className={`px-4 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-full border ${config.color}`}>
+      {config.label}
+    </span>
+  );
+}
+
+// ── Tab 3: Practice Quiz ─────────────────────────────────────────────────────
+
+function QuizTab() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [score, setScore] = useState(0);
+  const [finished, setFinished] = useState(false);
+
+  const q = GENERATED_QUIZ[currentIndex];
+  const isCorrect = selected === q.correctIndex;
+  const answered = selected !== null;
+
+  function handleSelect(i: number) {
+    if (answered) return;
+    setSelected(i);
+    if (i === q.correctIndex) setScore((s) => s + 1);
+  }
+
+  function handleNext() {
+    if (currentIndex + 1 >= GENERATED_QUIZ.length) {
+      setFinished(true);
+      return;
+    }
+    setSelected(null);
+    setCurrentIndex((i) => i + 1);
+  }
+
+  function restart() {
+    setCurrentIndex(0);
+    setSelected(null);
+    setScore(0);
+    setFinished(false);
+  }
+
+  if (finished) {
+    const pct = Math.round((score / GENERATED_QUIZ.length) * 100);
+    return (
+      <div className="rounded-xl bg-[#18162e] border border-white/10 p-14 text-center">
+        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-green-500 flex items-center justify-center mx-auto mb-6">
+            <span className="text-3xl font-bold text-white">{pct}%</span>
+          </div>
+          <h3 className="text-2xl font-bold text-white mb-3">Quiz Complete!</h3>
+          <p className="text-base text-gray-400 mb-2">
+            You scored <span className="text-white font-semibold">{score}</span> out of{' '}
+            <span className="text-white font-semibold">{GENERATED_QUIZ.length}</span>
+          </p>
+          <p className="text-sm text-gray-500 mb-8">
+            {pct >= 80 ? 'Excellent work!' : pct >= 60 ? 'Good effort — review the tricky ones.' : 'Keep studying — you\'ll get there!'}
+          </p>
+          <button
+            onClick={restart}
+            className="px-8 py-3 text-sm font-semibold rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white transition-all"
+          >
+            Try Again
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Progress */}
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-gray-500">
+          Question {currentIndex + 1} of {GENERATED_QUIZ.length}
+        </span>
+        <span className="text-sm font-semibold text-purple-400">
+          Score: {score}/{currentIndex + (answered ? 1 : 0)}
+        </span>
+      </div>
+      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+        <motion.div
+          className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
+          animate={{ width: `${((currentIndex + (answered ? 1 : 0)) / GENERATED_QUIZ.length) * 100}%` }}
+          transition={{ duration: 0.3 }}
+        />
+      </div>
+
+      {/* Question */}
+      <div className="rounded-xl bg-[#18162e] border border-white/10 p-8">
+        <p className="text-lg sm:text-xl font-semibold text-white leading-relaxed">
+          {q.question}
+        </p>
+      </div>
+
+      {/* Options grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {q.options.map((opt, i) => {
+          const letter = String.fromCharCode(65 + i);
+          let borderColor = 'border-white/10 hover:border-purple-500/50';
+          let bg = 'bg-[#18162e]';
+          let icon = null;
+
+          if (answered) {
+            if (i === q.correctIndex) {
+              borderColor = 'border-green-500';
+              bg = 'bg-green-500/10';
+              icon = <Check className="w-5 h-5 text-green-400 shrink-0" />;
+            } else if (i === selected) {
+              borderColor = 'border-red-500';
+              bg = 'bg-red-500/10';
+              icon = <X className="w-5 h-5 text-red-400 shrink-0" />;
+            } else {
+              borderColor = 'border-white/5';
+            }
+          }
+
+          return (
+            <motion.button
+              key={i}
+              onClick={() => handleSelect(i)}
+              whileTap={!answered ? { scale: 0.98 } : undefined}
+              className={`${bg} border ${borderColor} rounded-xl p-5 text-left transition-all duration-200 ${
+                answered ? 'cursor-default' : 'cursor-pointer'
+              }`}
+            >
+              <div className="flex items-start gap-4">
+                <span
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${
+                    answered && i === q.correctIndex
+                      ? 'bg-green-500/20 text-green-400'
+                      : answered && i === selected
+                        ? 'bg-red-500/20 text-red-400'
+                        : 'bg-white/5 text-gray-500'
+                  }`}
+                >
+                  {letter}
+                </span>
+                <span className={`text-sm leading-relaxed pt-1 ${answered && i !== q.correctIndex && i !== selected ? 'text-gray-600' : 'text-gray-300'}`}>
+                  {opt}
+                </span>
+                {icon && <span className="ml-auto mt-1">{icon}</span>}
+              </div>
+            </motion.button>
+          );
+        })}
+      </div>
+
+      {/* Explanation + Next */}
+      <AnimatePresence>
+        {answered && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="space-y-5"
+          >
+            <div className={`p-6 rounded-xl ${isCorrect ? 'bg-green-900/20 border border-green-500/20' : 'bg-purple-900/20 border border-purple-500/20'}`}>
+              <p className={`text-sm font-semibold mb-2 ${isCorrect ? 'text-green-400' : 'text-purple-400'}`}>
+                {isCorrect ? 'Correct!' : 'Not quite — here\'s why:'}
+              </p>
+              <p className={`text-sm leading-relaxed ${isCorrect ? 'text-green-200/80' : 'text-purple-200/80'}`}>
+                {q.explanation}
+              </p>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={handleNext}
+                className="px-6 py-3 text-sm font-semibold rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white transition-all"
+              >
+                {currentIndex + 1 >= GENERATED_QUIZ.length ? 'See Results' : 'Next Question'}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

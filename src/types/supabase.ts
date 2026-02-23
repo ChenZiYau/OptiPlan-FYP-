@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      chat_messages: {
+        Row: {
+          id: string
+          user_id: string
+          sender: string
+          text: string
+          component_type: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          sender: string
+          text: string
+          component_type?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          sender?: string
+          text?: string
+          component_type?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       budgets: {
         Row: {
           category: string
@@ -34,6 +61,7 @@ export type Database = {
         Row: {
           id: string
           main_income: number
+          monthly_budget: number
           side_income: number
           starting_balance: number
           user_id: string
@@ -41,6 +69,7 @@ export type Database = {
         Insert: {
           id?: string
           main_income?: number
+          monthly_budget?: number
           side_income?: number
           starting_balance?: number
           user_id: string
@@ -48,6 +77,7 @@ export type Database = {
         Update: {
           id?: string
           main_income?: number
+          monthly_budget?: number
           side_income?: number
           starting_balance?: number
           user_id?: string
@@ -118,3 +148,6 @@ export type TransactionUpdate = Database['public']['Tables']['transactions']['Up
 export type BudgetRow = Database['public']['Tables']['budgets']['Row']
 export type BudgetInsert = Database['public']['Tables']['budgets']['Insert']
 export type BudgetUpdate = Database['public']['Tables']['budgets']['Update']
+
+export type ChatMessage = Database['public']['Tables']['chat_messages']['Row']
+export type ChatMessageInsert = Database['public']['Tables']['chat_messages']['Insert']

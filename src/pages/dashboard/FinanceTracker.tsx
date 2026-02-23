@@ -40,6 +40,7 @@ import {
   spendingTrends,
 } from '@/hooks/useFinanceData';
 import { AddTransactionModal } from '@/components/dashboard/AddTransactionModal';
+import { SetBudgetModal } from '@/components/dashboard/SetBudgetModal';
 import type { LucideIcon } from 'lucide-react';
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -51,11 +52,15 @@ function fmt(n: number) {
 
 /** Compact: $1.2k, $10k, $1.5m — used on stat cards */
 function fmtCompact(n: number) {
-  const abs = Math.abs(n);
-  const sign = n < 0 ? '-' : '';
+  const num = Number(n) || 0;
+  const abs = Math.abs(num);
+  const sign = num < 0 ? '-' : '';
   if (abs >= 1_000_000) {
     const v = abs / 1_000_000;
     return `${sign}$${v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)}m`;
+  }
+  if (abs >= 100_000) {
+    return `${sign}$${Math.round(abs / 1_000)}k`;
   }
   if (abs >= 1_000) {
     const v = abs / 1_000;
@@ -90,6 +95,7 @@ export function FinanceTracker() {
     transactions,
     budgets,
     totalBalance,
+    totalMonthlyBudget,
     budgetRemaining,
     todaySpending,
     weekSpending,
@@ -100,6 +106,7 @@ export function FinanceTracker() {
   } = useFinance();
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [budgetModalOpen, setBudgetModalOpen] = useState(false);
   const [pieRange, setPieRange] = useState<TimeRange>('month');
   const [trendRange, setTrendRange] = useState<TimeRange>('month');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -202,12 +209,20 @@ export function FinanceTracker() {
           <h1 className="text-xl font-bold text-white">Finance Tracker</h1>
           <p className="text-sm text-gray-400">Track spending, manage budgets, and plan finances</p>
         </div>
-        <button
-          onClick={() => setModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl bg-purple-500/80 hover:bg-purple-500 text-white transition-colors"
-        >
-          <Plus className="w-4 h-4" /> Add Expense
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setBudgetModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 hover:text-white transition-colors"
+          >
+            <Wallet className="w-4 h-4" /> Set Budget
+          </button>
+          <button
+            onClick={() => setModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl bg-purple-500/80 hover:bg-purple-500 text-white transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Add Expense
+          </button>
+        </div>
       </div>
 
       {/* ── Stat Cards ────────────────────────────────────────────────────── */}
@@ -240,7 +255,7 @@ export function FinanceTracker() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="relative rounded-xl bg-gradient-to-br from-green-500/20 to-green-500/5 border border-green-500/20 p-5 cursor-pointer hover:border-green-500/40 transition-colors"
+          className="group/bal relative rounded-xl bg-gradient-to-br from-green-500/20 to-green-500/5 border border-green-500/20 p-5 cursor-pointer hover:border-green-500/40 transition-colors"
           onClick={() => !balancePopover && openBalancePopover()}
         >
           <div className="flex items-start justify-between">
@@ -252,13 +267,30 @@ export function FinanceTracker() {
                 {fmtCompact(totalBalance)}
               </p>
               <p className="mt-1 text-xs text-gray-500">
-                Remaining: {fmtCompact(budgetRemaining)}
+                Budget left: {fmtCompact(budgetRemaining)} of {fmtCompact(totalMonthlyBudget)}
               </p>
             </div>
             <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
               <Wallet className="w-5 h-5 text-green-400" />
             </div>
           </div>
+
+          {/* Hover info card — appears below */}
+          {!balancePopover && (
+            <div className="hidden group-hover/bal:block absolute z-40 top-full left-0 right-0 mt-2 rounded-xl bg-[#1a1735] border border-white/10 p-4 shadow-2xl shadow-black/50">
+              {/* Arrow */}
+              <div className="absolute bottom-full left-6 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[6px] border-b-[#1a1735]" />
+              <p className="text-xs font-semibold text-white mb-1.5">What is Total Balance?</p>
+              <p className="text-[11px] text-gray-400 leading-relaxed">
+                This is your <span className="text-green-400 font-medium">overall wealth</span> — starting balance + income minus all expenses. Your monthly budget of <span className="text-purple-400 font-semibold">{fmtCompact(totalMonthlyBudget)}</span> is separate.
+              </p>
+              <div className="mt-2.5 pt-2 border-t border-white/10">
+                <p className="text-[11px] text-gray-500 leading-relaxed">
+                  To change your monthly budget, use the <span className="text-purple-300 font-medium">"Set Budget"</span> button above or scroll to the <span className="text-purple-300 font-medium">Budget Overview</span> section below.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Popout edit card */}
           <AnimatePresence>
@@ -359,14 +391,38 @@ export function FinanceTracker() {
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{
-                        background: '#1e1b3a',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: 8,
-                        color: '#fff',
-                        fontSize: 12,
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const entry = payload[0];
+                        const name = entry.name as string;
+                        const value = entry.value as number;
+                        const total = donutData.reduce((s, d) => s + d.value, 0);
+                        const pct = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
+                        const color =
+                          CATEGORY_COLORS[name] ??
+                          DONUT_COLORS[donutData.findIndex((d) => d.name === name) % DONUT_COLORS.length];
+                        return (
+                          <div className="rounded-xl bg-[#1e1b3a] border border-white/10 px-4 py-3 shadow-xl min-w-[180px]">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div
+                                className="w-3 h-3 rounded-full shrink-0"
+                                style={{ backgroundColor: color }}
+                              />
+                              <span className="text-sm font-bold text-white">{name}</span>
+                            </div>
+                            <div className="flex items-baseline justify-between gap-4">
+                              <span className="text-xs text-gray-400">Amount</span>
+                              <span className="text-base font-bold" style={{ color }}>
+                                ${fmt(value)}
+                              </span>
+                            </div>
+                            <div className="flex items-baseline justify-between gap-4 mt-1">
+                              <span className="text-xs text-gray-400">Share</span>
+                              <span className="text-sm font-semibold text-gray-200">{pct}%</span>
+                            </div>
+                          </div>
+                        );
                       }}
-                      formatter={(value: number) => [`$${fmt(value)}`, 'Spent']}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -413,7 +469,7 @@ export function FinanceTracker() {
                   return (
                     <div
                       key={tx.id}
-                      className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.03] border border-white/5 group"
+                      className="group/tx relative flex items-center gap-3 p-3 rounded-lg bg-white/[0.03] border border-white/5 group"
                     >
                       <div
                         className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
@@ -437,6 +493,15 @@ export function FinanceTracker() {
                       <span className="text-sm font-semibold text-red-400 mr-1">
                         -${fmt(Number(tx.amount))}
                       </span>
+
+                      {/* Hover tooltip */}
+                      {tx.description && (
+                        <div className="absolute z-30 bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/tx:block pointer-events-none">
+                          <div className="bg-[#0B0A1A] text-xs text-gray-300 border border-white/10 rounded-lg p-2 shadow-xl max-w-[260px] whitespace-normal">
+                            {tx.description}
+                          </div>
+                        </div>
+                      )}
 
                       {deleteConfirm === tx.id ? (
                         <div className="flex items-center gap-1">
@@ -543,6 +608,7 @@ export function FinanceTracker() {
       />
 
       <AddTransactionModal open={modalOpen} onOpenChange={setModalOpen} />
+      <SetBudgetModal open={budgetModalOpen} onOpenChange={setBudgetModalOpen} />
     </div>
   );
 }

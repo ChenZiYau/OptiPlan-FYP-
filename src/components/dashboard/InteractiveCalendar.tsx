@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, CheckSquare, CalendarDays, BookOpen, GraduationCap } from 'lucide-react';
+import { ChevronLeft, ChevronRight, GraduationCap, Clock } from 'lucide-react';
 import { useDashboard } from '@/contexts/DashboardContext';
 import type { DashboardItem, ScheduleEntry } from '@/types/dashboard';
 
@@ -20,13 +20,30 @@ function toISO(year: number, month: number, day: number) {
 }
 
 const importanceLabels: Record<number, string> = { 1: 'Low', 2: 'Medium', 3: 'High' };
-const importanceColors: Record<number, string> = { 1: '#22c55e', 2: '#f59e0b', 3: '#ef4444' };
-
-const typeIcons = {
-  task: CheckSquare,
-  event: CalendarDays,
-  study: BookOpen,
+const importanceColors: Record<number, { text: string; bg: string; border: string }> = {
+  1: { text: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20' },
+  2: { text: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' },
+  3: { text: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500/20' },
 };
+
+const typeLabels: Record<string, string> = {
+  task: 'TASK',
+  event: 'EVENT',
+  study: 'STUDY',
+};
+
+const typeEmojis: Record<string, string> = {
+  task: '\ud83d\udcdd',
+  event: '\ud83d\udcc5',
+  study: '\ud83d\udcda',
+};
+
+function formatTime12h(time: string): string {
+  const [h, m] = time.split(':').map(Number);
+  const ampm = h >= 12 ? 'pm' : 'am';
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${h12}:${String(m).padStart(2, '0')}${ampm}`;
+}
 
 interface InteractiveCalendarProps {
   showSchedules?: boolean;
@@ -55,7 +72,7 @@ export function InteractiveCalendar({ showSchedules = false, mondayFirst = false
     return () => document.removeEventListener('mousedown', handleClick);
   }, [selectedDate]);
 
-  // Build lookup: date → items
+  // Build lookup: date -> items
   const itemsByDate = useMemo(() => {
     const map = new Map<string, DashboardItem[]>();
     for (const item of items) {
@@ -66,7 +83,7 @@ export function InteractiveCalendar({ showSchedules = false, mondayFirst = false
     return map;
   }, [items]);
 
-  // Build lookup: dayOfWeek → schedule entries
+  // Build lookup: dayOfWeek -> schedule entries
   const schedulesByDay = useMemo(() => {
     const map = new Map<number, ScheduleEntry[]>();
     for (const s of schedules) {
@@ -79,31 +96,30 @@ export function InteractiveCalendar({ showSchedules = false, mondayFirst = false
     return map;
   }, [schedules]);
 
-  // Get items and schedules for a specific date
   function getDateItems(dateISO: string, dayOfWeek: number) {
     const dateItems = itemsByDate.get(dateISO) ?? [];
     const daySchedules = schedulesByDay.get(dayOfWeek) ?? [];
     return { dateItems, daySchedules };
   }
 
-  // Get dot colors for a date
-  function getDotsForDate(dateISO: string, dayOfWeek: number): string[] {
+  // Get pills (short names + colors) for display inside calendar cells
+  function getPillsForDate(dateISO: string, dayOfWeek: number): { label: string; color: string }[] {
     const { dateItems, daySchedules } = getDateItems(dateISO, dayOfWeek);
-    const colors: string[] = [];
-    const seen = new Set<string>();
+    const pills: { label: string; color: string }[] = [];
+
     for (const item of dateItems) {
-      if (!seen.has(item.color)) {
-        seen.add(item.color);
-        colors.push(item.color);
-      }
+      pills.push({ label: item.title, color: item.color });
     }
     for (const s of daySchedules) {
-      if (!seen.has(s.color)) {
-        seen.add(s.color);
-        colors.push(s.color);
-      }
+      // Create short abbreviation for subject names
+      const words = s.subjectName.split(/\s+/);
+      const abbr = words.length > 1
+        ? words.map((w) => w[0]).join('').toUpperCase()
+        : s.subjectName.slice(0, 4).toUpperCase();
+      pills.push({ label: abbr, color: s.color });
     }
-    return colors.slice(0, 4);
+
+    return pills.slice(0, 3); // Max 3 pills per cell
   }
 
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
@@ -133,7 +149,6 @@ export function InteractiveCalendar({ showSchedules = false, mondayFirst = false
 
   const weekdays = mondayFirst ? WEEKDAYS_MON : WEEKDAYS_SUN;
 
-  // Build the grid cells — adjust offset when Monday is first day
   const cells: (number | null)[] = [];
   const offset = mondayFirst ? (firstDay === 0 ? 6 : firstDay - 1) : firstDay;
   for (let i = 0; i < offset; i++) cells.push(null);
@@ -172,101 +187,164 @@ export function InteractiveCalendar({ showSchedules = false, mondayFirst = false
         ))}
       </div>
 
-      {/* Day grid */}
-      <div className="grid grid-cols-7 relative">
+      {/* Day grid — taller cells for pill display */}
+      <div className="grid grid-cols-7 gap-px relative">
         {cells.map((day, i) => {
           if (day === null) {
-            return <div key={`empty-${i}`} className="aspect-square" />;
+            return <div key={`empty-${i}`} className="min-h-[72px]" />;
           }
 
           const dateISO = toISO(viewYear, viewMonth, day);
           const dayOfWeek = new Date(viewYear, viewMonth, day).getDay();
-          const dots = getDotsForDate(dateISO, dayOfWeek);
+          const pills = getPillsForDate(dateISO, dayOfWeek);
           const isToday = dateISO === todayISO;
           const isSelected = dateISO === selectedDate;
+          const { dateItems, daySchedules } = getDateItems(dateISO, dayOfWeek);
+          const totalItems = dateItems.length + daySchedules.length;
+          const overflowCount = totalItems - 3;
 
           return (
             <div key={dateISO} className="relative">
               <button
                 onClick={() => setSelectedDate(isSelected ? null : dateISO)}
-                className={`w-full aspect-square flex flex-col items-center justify-center rounded-lg text-sm transition-all ${
+                className={`w-full min-h-[72px] flex flex-col items-start p-1 rounded-lg text-sm transition-all ${
                   isSelected
-                    ? 'bg-purple-600 text-white'
+                    ? 'bg-purple-600/20 ring-1 ring-purple-500/50'
                     : isToday
-                      ? 'bg-purple-500/20 text-purple-300 font-semibold'
-                      : 'text-gray-300 hover:bg-white/5'
+                      ? 'bg-purple-500/10'
+                      : 'hover:bg-white/[0.03]'
                 }`}
               >
-                <span>{day}</span>
-                {dots.length > 0 && (
-                  <div className="flex gap-0.5 mt-0.5">
-                    {dots.map((c, j) => (
-                      <div key={j} className="w-1 h-1 rounded-full" style={{ backgroundColor: c }} />
+                {/* Date number */}
+                <span className={`text-xs font-medium ml-0.5 ${
+                  isToday
+                    ? 'bg-purple-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold'
+                    : isSelected
+                      ? 'text-purple-300 font-semibold'
+                      : 'text-gray-400'
+                }`}>
+                  {day}
+                </span>
+
+                {/* Event pills */}
+                {pills.length > 0 && (
+                  <div className="w-full mt-0.5 space-y-0.5">
+                    {pills.map((pill, j) => (
+                      <div
+                        key={j}
+                        className="truncate text-[9px] leading-tight px-1 py-[1px] rounded-sm w-full text-left font-medium"
+                        style={{
+                          backgroundColor: `${pill.color}20`,
+                          color: pill.color,
+                        }}
+                      >
+                        {pill.label}
+                      </div>
                     ))}
+                    {overflowCount > 0 && (
+                      <div className="text-[9px] text-gray-500 pl-1">+{overflowCount} more</div>
+                    )}
                   </div>
                 )}
               </button>
 
-              {/* Popover */}
+              {/* ── Detailed Popover ── */}
               <AnimatePresence>
                 {isSelected && (
                   <motion.div
                     ref={popoverRef}
-                    initial={{ opacity: 0, scale: 0.9, y: -4 }}
+                    initial={{ opacity: 0, scale: 0.92, y: -4 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: -4 }}
+                    exit={{ opacity: 0, scale: 0.92, y: -4 }}
                     transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                    className="absolute z-50 top-full mt-1 left-1/2 -translate-x-1/2 w-64 bg-[#1e1b3a] border border-white/10 rounded-xl shadow-2xl p-3"
+                    className="absolute z-50 top-full mt-1.5 left-1/2 -translate-x-1/2 w-64 bg-[#131127] border border-white/10 rounded-xl shadow-2xl shadow-black/60 flex flex-col text-center overflow-hidden"
                   >
-                    <p className="text-xs font-semibold text-white mb-2">
-                      {new Date(viewYear, viewMonth, day).toLocaleDateString('default', { weekday: 'long', month: 'short', day: 'numeric' })}
-                    </p>
+                    {/* Header */}
+                    <div className="px-4 pt-4 pb-3 border-b border-white/10">
+                      <p className="text-sm font-bold text-white">
+                        {new Date(viewYear, viewMonth, day).toLocaleDateString('default', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      </p>
+                      <p className="text-xs text-purple-400 font-medium mt-0.5">
+                        {totalItems} {totalItems === 1 ? 'item' : 'items'}
+                      </p>
+                    </div>
 
-                    {(() => {
-                      const { dateItems, daySchedules } = getDateItems(dateISO, dayOfWeek);
-                      const hasContent = dateItems.length > 0 || daySchedules.length > 0;
-
-                      if (!hasContent) {
-                        return <p className="text-xs text-gray-500">No items for this day</p>;
-                      }
-
-                      return (
-                        <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                    {/* Body */}
+                    <div className="px-4 py-3 max-h-64 overflow-y-auto">
+                      {totalItems === 0 ? (
+                        <p className="text-xs text-gray-500 py-2">No items for this day</p>
+                      ) : (
+                        <div className="space-y-4">
+                          {/* Dashboard items (tasks, events, study) */}
                           {dateItems.map((item) => {
-                            const Icon = typeIcons[item.type];
+                            const impStyle = importanceColors[item.importance];
+                            const hasTime = item.type !== 'task' && 'startTime' in item;
+                            const hasSubject = item.type === 'study' && 'subject' in item;
+
                             return (
-                              <div key={item.id} className="flex items-start gap-2 p-1.5 rounded-lg bg-white/[0.03]">
-                                <div className="w-5 h-5 rounded flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: `${item.color}20` }}>
-                                  <Icon className="w-3 h-3" style={{ color: item.color }} />
+                              <div key={item.id} className="py-1">
+                                {/* Type label */}
+                                <div className="flex items-center justify-center gap-1.5">
+                                  <span className="text-xs">{typeEmojis[item.type]}</span>
+                                  <span className="text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
+                                    {typeLabels[item.type]}
+                                  </span>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-medium text-white truncate">{item.title}</p>
-                                  <div className="flex items-center gap-1.5 mt-0.5">
-                                    <span className="text-[10px] capitalize text-gray-500">{item.type}</span>
-                                    <div className="w-1 h-1 rounded-full" style={{ backgroundColor: importanceColors[item.importance] }} />
-                                    <span className="text-[10px]" style={{ color: importanceColors[item.importance] }}>
-                                      {importanceLabels[item.importance]}
-                                    </span>
+
+                                {/* Title */}
+                                <p className="text-lg font-bold text-white mt-1">{item.title}</p>
+
+                                {/* Importance pill */}
+                                <div className={`${impStyle.bg} ${impStyle.text} ${impStyle.border} border rounded-full px-3 py-1 text-xs mx-auto mt-2 w-max font-medium`}>
+                                  {importanceLabels[item.importance]}
+                                </div>
+
+                                {/* Time pill */}
+                                {hasTime && (
+                                  <div className="bg-[#18162e] text-white rounded-full px-3 py-1.5 text-xs mx-auto mt-3 w-max flex items-center gap-2">
+                                    <Clock className="w-3 h-3 text-gray-400" />
+                                    <span>{formatTime12h((item as { startTime: string }).startTime)} – {formatTime12h((item as { endTime: string }).endTime)}</span>
                                   </div>
-                                </div>
+                                )}
+
+                                {/* Subject */}
+                                {hasSubject && (
+                                  <p className="text-purple-400 text-sm mt-3">{(item as { subject: string }).subject}</p>
+                                )}
                               </div>
                             );
                           })}
 
+                          {/* Schedule entries */}
                           {daySchedules.map((s) => (
-                            <div key={s.id} className="flex items-start gap-2 p-1.5 rounded-lg bg-white/[0.03]">
-                              <div className="w-5 h-5 rounded flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: `${s.color}20` }}>
-                                <GraduationCap className="w-3 h-3" style={{ color: s.color }} />
+                            <div key={s.id} className="py-1">
+                              {/* Type label */}
+                              <div className="flex items-center justify-center gap-1.5">
+                                <GraduationCap className="w-3 h-3 text-slate-400" />
+                                <span className="text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
+                                  CLASS
+                                </span>
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium text-white truncate">{s.subjectName}</p>
-                                <p className="text-[10px] text-gray-500">{s.startTime} – {s.endTime}</p>
+
+                              {/* Title */}
+                              <p className="text-lg font-bold text-white mt-1">{s.subjectName}</p>
+
+                              {/* Time pill */}
+                              <div className="bg-[#18162e] text-white rounded-full px-3 py-1.5 text-xs mx-auto mt-3 w-max flex items-center gap-2">
+                                <Clock className="w-3 h-3 text-gray-400" />
+                                <span>{formatTime12h(s.startTime)} – {formatTime12h(s.endTime)}</span>
+                              </div>
+
+                              {/* Color indicator */}
+                              <div className="flex items-center justify-center gap-1.5 mt-3">
+                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+                                <span className="text-sm" style={{ color: s.color }}>{s.subjectName}</span>
                               </div>
                             </div>
                           ))}
                         </div>
-                      );
-                    })()}
+                      )}
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>

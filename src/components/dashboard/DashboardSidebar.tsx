@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutGrid, DollarSign, CheckSquare, CalendarDays,
-  Users, Bot, LogOut, X, Plus,
+  Users, Bot, BookOpen, LogOut, X, Plus,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDashboard } from '@/contexts/DashboardContext';
@@ -15,6 +15,7 @@ const navItems: DashboardNavItem[] = [
   { label: 'Schedules', href: '/dashboard/schedules', icon: CalendarDays },
   { label: 'Collaboration', href: '/dashboard/collab', icon: Users },
   { label: 'AI ChatBot', href: '/dashboard/chatbot', icon: Bot },
+  { label: 'Study Hub', href: '/dashboard/studyhub', icon: BookOpen },
 ];
 
 interface DashboardSidebarProps {

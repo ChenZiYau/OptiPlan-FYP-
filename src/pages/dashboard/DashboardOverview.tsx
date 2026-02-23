@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CheckSquare, Clock, TrendingUp, DollarSign, Wallet, Save, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import { StatCard } from '@/components/admin/StatCard';
 import { Progress } from '@/components/ui/progress';
 import { InteractiveCalendar } from '@/components/dashboard/InteractiveCalendar';
@@ -22,11 +23,15 @@ function fmt(n: number) {
 }
 
 function fmtCompact(n: number) {
-  const abs = Math.abs(n);
-  const sign = n < 0 ? '-' : '';
+  const num = Number(n) || 0;
+  const abs = Math.abs(num);
+  const sign = num < 0 ? '-' : '';
   if (abs >= 1_000_000) {
     const v = abs / 1_000_000;
     return `${sign}$${v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)}m`;
+  }
+  if (abs >= 100_000) {
+    return `${sign}$${Math.round(abs / 1_000)}k`;
   }
   if (abs >= 1_000) {
     const v = abs / 1_000;
@@ -41,6 +46,7 @@ export function DashboardOverview() {
     settings,
     transactions,
     totalBalance,
+    totalMonthlyBudget,
     budgetRemaining,
     monthSpending,
     todaySpending,
@@ -68,6 +74,7 @@ export function DashboardOverview() {
       main_income: parseFloat(mainVal) || 0,
       side_income: parseFloat(sideVal) || 0,
     });
+    toast.success('Settings saved');
     setStartingBal(null);
     setMainIncome(null);
     setSideIncome(null);
@@ -175,6 +182,7 @@ export function DashboardOverview() {
                 <p className={`text-base font-bold mt-0.5 ${budgetRemaining >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {fmtCompact(budgetRemaining)}
                 </p>
+                <p className="text-[10px] text-gray-600 mt-0.5">of {fmtCompact(totalMonthlyBudget)}</p>
               </div>
               <div className="rounded-lg bg-white/[0.03] border border-white/5 p-3">
                 <p className="text-[10px] text-gray-500 uppercase tracking-wider">This Month</p>
@@ -193,15 +201,23 @@ export function DashboardOverview() {
             ) : (
               <div className="space-y-2">
                 {recentExpenses.map((tx) => (
-                  <div key={tx.id} className="flex items-center gap-3 p-2 rounded-lg bg-white/[0.02]">
+                  <div key={tx.id} className="group/tx relative flex items-center gap-3 p-2 rounded-lg bg-white/[0.02]">
                     <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
                       <DollarSign className="w-4 h-4 text-gray-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white truncate">{tx.description || tx.category}</p>
+                      <p className="text-sm font-medium text-white truncate">{tx.description || tx.category}</p>
                       <p className="text-xs text-gray-500">{tx.category} · {tx.transaction_date}</p>
                     </div>
                     <span className="text-sm font-semibold text-red-400">-${fmt(Number(tx.amount))}</span>
+                    {/* Hover tooltip */}
+                    {tx.description && (
+                      <div className="absolute z-30 bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/tx:block pointer-events-none">
+                        <div className="bg-[#0B0A1A] text-xs text-gray-300 border border-white/10 rounded-lg p-2 shadow-xl max-w-[220px] whitespace-normal">
+                          {tx.description}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
