@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutGrid, DollarSign, CheckSquare, CalendarDays,
-  Users, Bot, BookOpen, LogOut, X, Plus, Sparkles, Heart,
+  Users, Bot, BookOpen, LogOut, X, Plus, Sparkles, Heart, Settings,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { HoverTip } from '@/components/HoverTip';
@@ -126,6 +126,22 @@ export function DashboardSidebar({ isOpen, onClose }: DashboardSidebarProps) {
             })}
           </div>
         </nav>
+
+        {/* Settings link */}
+        <div className="px-3 pb-2 shrink-0">
+          <Link
+            to="/dashboard/settings"
+            onClick={onClose}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+              isActive('/dashboard/settings')
+                ? 'bg-purple-900/20 text-white border-l-4 border-purple-500 pl-2'
+                : 'text-gray-400 hover:text-white hover:bg-white/5 border-l-4 border-transparent pl-2'
+            }`}
+          >
+            <Settings className={`w-[18px] h-[18px] ${isActive('/dashboard/settings') ? 'text-purple-400' : ''}`} />
+            Settings
+          </Link>
+        </div>
 
         {/* User profile */}
         <div className="px-3 pb-4 shrink-0">

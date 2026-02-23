@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   Users, Send, Plus, ChevronDown, Link, FileText, Calendar,
   Clock, CheckCircle2, Circle, ArrowRight, FolderOpen, Key,
@@ -49,17 +50,10 @@ interface TimeSlot {
 
 // ── Mock Data ───────────────────────────────────────────────
 
-const PROJECTS: GroupProject[] = [
-  { id: 'p1', name: 'CS 301 — Final Project', joinCode: 'CS301-XK9' },
-  { id: 'p2', name: 'Marketing Plan — Group B', joinCode: 'MKT-7QZ' },
-];
+const PROJECTS: GroupProject[] = [];
 
 const MEMBERS: GroupMember[] = [
   { userId: 'me', name: 'You', initials: 'YO', color: 'bg-purple-500', isOnline: true, role: 'admin' },
-  { userId: 'u2', name: 'Alex Kim', initials: 'AK', color: 'bg-blue-500', isOnline: true, role: 'member' },
-  { userId: 'u3', name: 'Sara Chen', initials: 'SC', color: 'bg-pink-500', isOnline: true, role: 'member' },
-  { userId: 'u4', name: 'Jamal Brown', initials: 'JB', color: 'bg-amber-500', isOnline: false, role: 'member' },
-  { userId: 'u5', name: 'Priya Patel', initials: 'PP', color: 'bg-emerald-500', isOnline: false, role: 'member' },
 ];
 
 const INITIAL_MESSAGES: ChatMessage[] = [];
@@ -72,11 +66,11 @@ const HOURS = [9, 10, 11, 12, 13, 14, 15, 16];
 const SCHEDULE: TimeSlot[] = (() => {
   const slots: TimeSlot[] = [];
   const pattern: Record<string, ('free' | 'partial' | 'blocked')[]> = {
-    Mon: ['free', 'free', 'blocked', 'blocked', 'partial', 'free', 'free', 'free'],
-    Tue: ['blocked', 'blocked', 'free', 'free', 'free', 'free', 'partial', 'blocked'],
-    Wed: ['free', 'free', 'free', 'partial', 'free', 'free', 'free', 'free'],
-    Thu: ['partial', 'blocked', 'blocked', 'free', 'free', 'partial', 'blocked', 'blocked'],
-    Fri: ['free', 'free', 'free', 'free', 'blocked', 'blocked', 'partial', 'free'],
+    Mon: ['free', 'free', 'free', 'free', 'free', 'free', 'free', 'free'],
+    Tue: ['free', 'free', 'free', 'free', 'free', 'free', 'free', 'free'],
+    Wed: ['free', 'free', 'free', 'free', 'free', 'free', 'free', 'free'],
+    Thu: ['free', 'free', 'free', 'free', 'free', 'free', 'free', 'free'],
+    Fri: ['free', 'free', 'free', 'free', 'free', 'free', 'free', 'free'],
   };
   DAYS.forEach(day => {
     HOURS.forEach((hour, i) => {
@@ -108,8 +102,10 @@ const CATEGORY_META: Record<ResourceCategory, { label: string; emoji: string }> 
 
 // ── Helpers ─────────────────────────────────────────────────
 
+const DEFAULT_MEMBER: GroupMember = { userId: 'me', name: 'You', initials: 'YO', color: 'bg-purple-500', isOnline: true, role: 'admin' };
+
 function getMember(id: string): GroupMember {
-  return MEMBERS.find(m => m.userId === id) || MEMBERS[0];
+  return MEMBERS.find(m => m.userId === id) || DEFAULT_MEMBER;
 }
 
 function formatTime(d: Date) {
@@ -132,7 +128,7 @@ const fadeUp = {
 // ── Component ───────────────────────────────────────────────
 
 export function CollabPage() {
-  const [selectedProject, setSelectedProject] = useState<GroupProject>(PROJECTS[0]);
+  const [selectedProject, setSelectedProject] = useState<GroupProject | null>(PROJECTS[0] ?? null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [tasks, setTasks] = useState<SharedTask[]>(INITIAL_TASKS);
@@ -168,7 +164,7 @@ export function CollabPage() {
 
   function addTask() {
     const title = newTaskTitle.trim();
-    if (!title) return;
+    if (!title || !selectedProject) return;
     setTasks(prev => [...prev, {
       id: `t${Date.now()}`,
       projectId: selectedProject.id,
@@ -180,10 +176,12 @@ export function CollabPage() {
     setShowNewTask(false);
   }
 
-  const projectTasks = tasks.filter(t => t.projectId === selectedProject.id);
+  const projectTasks = selectedProject ? tasks.filter(t => t.projectId === selectedProject.id) : [];
   const todoTasks = projectTasks.filter(t => t.status === 'todo');
   const doingTasks = projectTasks.filter(t => t.status === 'doing');
   const doneTasks = projectTasks.filter(t => t.status === 'done');
+
+  const hasProjects = PROJECTS.length > 0;
 
   return (
     <motion.div
@@ -194,54 +192,90 @@ export function CollabPage() {
     >
       {/* ── Header ─────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="relative">
-          <HoverTip label="Switch between your group projects">
-            <button
-              onClick={() => setShowDropdown(!showDropdown)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.03] border border-white/10 text-white hover:bg-white/[0.06] transition-colors"
-            >
-              <Users className="w-4 h-4 text-purple-400" />
-              <span className="font-semibold text-sm">{selectedProject.name}</span>
-              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
-            </button>
-          </HoverTip>
-          <AnimatePresence>
-            {showDropdown && (
-              <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                className="absolute z-50 mt-2 w-64 rounded-xl bg-[#18162e] border border-white/10 shadow-xl overflow-hidden"
+        {hasProjects && selectedProject ? (
+          <div className="relative">
+            <HoverTip label="Switch between your group projects">
+              <button
+                onClick={() => setShowDropdown(!showDropdown)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.03] border border-white/10 text-white hover:bg-white/[0.06] transition-colors"
               >
-                {PROJECTS.map(p => (
-                  <button
-                    key={p.id}
-                    onClick={() => { setSelectedProject(p); setShowDropdown(false); }}
-                    className={`w-full text-left px-4 py-3 text-sm hover:bg-white/[0.06] transition-colors ${p.id === selectedProject.id ? 'text-purple-400 bg-white/[0.03]' : 'text-gray-300'}`}
-                  >
-                    <div className="font-medium">{p.name}</div>
-                    <div className="text-xs text-gray-500 mt-0.5">Code: {p.joinCode}</div>
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                <Users className="w-4 h-4 text-purple-400" />
+                <span className="font-semibold text-sm">{selectedProject.name}</span>
+                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
+              </button>
+            </HoverTip>
+            <AnimatePresence>
+              {showDropdown && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  className="absolute z-50 mt-2 w-64 rounded-xl bg-[#18162e] border border-white/10 shadow-xl overflow-hidden"
+                >
+                  {PROJECTS.map(p => (
+                    <button
+                      key={p.id}
+                      onClick={() => { setSelectedProject(p); setShowDropdown(false); }}
+                      className={`w-full text-left px-4 py-3 text-sm hover:bg-white/[0.06] transition-colors ${p.id === selectedProject.id ? 'text-purple-400 bg-white/[0.03]' : 'text-gray-300'}`}
+                    >
+                      <div className="font-medium">{p.name}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Code: {p.joinCode}</div>
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-purple-400" />
+            <span className="font-semibold text-sm text-white">Collaboration</span>
+          </div>
+        )}
 
         <div className="flex gap-2">
           <HoverTip label="Create a new group project">
-            <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-semibold hover:opacity-90 transition-opacity">
+            <button
+              onClick={() => toast('Group creation coming soon!', { description: 'This feature is under development.' })}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-semibold hover:opacity-90 transition-opacity"
+            >
               <Plus className="w-4 h-4" /> Create Group
             </button>
           </HoverTip>
-          <HoverTip label="Copy invite link to share with teammates">
-            <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-white/10 text-gray-300 text-sm hover:bg-white/[0.06] transition-colors">
-              <Link className="w-4 h-4" /> Invite Members
-            </button>
-          </HoverTip>
+          {hasProjects && (
+            <HoverTip label="Copy invite link to share with teammates">
+              <button
+                onClick={() => { if (selectedProject) { navigator.clipboard.writeText(selectedProject.joinCode); toast.success('Invite code copied to clipboard!'); } else { toast('Invite members coming soon!', { description: 'Create a group first.' }); } }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-white/10 text-gray-300 text-sm hover:bg-white/[0.06] transition-colors"
+              >
+                <Link className="w-4 h-4" /> Invite Members
+              </button>
+            </HoverTip>
+          )}
         </div>
       </div>
 
+      {/* ── Empty State ─────────────────────────────────── */}
+      {!hasProjects ? (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center justify-center py-24 text-center"
+        >
+          <div className="w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-5">
+            <Users className="w-8 h-8 text-purple-400" />
+          </div>
+          <h2 className="text-lg font-semibold text-white mb-2">No group projects yet</h2>
+          <p className="text-sm text-gray-500 mb-6 max-w-sm">Create a group to start collaborating with teammates — share tasks, chat, match schedules, and more.</p>
+          <button
+            onClick={() => toast('Group creation coming soon!', { description: 'This feature is under development.' })}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold hover:opacity-90 transition-opacity"
+          >
+            <Plus className="w-5 h-5" /> Create Group
+          </button>
+        </motion.div>
+      ) : (
+      <>
       {/* ── Active Members ─────────────────────────────── */}
       <div className="flex items-center gap-3">
         <div className="flex -space-x-2">
@@ -479,7 +513,10 @@ export function CollabPage() {
 
             <div className="mt-3 text-right">
               <HoverTip label="Suggest a meeting during a free slot">
-                <button className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1 ml-auto">
+                <button
+                  onClick={() => toast('Meeting proposal coming soon!', { description: 'Scheduling integration is under development.' })}
+                  className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1 ml-auto"
+                >
                   <Clock className="w-3.5 h-3.5" /> Propose Meeting on Free Slot
                 </button>
               </HoverTip>
@@ -490,6 +527,8 @@ export function CollabPage() {
 
       {/* ── Resource Vault ────────────────────────────── */}
       <ResourceVault />
+      </>
+      )}
     </motion.div>
   );
 }

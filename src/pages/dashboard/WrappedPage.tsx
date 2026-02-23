@@ -3,20 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Download, Sparkles, Trophy, BookOpen, DollarSign, CheckCircle2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { HoverTip } from '@/components/HoverTip';
+import { useDashboard } from '@/contexts/DashboardContext';
+import { useFinance } from '@/contexts/FinanceContext';
 
-// ── Mock semester data ──────────────────────────────────────────────────────
-
-const WRAPPED_DATA = {
-  tasksCompleted: 0,
-  totalTasks: 0,
-  moneySaved: 0,
-  totalBudget: 0,
-  flashcardsMastered: 0,
-  focusHours: 0,
-  topSubject: '—',
-  streakDays: 0,
-  percentile: 0,
-};
+// Wrapped data will be computed dynamically inside the component
 
 // ── Animated counter hook ───────────────────────────────────────────────────
 
@@ -48,13 +38,26 @@ function useAnimatedCounter(target: number, duration = 2000, active = false) {
 
 // ── Slide definitions ───────────────────────────────────────────────────────
 
-interface SlideProps {
-  active: boolean;
+interface WrappedData {
+  tasksCompleted: number;
+  totalTasks: number;
+  moneySaved: number;
+  totalBudget: number;
+  flashcardsMastered: number;
+  focusHours: number;
+  topSubject: string;
+  streakDays: number;
+  percentile: number;
 }
 
-function SlideProductivity({ active }: SlideProps) {
-  const count = useAnimatedCounter(WRAPPED_DATA.tasksCompleted, 2500, active);
-  const pct = Math.round((WRAPPED_DATA.tasksCompleted / WRAPPED_DATA.totalTasks) * 100);
+interface SlideProps {
+  active: boolean;
+  data: WrappedData;
+}
+
+function SlideProductivity({ active, data }: SlideProps) {
+  const count = useAnimatedCounter(data.tasksCompleted, 2500, active);
+  const pct = data.totalTasks > 0 ? Math.round((data.tasksCompleted / data.totalTasks) * 100) : 0;
 
   return (
     <div className="flex flex-col items-center justify-center h-full text-center px-8">
@@ -115,9 +118,9 @@ function SlideProductivity({ active }: SlideProps) {
   );
 }
 
-function SlideFinance({ active }: SlideProps) {
-  const saved = useAnimatedCounter(WRAPPED_DATA.moneySaved, 2000, active);
-  const pctSaved = Math.round((WRAPPED_DATA.moneySaved / WRAPPED_DATA.totalBudget) * 100);
+function SlideFinance({ active, data }: SlideProps) {
+  const saved = useAnimatedCounter(data.moneySaved, 2000, active);
+  const pctSaved = data.totalBudget > 0 ? Math.round((data.moneySaved / data.totalBudget) * 100) : 0;
 
   return (
     <div className="flex flex-col items-center justify-center h-full text-center px-8">
@@ -156,7 +159,7 @@ function SlideFinance({ active }: SlideProps) {
         transition={{ delay: 0.8 }}
         className="text-xl text-white font-semibold mb-6"
       >
-        saved from your ${WRAPPED_DATA.totalBudget} budget
+        saved from your ${data.totalBudget} budget
       </motion.p>
 
       {/* Mini bar chart */}
@@ -185,17 +188,17 @@ function SlideFinance({ active }: SlideProps) {
           />
         </div>
         <div className="flex justify-between text-[11px] mt-1.5">
-          <span className="text-gray-400">${WRAPPED_DATA.totalBudget - WRAPPED_DATA.moneySaved}</span>
-          <span className="text-emerald-400 font-semibold">${WRAPPED_DATA.moneySaved}</span>
+          <span className="text-gray-400">${data.totalBudget - data.moneySaved}</span>
+          <span className="text-emerald-400 font-semibold">${data.moneySaved}</span>
         </div>
       </motion.div>
     </div>
   );
 }
 
-function SlideStudy({ active }: SlideProps) {
-  const cards = useAnimatedCounter(WRAPPED_DATA.flashcardsMastered, 2000, active);
-  const hours = useAnimatedCounter(WRAPPED_DATA.focusHours, 2000, active);
+function SlideStudy({ active, data }: SlideProps) {
+  const cards = useAnimatedCounter(data.flashcardsMastered, 2000, active);
+  const hours = useAnimatedCounter(data.focusHours, 2000, active);
 
   return (
     <div className="flex flex-col items-center justify-center h-full text-center px-8">
@@ -247,14 +250,14 @@ function SlideStudy({ active }: SlideProps) {
         className="px-5 py-3 rounded-xl bg-blue-500/10 border border-blue-500/20"
       >
         <p className="text-sm text-blue-300">
-          Top subject: <span className="font-bold text-white">{WRAPPED_DATA.topSubject}</span>
+          Top subject: <span className="font-bold text-white">{data.topSubject}</span>
         </p>
       </motion.div>
     </div>
   );
 }
 
-function SlideSummary({ active, cardRef }: SlideProps & { cardRef: React.RefObject<HTMLDivElement | null> }) {
+function SlideSummary({ active, data, cardRef }: SlideProps & { cardRef: React.RefObject<HTMLDivElement | null> }) {
   return (
     <div className="flex flex-col items-center justify-center h-full text-center px-6">
       <div ref={cardRef} className="w-full max-w-sm bg-gradient-to-b from-[#1a1040] to-[#0B0A1A] rounded-2xl border border-white/10 p-8 space-y-6">
@@ -277,10 +280,10 @@ function SlideSummary({ active, cardRef }: SlideProps & { cardRef: React.RefObje
           className="grid grid-cols-2 gap-4"
         >
           {[
-            { label: 'Tasks Done', value: WRAPPED_DATA.tasksCompleted.toString(), color: 'from-purple-500 to-pink-500' },
-            { label: 'Money Saved', value: `$${WRAPPED_DATA.moneySaved}`, color: 'from-emerald-500 to-teal-500' },
-            { label: 'Cards Mastered', value: WRAPPED_DATA.flashcardsMastered.toString(), color: 'from-blue-500 to-indigo-500' },
-            { label: 'Focus Hours', value: `${WRAPPED_DATA.focusHours}h`, color: 'from-amber-500 to-orange-500' },
+            { label: 'Tasks Done', value: data.tasksCompleted.toString(), color: 'from-purple-500 to-pink-500' },
+            { label: 'Money Saved', value: `$${data.moneySaved}`, color: 'from-emerald-500 to-teal-500' },
+            { label: 'Cards Mastered', value: data.flashcardsMastered.toString(), color: 'from-blue-500 to-indigo-500' },
+            { label: 'Focus Hours', value: `${data.focusHours}h`, color: 'from-amber-500 to-orange-500' },
           ].map(stat => (
             <div key={stat.label} className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-3">
               <p className={`text-2xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}>
@@ -299,7 +302,7 @@ function SlideSummary({ active, cardRef }: SlideProps & { cardRef: React.RefObje
           className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30"
         >
           <Trophy className="w-5 h-5 text-amber-400" />
-          <span className="text-sm font-bold text-amber-300">Top {WRAPPED_DATA.percentile}% of OptiPlan Scholars</span>
+          <span className="text-sm font-bold text-amber-300">Top {data.percentile}% of OptiPlan Scholars</span>
         </motion.div>
 
         {/* Streak */}
@@ -309,7 +312,7 @@ function SlideSummary({ active, cardRef }: SlideProps & { cardRef: React.RefObje
           transition={{ delay: 1 }}
           className="text-xs text-gray-500"
         >
-          Longest streak: <span className="text-purple-400 font-semibold">{WRAPPED_DATA.streakDays} days</span>
+          Longest streak: <span className="text-purple-400 font-semibold">{data.streakDays} days</span>
         </motion.p>
 
         {/* Branding */}
@@ -335,6 +338,26 @@ export function WrappedPage() {
   const [direction, setDirection] = useState(1);
   const summaryRef = useRef<HTMLDivElement | null>(null);
   const [downloading, setDownloading] = useState(false);
+
+  // Pull real data from contexts
+  const { items } = useDashboard();
+  const { totalMonthlyBudget, monthSpending } = useFinance();
+
+  const allTasks = items.filter(i => i.type === 'task');
+  const completedTasks = allTasks.filter(i => i.status === 'completed');
+  const moneySaved = Math.max(0, totalMonthlyBudget - monthSpending);
+
+  const WRAPPED_DATA = {
+    tasksCompleted: completedTasks.length,
+    totalTasks: Math.max(allTasks.length, 1), // avoid division by zero
+    moneySaved: Math.round(moneySaved),
+    totalBudget: Math.round(totalMonthlyBudget),
+    flashcardsMastered: 0, // local state only, no backend
+    focusHours: 0,         // Pomodoro is local state only
+    topSubject: allTasks.length > 0 ? '—' : '—',
+    streakDays: 0,
+    percentile: completedTasks.length > 0 ? Math.min(99, Math.round(completedTasks.length * 3)) : 0,
+  };
 
   function goTo(index: number) {
     if (index < 0 || index >= TOTAL_SLIDES) return;
@@ -415,10 +438,10 @@ export function WrappedPage() {
               transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
               className="absolute inset-0"
             >
-              {current === 0 && <SlideProductivity active={current === 0} />}
-              {current === 1 && <SlideFinance active={current === 1} />}
-              {current === 2 && <SlideStudy active={current === 2} />}
-              {current === 3 && <SlideSummary active={current === 3} cardRef={summaryRef} />}
+              {current === 0 && <SlideProductivity active={current === 0} data={WRAPPED_DATA} />}
+              {current === 1 && <SlideFinance active={current === 1} data={WRAPPED_DATA} />}
+              {current === 2 && <SlideStudy active={current === 2} data={WRAPPED_DATA} />}
+              {current === 3 && <SlideSummary active={current === 3} data={WRAPPED_DATA} cardRef={summaryRef} />}
             </motion.div>
           </AnimatePresence>
 

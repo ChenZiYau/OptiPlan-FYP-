@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -41,18 +41,23 @@
   * {
     @apply border-border;
   }
-  
+
   html {
     scroll-behavior: smooth;
   }
-  
+
   body {
     @apply bg-opti-bg text-opti-text-primary antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: "Inter", system-ui, sans-serif;
   }
-  
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Grotesk', system-ui, sans-serif;
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Space Grotesk", system-ui, sans-serif;
     letter-spacing: -0.02em;
   }
 }
@@ -63,37 +68,41 @@
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
   }
-  
+
   .glass-nav {
     @apply bg-opti-bg/80 border-b border-white/5;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
   }
-  
+
   .text-gradient {
     @apply bg-gradient-to-r from-opti-accent to-opti-accent-light bg-clip-text text-transparent;
   }
-  
+
   .btn-primary {
     @apply px-6 py-3 bg-gradient-to-r from-opti-accent to-[#8B5CF6] text-opti-bg font-semibold rounded-xl 
            transition-all duration-300 hover:shadow-glow hover:scale-[1.02] active:scale-[0.98];
   }
-  
+
   .btn-secondary {
     @apply px-6 py-3 bg-white/5 border border-white/10 text-opti-text-primary font-medium rounded-xl 
            transition-all duration-300 hover:bg-white/10 hover:border-white/20;
   }
-  
+
   .glow-accent {
     box-shadow: 0 0 60px rgba(167, 139, 250, 0.18);
   }
-  
+
   .section-pinned {
     @apply relative w-screen h-screen overflow-hidden;
   }
-  
+
   .bg-radial-glow {
-    background: radial-gradient(circle at 50% 0%, rgba(167, 139, 250, 0.14), rgba(0, 0, 0, 0) 60%);
+    background: radial-gradient(
+      circle at 50% 0%,
+      rgba(167, 139, 250, 0.14),
+      rgba(0, 0, 0, 0) 60%
+    );
   }
 }
 
@@ -101,11 +110,11 @@
   .will-change-transform {
     will-change: transform;
   }
-  
+
   .perspective-1000 {
     perspective: 1000px;
   }
-  
+
   .preserve-3d {
     transform-style: preserve-3d;
   }
@@ -117,7 +126,7 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #07040A;
+  background: #07040a;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -132,5 +141,55 @@
 /* Selection color */
 ::selection {
   background: rgba(167, 139, 250, 0.3);
-  color: #F6F3FB;
+  color: #f6f3fb;
+}
+
+/* ── Accessibility: High Contrast ────────────────────────────────────────── */
+
+html.high-contrast * {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+html.high-contrast .text-gray-400,
+html.high-contrast .text-gray-500,
+html.high-contrast .text-gray-600 {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+html.high-contrast .border-white\/10,
+html.high-contrast .border-white\/5 {
+  border-color: rgba(255, 255, 255, 0.35) !important;
+}
+
+/* ── Accessibility: Reduce Motion ────────────────────────────────────────── */
+
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* ── Accessibility: Dyslexia-Friendly Font ───────────────────────────────── */
+
+html.dyslexia-font body,
+html.dyslexia-font h1,
+html.dyslexia-font h2,
+html.dyslexia-font h3,
+html.dyslexia-font h4,
+html.dyslexia-font h5,
+html.dyslexia-font h6,
+html.dyslexia-font p,
+html.dyslexia-font span,
+html.dyslexia-font button,
+html.dyslexia-font input,
+html.dyslexia-font textarea,
+html.dyslexia-font label,
+html.dyslexia-font a {
+  font-family:
+    "Comic Sans MS", "Comic Sans", "OpenDyslexic", system-ui, sans-serif !important;
+  letter-spacing: 0.05em !important;
+  word-spacing: 0.12em !important;
 }

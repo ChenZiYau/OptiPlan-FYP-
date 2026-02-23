@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/hooks/useAuth';
+import { SettingsProvider } from '@/contexts/SettingsContext';
 import { LandingPage } from '@/pages/LandingPage';
 import { SignUp } from '@/pages/SignUp';
 import { Login } from '@/pages/Login';
@@ -18,10 +19,12 @@ import { ChatBotPage } from '@/pages/dashboard/ChatBotPage';
 import { StudyHubPage } from '@/pages/dashboard/StudyHubPage';
 import { WrappedPage } from '@/pages/dashboard/WrappedPage';
 import { WellnessPage } from '@/pages/dashboard/WellnessPage';
+import { SettingsPage } from '@/pages/dashboard/SettingsPage';
 
 function App() {
   return (
     <BrowserRouter>
+      <SettingsProvider>
       <AuthProvider>
         <Routes>
           <Route path="/" element={<LandingPage />} />
@@ -39,6 +42,7 @@ function App() {
             <Route path="studyhub" element={<StudyHubPage />} />
             <Route path="wrapped" element={<WrappedPage />} />
             <Route path="wellness" element={<WellnessPage />} />
+            <Route path="settings" element={<SettingsPage />} />
           </Route>
 
           {/* Admin routes — protected by AdminLayout */}
@@ -50,6 +54,7 @@ function App() {
           </Route>
         </Routes>
       </AuthProvider>
+      </SettingsProvider>
     </BrowserRouter>
   );
 }

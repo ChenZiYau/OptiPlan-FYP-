@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   PenLine, X, Droplets, BookOpen, BrainCircuit, Heart, Calendar,
   Smile, TrendingUp,
@@ -185,7 +186,7 @@ export function WellnessPage() {
               {MOODS.map((mood, i) => (
                 <HoverTip key={i} label={`Log as ${mood.label}`}>
                   <button
-                    onClick={() => setSelectedMood(i)}
+                    onClick={() => { setSelectedMood(i); toast.success(`Mood logged: ${mood.label} ${mood.emoji}`); }}
                     className="flex-1 flex flex-col items-center gap-1.5 group"
                   >
                     <div className={`w-12 h-12 rounded-2xl text-2xl flex items-center justify-center transition-all ${

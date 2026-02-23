@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { HoverTip } from '@/components/HoverTip';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
+import ReactMarkdown from 'react-markdown';
 import {
   Play,
   Pause,
@@ -377,23 +379,92 @@ function PomodoroTimer() {
 // ── Tab 1: Notes & Import ────────────────────────────────────────────────────
 
 function NotesTab({ onContentGenerated }: { onContentGenerated: () => void }) {
-  const [stage, setStage] = useState<'upload' | 'processing' | 'done'>('upload');
+  const [stage, setStage] = useState<'upload' | 'processing' | 'done' | 'error'>('upload');
   const [urlInput, setUrlInput] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [generatedNotes, setGeneratedNotes] = useState('');
+  const [notesMetadata, setNotesMetadata] = useState<{ filename: string; extractedChars: number } | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
+  const lastFileRef = useRef<File | null>(null);
 
-  const handleUpload = useCallback(() => {
+  const handleUpload = useCallback(async (file: File) => {
+    lastFileRef.current = file;
     setStage('processing');
-    setTimeout(() => {
+    setErrorMessage('');
+
+    // 60-second timeout to prevent indefinite hang
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/generate-notes', {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      // Try to parse JSON response (even error responses have JSON bodies)
+      let data: any;
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error(`Server returned invalid response (status ${response.status})`);
+      }
+
+      if (!response.ok) {
+        // Server returned an error with a proper JSON body
+        throw new Error(data.error || data.details || `Server error (${response.status})`);
+      }
+
+      setGeneratedNotes(data.notes);
+      setNotesMetadata(data.metadata);
       setStage('done');
       onContentGenerated();
-    }, 3000);
+      toast.success('Notes generated!', { description: `From ${data.metadata?.filename} via Groq ${data.metadata?.model ?? 'Llama 3'}` });
+    } catch (err: any) {
+      clearTimeout(timeout);
+      console.error('[StudyHub] Upload error:', err);
+
+      let msg: string;
+      if (err.name === 'AbortError') {
+        msg = 'Request timed out after 60 seconds. The file may be too large or the AI is under heavy load. Please try again.';
+      } else if (err instanceof TypeError && err.message.includes('fetch')) {
+        // Network-level failure: server not reachable
+        msg = 'Cannot connect to the API server. Please make sure both Vite and the API server are running (npm run dev).';
+      } else {
+        msg = err.message || 'Failed to generate notes. Please try again.';
+      }
+
+      setErrorMessage(msg);
+      setStage('error');
+      toast.error('Note generation failed', { description: msg });
+    }
   }, [onContentGenerated]);
+
+  const handleRegenerate = useCallback(() => {
+    if (lastFileRef.current) {
+      handleUpload(lastFileRef.current);
+    }
+  }, [handleUpload]);
 
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     setDragActive(false);
-    if (e.dataTransfer.files.length > 0) handleUpload();
+    const file = e.dataTransfer.files[0];
+    if (file) handleUpload(file);
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) handleUpload(file);
+    // Reset input so the same file can be re-selected
+    e.target.value = '';
   }
 
   if (stage === 'processing') {
@@ -406,16 +477,46 @@ function NotesTab({ onContentGenerated }: { onContentGenerated: () => void }) {
           <Loader2 className="absolute -top-1 -right-1 w-6 h-6 text-purple-400 animate-spin" />
         </div>
         <div className="text-center space-y-2">
-          <p className="text-base font-semibold text-white">AI is reading your document...</p>
-          <p className="text-sm text-gray-500">Synthesizing notes, flashcards & quiz questions</p>
+          <p className="text-base font-semibold text-white">Extracting text & generating notes via Groq...</p>
+          <p className="text-sm text-gray-500">Using Llama 3 to synthesize structured study notes</p>
         </div>
         <div className="w-56 h-2 rounded-full bg-white/10 overflow-hidden">
           <motion.div
             className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
             initial={{ width: '0%' }}
-            animate={{ width: '100%' }}
-            transition={{ duration: 3, ease: 'easeInOut' }}
+            animate={{ width: '90%' }}
+            transition={{ duration: 15, ease: 'easeOut' }}
           />
+        </div>
+      </div>
+    );
+  }
+
+  if (stage === 'error') {
+    return (
+      <div className="rounded-xl bg-[#18162e] border border-red-500/20 p-16 flex flex-col items-center justify-center gap-6">
+        <div className="w-16 h-16 rounded-2xl bg-red-900/20 border border-red-500/30 flex items-center justify-center">
+          <X className="w-8 h-8 text-red-400" />
+        </div>
+        <div className="text-center space-y-2">
+          <p className="text-base font-semibold text-white">Something went wrong</p>
+          <p className="text-sm text-gray-500 max-w-md">{errorMessage}</p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setStage('upload')}
+            className="px-6 py-3 text-sm font-medium rounded-xl border border-white/10 text-gray-400 hover:bg-white/5 transition-colors"
+          >
+            Try Different File
+          </button>
+          {lastFileRef.current && (
+            <button
+              onClick={handleRegenerate}
+              className="flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white transition-all"
+            >
+              <RefreshCw className="w-4 h-4" /> Retry
+            </button>
+          )}
         </div>
       </div>
     );
@@ -427,18 +528,29 @@ function NotesTab({ onContentGenerated }: { onContentGenerated: () => void }) {
         {/* Action bar */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h3 className="text-base font-semibold text-white">{GENERATED_NOTES.topic}</h3>
-            <p className="text-sm text-gray-500 mt-1">{GENERATED_NOTES.subject}</p>
+            <h3 className="text-base font-semibold text-white">{notesMetadata?.filename ?? 'Generated Notes'}</h3>
+            <p className="text-sm text-gray-500 mt-1">
+              {notesMetadata ? `${notesMetadata.extractedChars.toLocaleString()} characters extracted` : 'AI-generated from your upload'}
+            </p>
           </div>
           <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white transition-colors">
+            <button
+              onClick={() => toast('PDF export coming soon!', { description: 'This feature is under development.' })}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white transition-colors"
+            >
               <Download className="w-4 h-4" /> Export PDF
             </button>
             <button
-              onClick={() => { setStage('processing'); setTimeout(() => setStage('done'), 3000); }}
+              onClick={handleRegenerate}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white transition-colors"
             >
               <RefreshCw className="w-4 h-4" /> Regenerate
+            </button>
+            <button
+              onClick={() => { setStage('upload'); setGeneratedNotes(''); setNotesMetadata(null); }}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white transition-colors"
+            >
+              <Upload className="w-4 h-4" /> New Upload
             </button>
           </div>
         </div>
@@ -447,24 +559,13 @@ function NotesTab({ onContentGenerated }: { onContentGenerated: () => void }) {
         <div className="bg-green-900/15 border border-green-500/20 rounded-xl p-4 mb-8 flex items-center gap-3">
           <Check className="w-5 h-5 text-green-400 shrink-0" />
           <p className="text-sm text-green-300">
-            Notes generated! <span className="text-green-400/70">Flashcards and Practice Quiz are now available in their tabs.</span>
+            Notes generated via <span className="font-semibold text-green-400">Groq Llama 3</span>! <span className="text-green-400/70">Flashcards and Practice Quiz are now available in their tabs.</span>
           </p>
         </div>
 
-        {/* Notes content */}
+        {/* Notes content — rendered with react-markdown */}
         <div className="prose prose-invert prose-base max-w-none prose-headings:text-white prose-h2:text-xl prose-h2:font-bold prose-h2:mt-8 prose-h2:mb-4 prose-h3:text-lg prose-h3:font-semibold prose-h3:mt-6 prose-h3:mb-3 prose-p:text-gray-400 prose-p:leading-relaxed prose-p:mb-4 prose-strong:text-white prose-li:text-gray-400 prose-li:mb-1.5 prose-code:text-purple-300 prose-code:bg-purple-900/20 prose-code:px-2 prose-code:py-1 prose-code:rounded-md prose-code:text-sm prose-em:text-gray-300">
-          {GENERATED_NOTES.generatedNotes.split('\n').map((line, i) => {
-            if (line.startsWith('## ')) return <h2 key={i}>{line.slice(3)}</h2>;
-            if (line.startsWith('### ')) return <h3 key={i}>{line.slice(4)}</h3>;
-            if (line.startsWith('- **')) {
-              const match = line.match(/^- \*\*(.+?)\*\*\s*[—–-]\s*(.+)$/);
-              if (match) return <li key={i}><strong>{match[1]}</strong> — {match[2]}</li>;
-            }
-            if (line.startsWith('- ')) return <li key={i}>{line.slice(2)}</li>;
-            if (line.match(/^\d+\./)) return <li key={i}>{line.replace(/^\d+\.\s*/, '')}</li>;
-            if (line.trim() === '') return null;
-            return <p key={i}>{renderInlineCode(line)}</p>;
-          })}
+          <ReactMarkdown>{generatedNotes}</ReactMarkdown>
         </div>
       </div>
     );
@@ -489,7 +590,7 @@ function NotesTab({ onContentGenerated }: { onContentGenerated: () => void }) {
           type="file"
           accept=".pdf,.pptx,.ppt,.doc,.docx"
           className="hidden"
-          onChange={(e) => { if (e.target.files?.length) handleUpload(); }}
+          onChange={handleFileChange}
         />
         <div className="w-16 h-16 rounded-2xl bg-purple-900/20 border border-purple-500/30 flex items-center justify-center mx-auto mb-5">
           <Upload className="w-8 h-8 text-purple-400" />
@@ -501,7 +602,7 @@ function NotesTab({ onContentGenerated }: { onContentGenerated: () => void }) {
           PDF, PPTX, DOC — or click to browse
         </p>
         <p className="text-xs text-gray-600">
-          AI will generate notes, flashcards & quiz questions from your content
+          Groq AI will generate structured notes from your content
         </p>
       </div>
 
@@ -522,7 +623,7 @@ function NotesTab({ onContentGenerated }: { onContentGenerated: () => void }) {
             />
           </div>
           <button
-            onClick={handleUpload}
+            onClick={() => toast('URL import coming soon!', { description: 'File upload is available now.' })}
             disabled={!urlInput.trim()}
             className="px-6 py-3 text-sm font-semibold rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
@@ -534,28 +635,7 @@ function NotesTab({ onContentGenerated }: { onContentGenerated: () => void }) {
   );
 }
 
-/** Simple inline code renderer */
-function renderInlineCode(text: string): React.ReactNode {
-  const parts = text.split(/(`[^`]+`)/);
-  return parts.map((part, i) => {
-    if (part.startsWith('`') && part.endsWith('`')) {
-      return <code key={i}>{part.slice(1, -1)}</code>;
-    }
-    const boldParts = part.split(/(\*\*[^*]+\*\*)/);
-    return boldParts.map((bp, j) => {
-      if (bp.startsWith('**') && bp.endsWith('**')) {
-        return <strong key={`${i}-${j}`}>{bp.slice(2, -2)}</strong>;
-      }
-      const italicParts = bp.split(/(\*[^*]+\*)/);
-      return italicParts.map((ip, k) => {
-        if (ip.startsWith('*') && ip.endsWith('*')) {
-          return <em key={`${i}-${j}-${k}`}>{ip.slice(1, -1)}</em>;
-        }
-        return ip;
-      });
-    });
-  });
-}
+
 
 // ── Tab 2: Flashcards ────────────────────────────────────────────────────────
 

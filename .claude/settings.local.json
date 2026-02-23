@@ -21,7 +21,8 @@
       "Bash(python:*)",
       "mcp__supabase__generate_typescript_types",
       "Bash(tail:*)",
-      "Bash(npm view:*)"
+      "Bash(npm view:*)",
+      "Bash(cd \"C:\\\\Users\\\\yauyau\\\\Desktop\\\\Kimi_Agent_OptiPlan SaaS Landing Page\\\\app\" && npx vite --port 5173 2>&1)"
     ]
   },
   "enableAllProjectMcpServers": true,
