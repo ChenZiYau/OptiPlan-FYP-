@@ -36,7 +36,7 @@ export function CTA() {
       <div className="relative z-10 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <AnimatedSection>
           <h2
-            className="font-display font-bold text-opti-text-primary"
+            className="font-bold tracking-tight text-opti-text-primary"
             style={{ fontSize: 'clamp(36px, 5vw, 56px)' }}
           >
             Start your day,{' '}

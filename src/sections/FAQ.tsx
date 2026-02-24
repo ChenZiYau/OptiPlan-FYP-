@@ -22,7 +22,7 @@ function FAQItem({
         onClick={onClick}
         className="w-full py-5 flex items-center justify-between text-left group"
       >
-        <span className="font-display font-medium text-opti-text-primary pr-4 group-hover:text-opti-accent transition-colors">
+        <span className="font-medium text-opti-text-primary pr-4 group-hover:text-opti-accent transition-colors">
           {question}
         </span>
         <motion.div

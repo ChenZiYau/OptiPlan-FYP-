@@ -28,7 +28,7 @@ export function AboutCreator() {
               organize your notes, and actually see where your money goes. No bloat, no
               learning curve — just the essentials done right.
             </p>
-            <p className="text-opti-text-primary font-display font-semibold mt-6">
+            <p className="text-opti-text-primary font-semibold mt-6">
               — The OptiPlan Team
             </p>
           </div>

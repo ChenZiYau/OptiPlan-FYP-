@@ -47,7 +47,7 @@ export function Features() {
                         >
                           <feature.icon className="w-6 h-6 text-white" />
                         </div>
-                        <h3 className="font-display font-semibold text-xl text-opti-text-primary mb-2">
+                        <h3 className="font-semibold text-xl text-opti-text-primary mb-2">
                           {feature.title}
                         </h3>
                         <p className="text-opti-text-secondary text-sm leading-relaxed mb-4">
@@ -66,7 +66,7 @@ export function Features() {
                     back={
                       <div className="flex flex-col h-full justify-center">
                         <feature.icon className="w-8 h-8 text-opti-accent mb-4" />
-                        <h3 className="font-display font-semibold text-lg text-opti-text-primary mb-3">
+                        <h3 className="font-semibold text-lg text-opti-text-primary mb-3">
                           {feature.title}
                         </h3>
                         <p className="text-opti-text-secondary text-sm leading-relaxed">

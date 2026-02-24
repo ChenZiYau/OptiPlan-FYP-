@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useSettings } from '@/contexts/SettingsContext';
+import { THEMES } from '@/contexts/SettingsContext';
 import { DashboardProvider } from '@/contexts/DashboardContext';
 import { FinanceProvider } from '@/contexts/FinanceContext';
 import { DashboardSidebar } from './DashboardSidebar';
@@ -22,11 +23,47 @@ const pageTitles: Record<string, string> = {
   '/dashboard/wrapped': 'Wrapped',
 };
 
+function hexToRgbStr(hex: string) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
+    : '168, 85, 247';
+}
+
 export function DashboardLayout() {
   const { user, loading } = useAuth();
   const { settings } = useSettings();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const shellRef = useRef<HTMLDivElement>(null);
+
+  // ── Apply theme CSS vars scoped to .dashboard-shell ────────────────
+  useEffect(() => {
+    const el = shellRef.current;
+    if (!el) return;
+
+    const theme = THEMES[settings.theme];
+
+    el.style.setProperty('--color-primary', theme.primary);
+    el.style.setProperty('--color-accent', theme.accent);
+    el.style.setProperty('--color-primary-hsl', theme.primaryHSL);
+    el.style.setProperty('--color-accent-hsl', theme.accentHSL);
+
+    const [p_h, p_s, p_l] = theme.primaryHSL.split(' ');
+    el.style.setProperty('--color-primary-h', p_h);
+    el.style.setProperty('--color-primary-s', p_s);
+    el.style.setProperty('--color-primary-l', p_l);
+
+    const [a_h, a_s, a_l] = theme.accentHSL.split(' ');
+    el.style.setProperty('--color-accent-h', a_h);
+    el.style.setProperty('--color-accent-s', a_s);
+    el.style.setProperty('--color-accent-l', a_l);
+
+    const primaryRgbStr = hexToRgbStr(theme.primary);
+    el.style.setProperty('--color-primary-014', `rgba(${primaryRgbStr}, 0.14)`);
+    el.style.setProperty('--color-primary-018', `rgba(${primaryRgbStr}, 0.18)`);
+    el.style.setProperty('--color-primary-030', `rgba(${primaryRgbStr}, 0.3)`);
+  }, [settings.theme]);
 
   if (loading) {
     return (
@@ -53,7 +90,13 @@ export function DashboardLayout() {
   return (
     <DashboardProvider>
       <FinanceProvider>
-        <div className={`dashboard-shell dashboard-text-scale-${settings.textScale}`}>
+        <div
+          ref={shellRef}
+          className={`dashboard-shell dashboard-text-scale-${settings.textScale}${
+            settings.colorMode === 'light' ? ' color-mode-light' :
+            settings.colorMode === 'grey' ? ' color-mode-grey' : ''
+          }`}
+        >
           <div className="min-h-screen bg-[#0B0A1A]">
             <DashboardSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 

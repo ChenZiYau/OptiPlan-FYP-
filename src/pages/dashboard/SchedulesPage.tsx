@@ -110,7 +110,7 @@ export function SchedulesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-display font-semibold text-white">Weekly Schedule</h2>
+          <h2 className="text-lg font-semibold text-white tracking-tight">Weekly Schedule</h2>
           <p className="text-sm text-gray-500 mt-0.5">{schedules.length} subject{schedules.length !== 1 ? 's' : ''} scheduled</p>
         </div>
         <HoverTip label="Add a new class or event">

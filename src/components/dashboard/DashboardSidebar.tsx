@@ -74,7 +74,7 @@ export function DashboardSidebar({ isOpen, onClose }: DashboardSidebarProps) {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
               <span className="text-white font-bold text-sm">O</span>
             </div>
-            <span className="font-display font-semibold text-lg text-white tracking-tight">
+            <span className="font-semibold text-lg text-white tracking-tight">
               OptiPlan
             </span>
           </Link>

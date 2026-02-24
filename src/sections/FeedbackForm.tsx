@@ -23,7 +23,7 @@ export function FeedbackForm() {
               <User className="w-8 h-8 text-opti-accent" />
             </div>
 
-            <h3 className="font-display font-semibold text-xl text-opti-text-primary mb-2">
+            <h3 className="font-semibold text-xl text-opti-text-primary mb-2">
               Login Required
             </h3>
             <p className="text-opti-text-secondary text-sm leading-relaxed mb-6 max-w-sm mx-auto">

@@ -19,7 +19,7 @@ export function Footer() {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-opti-accent to-[#8B5CF6] flex items-center justify-center">
                 <span className="text-opti-bg font-bold text-sm">O</span>
               </div>
-              <span className="font-display font-semibold text-xl text-opti-text-primary">
+              <span className="font-semibold text-xl text-opti-text-primary tracking-tight">
                 OptiPlan
               </span>
             </motion.a>
@@ -48,7 +48,7 @@ export function Footer() {
           {/* Link Columns */}
           {Object.entries(footerLinks).map(([category, links]) => (
             <div key={category}>
-              <h4 className="font-display font-semibold text-opti-text-primary mb-4 capitalize">
+              <h4 className="font-semibold text-opti-text-primary mb-4 capitalize">
                 {category}
               </h4>
               <ul className="space-y-3">

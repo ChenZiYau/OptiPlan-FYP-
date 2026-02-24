@@ -28,7 +28,7 @@ export function TestimonialCard({ quote, name, role, initials }: TestimonialCard
           {initials}
         </div>
         <div>
-          <p className="font-display font-semibold text-opti-text-primary text-sm">{name}</p>
+          <p className="font-semibold text-opti-text-primary text-sm">{name}</p>
           <p className="text-xs text-opti-text-secondary">{role}</p>
         </div>
       </div>

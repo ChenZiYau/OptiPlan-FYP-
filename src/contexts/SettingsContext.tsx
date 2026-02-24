@@ -97,54 +97,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setSettings(DEFAULT_SETTINGS);
   };
 
-  // ── Apply theme CSS vars ──────────────────────────────────────────────
-  useEffect(() => {
-    const theme = THEMES[settings.theme];
-    const root = document.documentElement;
-
-    root.style.setProperty('--color-primary', theme.primary);
-    root.style.setProperty('--color-accent', theme.accent);
-    root.style.setProperty('--color-primary-hsl', theme.primaryHSL);
-    root.style.setProperty('--color-accent-hsl', theme.accentHSL);
-
-    // Extract H, S, L components to dynamically calculate shades in tailwind config
-    const [p_h, p_s, p_l] = theme.primaryHSL.split(' ');
-    root.style.setProperty('--color-primary-h', p_h);
-    root.style.setProperty('--color-primary-s', p_s);
-    root.style.setProperty('--color-primary-l', p_l);
-
-    const [a_h, a_s, a_l] = theme.accentHSL.split(' ');
-    root.style.setProperty('--color-accent-h', a_h);
-    root.style.setProperty('--color-accent-s', a_s);
-    root.style.setProperty('--color-accent-l', a_l);
-
-    // Helper to convert hex to rgb string for rgba() tailwind usage
-    const hexToRgbStr = (hex: string) => {
-      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-      return result
-        ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
-        : '167, 139, 250'; // Default purple
-    };
-
-    const primaryRgbStr = hexToRgbStr(theme.primary);
-    root.style.setProperty('--color-primary-014', `rgba(${primaryRgbStr}, 0.14)`);
-    root.style.setProperty('--color-primary-018', `rgba(${primaryRgbStr}, 0.18)`);
-    root.style.setProperty('--color-primary-030', `rgba(${primaryRgbStr}, 0.3)`);
-
-  }, [settings.theme]);
-
-  // ── Apply color mode class ──────────────────────────────────────────
-  useEffect(() => {
-    const root = document.documentElement;
-    root.classList.remove('color-mode-light', 'color-mode-grey');
-    if (settings.colorMode === 'light') {
-      root.classList.add('color-mode-light');
-    } else if (settings.colorMode === 'grey') {
-      root.classList.add('color-mode-grey');
-    }
-  }, [settings.colorMode]);
-
-  // ── Apply accessibility classes ───────────────────────────────────────
+  // ── Apply accessibility classes (global — intentionally on <html>) ────
   useEffect(() => {
     const root = document.documentElement;
 

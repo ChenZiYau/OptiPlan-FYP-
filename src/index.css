@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -34,6 +32,21 @@
     --sidebar-accent-foreground: 260 33% 97%;
     --sidebar-border: 260 15% 20%;
     --sidebar-ring: 258 91% 76%;
+
+    /* Default theme (Deep Purple) — used by landing page, admin, etc. */
+    --color-primary: #a855f7;
+    --color-accent: #ec4899;
+    --color-primary-hsl: 271 91% 65%;
+    --color-accent-hsl: 330 81% 60%;
+    --color-primary-h: 271;
+    --color-primary-s: 91%;
+    --color-primary-l: 65%;
+    --color-accent-h: 330;
+    --color-accent-s: 81%;
+    --color-accent-l: 60%;
+    --color-primary-014: rgba(168, 85, 247, 0.14);
+    --color-primary-018: rgba(168, 85, 247, 0.18);
+    --color-primary-030: rgba(168, 85, 247, 0.3);
   }
 }
 
@@ -48,7 +61,7 @@
 
   body {
     @apply bg-opti-bg text-opti-text-primary antialiased;
-    font-family: "Inter", system-ui, sans-serif;
+    font-family: "Geist Sans", system-ui, sans-serif;
   }
 
   h1,
@@ -57,8 +70,7 @@
   h4,
   h5,
   h6 {
-    font-family: "Space Grotesk", system-ui, sans-serif;
-    letter-spacing: -0.02em;
+    @apply font-bold tracking-tight;
   }
 }
 
@@ -163,148 +175,148 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── Text colors ───────────────────────────────────────────────────────── */
-html.color-mode-light .dashboard-shell .text-white      { color: #1A1A2E !important; }
-html.color-mode-light .dashboard-shell .text-gray-200   { color: #374151 !important; }
-html.color-mode-light .dashboard-shell .text-gray-300   { color: #4B5563 !important; }
-html.color-mode-light .dashboard-shell .text-gray-400   { color: #6B7280 !important; }
-html.color-mode-light .dashboard-shell .text-gray-500   { color: #6B7280 !important; }
-html.color-mode-light .dashboard-shell .text-gray-600   { color: #9CA3AF !important; }
+.dashboard-shell.color-mode-light .text-white      { color: #1A1A2E !important; }
+.dashboard-shell.color-mode-light .text-gray-200   { color: #374151 !important; }
+.dashboard-shell.color-mode-light .text-gray-300   { color: #4B5563 !important; }
+.dashboard-shell.color-mode-light .text-gray-400   { color: #6B7280 !important; }
+.dashboard-shell.color-mode-light .text-gray-500   { color: #6B7280 !important; }
+.dashboard-shell.color-mode-light .text-gray-600   { color: #9CA3AF !important; }
 
 /* ── Backgrounds ───────────────────────────────────────────────────────── */
-html.color-mode-light .dashboard-shell .bg-\[\#0B0A1A\]     { background-color: #F8F9FA !important; }
-html.color-mode-light .dashboard-shell .bg-\[\#0B0A1A\]\/80 { background-color: rgba(248, 249, 250, 0.8) !important; }
-html.color-mode-light .dashboard-shell .bg-\[\#18162e\]     { background-color: #FFFFFF !important; }
-html.color-mode-light .dashboard-shell .bg-\[\#1a1735\]     { background-color: #FFFFFF !important; }
-html.color-mode-light .dashboard-shell .bg-white\/5          { background-color: rgba(0, 0, 0, 0.03) !important; }
-html.color-mode-light .dashboard-shell .bg-white\/10         { background-color: rgba(0, 0, 0, 0.05) !important; }
-html.color-mode-light .dashboard-shell .bg-white\/\[0\.02\]  { background-color: rgba(0, 0, 0, 0.02) !important; }
-html.color-mode-light .dashboard-shell .bg-white\/\[0\.03\]  { background-color: rgba(0, 0, 0, 0.02) !important; }
-html.color-mode-light .dashboard-shell .bg-white\/\[0\.04\]  { background-color: rgba(0, 0, 0, 0.03) !important; }
-html.color-mode-light .dashboard-shell .bg-white\/\[0\.06\]  { background-color: rgba(0, 0, 0, 0.04) !important; }
-html.color-mode-light .dashboard-shell .bg-black\/60         { background-color: rgba(0, 0, 0, 0.35) !important; }
+.dashboard-shell.color-mode-light .bg-\[\#0B0A1A\]     { background-color: #F8F9FA !important; }
+.dashboard-shell.color-mode-light .bg-\[\#0B0A1A\]\/80 { background-color: rgba(248, 249, 250, 0.8) !important; }
+.dashboard-shell.color-mode-light .bg-\[\#18162e\]     { background-color: #FFFFFF !important; }
+.dashboard-shell.color-mode-light .bg-\[\#1a1735\]     { background-color: #FFFFFF !important; }
+.dashboard-shell.color-mode-light .bg-white\/5          { background-color: rgba(0, 0, 0, 0.03) !important; }
+.dashboard-shell.color-mode-light .bg-white\/10         { background-color: rgba(0, 0, 0, 0.05) !important; }
+.dashboard-shell.color-mode-light .bg-white\/\[0\.02\]  { background-color: rgba(0, 0, 0, 0.02) !important; }
+.dashboard-shell.color-mode-light .bg-white\/\[0\.03\]  { background-color: rgba(0, 0, 0, 0.02) !important; }
+.dashboard-shell.color-mode-light .bg-white\/\[0\.04\]  { background-color: rgba(0, 0, 0, 0.03) !important; }
+.dashboard-shell.color-mode-light .bg-white\/\[0\.06\]  { background-color: rgba(0, 0, 0, 0.04) !important; }
+.dashboard-shell.color-mode-light .bg-black\/60         { background-color: rgba(0, 0, 0, 0.35) !important; }
 
 /* ── Borders ───────────────────────────────────────────────────────────── */
-html.color-mode-light .dashboard-shell .border-white\/5          { border-color: rgba(0, 0, 0, 0.06) !important; }
-html.color-mode-light .dashboard-shell .border-white\/10         { border-color: rgba(0, 0, 0, 0.1) !important; }
-html.color-mode-light .dashboard-shell .border-white\/\[0\.06\]  { border-color: rgba(0, 0, 0, 0.06) !important; }
-html.color-mode-light .dashboard-shell .border-white\/20         { border-color: rgba(0, 0, 0, 0.12) !important; }
-html.color-mode-light .dashboard-shell .border-white\/30         { border-color: rgba(0, 0, 0, 0.15) !important; }
-html.color-mode-light .dashboard-shell .border-white\/40         { border-color: rgba(0, 0, 0, 0.2) !important; }
+.dashboard-shell.color-mode-light .border-white\/5          { border-color: rgba(0, 0, 0, 0.06) !important; }
+.dashboard-shell.color-mode-light .border-white\/10         { border-color: rgba(0, 0, 0, 0.1) !important; }
+.dashboard-shell.color-mode-light .border-white\/\[0\.06\]  { border-color: rgba(0, 0, 0, 0.06) !important; }
+.dashboard-shell.color-mode-light .border-white\/20         { border-color: rgba(0, 0, 0, 0.12) !important; }
+.dashboard-shell.color-mode-light .border-white\/30         { border-color: rgba(0, 0, 0, 0.15) !important; }
+.dashboard-shell.color-mode-light .border-white\/40         { border-color: rgba(0, 0, 0, 0.2) !important; }
 
 /* ── Hover states ──────────────────────────────────────────────────────── */
-html.color-mode-light .dashboard-shell .hover\:text-white:hover       { color: #1A1A2E !important; }
-html.color-mode-light .dashboard-shell .hover\:bg-white\/5:hover      { background-color: rgba(0, 0, 0, 0.04) !important; }
-html.color-mode-light .dashboard-shell .hover\:bg-white\/10:hover     { background-color: rgba(0, 0, 0, 0.06) !important; }
-html.color-mode-light .dashboard-shell .hover\:border-white\/20:hover { border-color: rgba(0, 0, 0, 0.12) !important; }
+.dashboard-shell.color-mode-light .hover\:text-white:hover       { color: #1A1A2E !important; }
+.dashboard-shell.color-mode-light .hover\:bg-white\/5:hover      { background-color: rgba(0, 0, 0, 0.04) !important; }
+.dashboard-shell.color-mode-light .hover\:bg-white\/10:hover     { background-color: rgba(0, 0, 0, 0.06) !important; }
+.dashboard-shell.color-mode-light .hover\:border-white\/20:hover { border-color: rgba(0, 0, 0, 0.12) !important; }
 
 /* ── Placeholder text ──────────────────────────────────────────────────── */
-html.color-mode-light .dashboard-shell .placeholder\:text-gray-600::placeholder { color: #9CA3AF !important; }
-html.color-mode-light .dashboard-shell input::placeholder   { color: #9CA3AF !important; }
-html.color-mode-light .dashboard-shell textarea::placeholder { color: #9CA3AF !important; }
+.dashboard-shell.color-mode-light .placeholder\:text-gray-600::placeholder { color: #9CA3AF !important; }
+.dashboard-shell.color-mode-light input::placeholder   { color: #9CA3AF !important; }
+.dashboard-shell.color-mode-light textarea::placeholder { color: #9CA3AF !important; }
 
 /* ── Input fields ──────────────────────────────────────────────────────── */
-html.color-mode-light .dashboard-shell input,
-html.color-mode-light .dashboard-shell textarea {
+.dashboard-shell.color-mode-light input,
+.dashboard-shell.color-mode-light textarea {
   color: #1A1A2E !important;
 }
 
 /* ── Additional backgrounds ───────────────────────────────────────────── */
-html.color-mode-light .dashboard-shell .bg-\[\#131127\]     { background-color: #FFFFFF !important; }
-html.color-mode-light .dashboard-shell .bg-\[\#1e1b3a\]     { background-color: #F0F0F5 !important; }
-html.color-mode-light .dashboard-shell .bg-\[\#1e1c38\]     { background-color: #F0F0F5 !important; }
-html.color-mode-light .dashboard-shell .bg-\[\#12101f\]     { background-color: #FFFFFF !important; }
-html.color-mode-light .dashboard-shell .bg-\[\#050410\]     { background-color: #F0F1F5 !important; }
-html.color-mode-light .dashboard-shell .bg-\[\#0B0A1A\]\/90 { background-color: rgba(248, 249, 250, 0.9) !important; }
-html.color-mode-light .dashboard-shell .bg-white\/\[0\.05\] { background-color: rgba(0, 0, 0, 0.03) !important; }
-html.color-mode-light .dashboard-shell .bg-purple-900\/20   { background-color: rgba(107, 79, 200, 0.08) !important; }
+.dashboard-shell.color-mode-light .bg-\[\#131127\]     { background-color: #FFFFFF !important; }
+.dashboard-shell.color-mode-light .bg-\[\#1e1b3a\]     { background-color: #F0F0F5 !important; }
+.dashboard-shell.color-mode-light .bg-\[\#1e1c38\]     { background-color: #F0F0F5 !important; }
+.dashboard-shell.color-mode-light .bg-\[\#12101f\]     { background-color: #FFFFFF !important; }
+.dashboard-shell.color-mode-light .bg-\[\#050410\]     { background-color: #F0F1F5 !important; }
+.dashboard-shell.color-mode-light .bg-\[\#0B0A1A\]\/90 { background-color: rgba(248, 249, 250, 0.9) !important; }
+.dashboard-shell.color-mode-light .bg-white\/\[0\.05\] { background-color: rgba(0, 0, 0, 0.03) !important; }
+.dashboard-shell.color-mode-light .bg-purple-900\/20   { background-color: rgba(107, 79, 200, 0.08) !important; }
 
 /* ── Additional text ──────────────────────────────────────────────────── */
-html.color-mode-light .dashboard-shell .text-white\/70      { color: rgba(26, 26, 46, 0.7) !important; }
+.dashboard-shell.color-mode-light .text-white\/70      { color: rgba(26, 26, 46, 0.7) !important; }
 
 /* ── Additional borders ───────────────────────────────────────────────── */
-html.color-mode-light .dashboard-shell .border-white\/\[0\.04\] { border-color: rgba(0, 0, 0, 0.04) !important; }
-html.color-mode-light .dashboard-shell .border-white\/15        { border-color: rgba(0, 0, 0, 0.1) !important; }
-html.color-mode-light .dashboard-shell .border-gray-600         { border-color: #D1D5DB !important; }
+.dashboard-shell.color-mode-light .border-white\/\[0\.04\] { border-color: rgba(0, 0, 0, 0.04) !important; }
+.dashboard-shell.color-mode-light .border-white\/15        { border-color: rgba(0, 0, 0, 0.1) !important; }
+.dashboard-shell.color-mode-light .border-gray-600         { border-color: #D1D5DB !important; }
 
 /* ── Rings ────────────────────────────────────────────────────────────── */
-html.color-mode-light .dashboard-shell .ring-white\/20       { --tw-ring-color: rgba(0, 0, 0, 0.12) !important; }
+.dashboard-shell.color-mode-light .ring-white\/20       { --tw-ring-color: rgba(0, 0, 0, 0.12) !important; }
 
 /* ── Shadows ──────────────────────────────────────────────────────────── */
-html.color-mode-light .dashboard-shell .shadow-black\/40     { --tw-shadow-color: rgba(0, 0, 0, 0.08) !important; }
-html.color-mode-light .dashboard-shell .shadow-black\/50     { --tw-shadow-color: rgba(0, 0, 0, 0.1) !important; }
-html.color-mode-light .dashboard-shell .shadow-black\/60     { --tw-shadow-color: rgba(0, 0, 0, 0.12) !important; }
+.dashboard-shell.color-mode-light .shadow-black\/40     { --tw-shadow-color: rgba(0, 0, 0, 0.08) !important; }
+.dashboard-shell.color-mode-light .shadow-black\/50     { --tw-shadow-color: rgba(0, 0, 0, 0.1) !important; }
+.dashboard-shell.color-mode-light .shadow-black\/60     { --tw-shadow-color: rgba(0, 0, 0, 0.12) !important; }
 
 /* ── Additional hover states ──────────────────────────────────────────── */
-html.color-mode-light .dashboard-shell .hover\:bg-white\/\[0\.06\]:hover { background-color: rgba(0, 0, 0, 0.04) !important; }
-html.color-mode-light .dashboard-shell .hover\:text-gray-300:hover       { color: #374151 !important; }
+.dashboard-shell.color-mode-light .hover\:bg-white\/\[0\.06\]:hover { background-color: rgba(0, 0, 0, 0.04) !important; }
+.dashboard-shell.color-mode-light .hover\:text-gray-300:hover       { color: #374151 !important; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    GREY MODE — Global Dashboard Overrides
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── Text colors ───────────────────────────────────────────────────────── */
-html.color-mode-grey .dashboard-shell .text-white      { color: #E5E5E5 !important; }
-html.color-mode-grey .dashboard-shell .text-white\/70  { color: rgba(229, 229, 229, 0.7) !important; }
-html.color-mode-grey .dashboard-shell .text-gray-200   { color: #D1D5DB !important; }
-html.color-mode-grey .dashboard-shell .text-gray-300   { color: #C0C0C8 !important; }
-html.color-mode-grey .dashboard-shell .text-gray-400   { color: #A0A0B0 !important; }
-html.color-mode-grey .dashboard-shell .text-gray-500   { color: #8A8A9A !important; }
-html.color-mode-grey .dashboard-shell .text-gray-600   { color: #6A6A7A !important; }
+.dashboard-shell.color-mode-grey .text-white      { color: #E5E5E5 !important; }
+.dashboard-shell.color-mode-grey .text-white\/70  { color: rgba(229, 229, 229, 0.7) !important; }
+.dashboard-shell.color-mode-grey .text-gray-200   { color: #D1D5DB !important; }
+.dashboard-shell.color-mode-grey .text-gray-300   { color: #C0C0C8 !important; }
+.dashboard-shell.color-mode-grey .text-gray-400   { color: #A0A0B0 !important; }
+.dashboard-shell.color-mode-grey .text-gray-500   { color: #8A8A9A !important; }
+.dashboard-shell.color-mode-grey .text-gray-600   { color: #6A6A7A !important; }
 
 /* ── Backgrounds ───────────────────────────────────────────────────────── */
-html.color-mode-grey .dashboard-shell .bg-\[\#0B0A1A\]     { background-color: #2D2D3A !important; }
-html.color-mode-grey .dashboard-shell .bg-\[\#0B0A1A\]\/80 { background-color: rgba(45, 45, 58, 0.8) !important; }
-html.color-mode-grey .dashboard-shell .bg-\[\#0B0A1A\]\/90 { background-color: rgba(45, 45, 58, 0.9) !important; }
-html.color-mode-grey .dashboard-shell .bg-\[\#050410\]     { background-color: #252530 !important; }
-html.color-mode-grey .dashboard-shell .bg-\[\#18162e\]     { background-color: #3A3A4A !important; }
-html.color-mode-grey .dashboard-shell .bg-\[\#1a1735\]     { background-color: #3A3A4A !important; }
-html.color-mode-grey .dashboard-shell .bg-\[\#131127\]     { background-color: #353545 !important; }
-html.color-mode-grey .dashboard-shell .bg-\[\#1e1b3a\]     { background-color: #424252 !important; }
-html.color-mode-grey .dashboard-shell .bg-\[\#1e1c38\]     { background-color: #424252 !important; }
-html.color-mode-grey .dashboard-shell .bg-\[\#12101f\]     { background-color: #353545 !important; }
-html.color-mode-grey .dashboard-shell .bg-white\/5          { background-color: rgba(255, 255, 255, 0.05) !important; }
-html.color-mode-grey .dashboard-shell .bg-white\/10         { background-color: rgba(255, 255, 255, 0.08) !important; }
-html.color-mode-grey .dashboard-shell .bg-white\/\[0\.02\]  { background-color: rgba(255, 255, 255, 0.03) !important; }
-html.color-mode-grey .dashboard-shell .bg-white\/\[0\.03\]  { background-color: rgba(255, 255, 255, 0.04) !important; }
-html.color-mode-grey .dashboard-shell .bg-white\/\[0\.04\]  { background-color: rgba(255, 255, 255, 0.05) !important; }
-html.color-mode-grey .dashboard-shell .bg-white\/\[0\.05\]  { background-color: rgba(255, 255, 255, 0.06) !important; }
-html.color-mode-grey .dashboard-shell .bg-white\/\[0\.06\]  { background-color: rgba(255, 255, 255, 0.07) !important; }
-html.color-mode-grey .dashboard-shell .bg-purple-900\/20    { background-color: rgba(107, 79, 200, 0.15) !important; }
+.dashboard-shell.color-mode-grey .bg-\[\#0B0A1A\]     { background-color: #2D2D3A !important; }
+.dashboard-shell.color-mode-grey .bg-\[\#0B0A1A\]\/80 { background-color: rgba(45, 45, 58, 0.8) !important; }
+.dashboard-shell.color-mode-grey .bg-\[\#0B0A1A\]\/90 { background-color: rgba(45, 45, 58, 0.9) !important; }
+.dashboard-shell.color-mode-grey .bg-\[\#050410\]     { background-color: #252530 !important; }
+.dashboard-shell.color-mode-grey .bg-\[\#18162e\]     { background-color: #3A3A4A !important; }
+.dashboard-shell.color-mode-grey .bg-\[\#1a1735\]     { background-color: #3A3A4A !important; }
+.dashboard-shell.color-mode-grey .bg-\[\#131127\]     { background-color: #353545 !important; }
+.dashboard-shell.color-mode-grey .bg-\[\#1e1b3a\]     { background-color: #424252 !important; }
+.dashboard-shell.color-mode-grey .bg-\[\#1e1c38\]     { background-color: #424252 !important; }
+.dashboard-shell.color-mode-grey .bg-\[\#12101f\]     { background-color: #353545 !important; }
+.dashboard-shell.color-mode-grey .bg-white\/5          { background-color: rgba(255, 255, 255, 0.05) !important; }
+.dashboard-shell.color-mode-grey .bg-white\/10         { background-color: rgba(255, 255, 255, 0.08) !important; }
+.dashboard-shell.color-mode-grey .bg-white\/\[0\.02\]  { background-color: rgba(255, 255, 255, 0.03) !important; }
+.dashboard-shell.color-mode-grey .bg-white\/\[0\.03\]  { background-color: rgba(255, 255, 255, 0.04) !important; }
+.dashboard-shell.color-mode-grey .bg-white\/\[0\.04\]  { background-color: rgba(255, 255, 255, 0.05) !important; }
+.dashboard-shell.color-mode-grey .bg-white\/\[0\.05\]  { background-color: rgba(255, 255, 255, 0.06) !important; }
+.dashboard-shell.color-mode-grey .bg-white\/\[0\.06\]  { background-color: rgba(255, 255, 255, 0.07) !important; }
+.dashboard-shell.color-mode-grey .bg-purple-900\/20    { background-color: rgba(107, 79, 200, 0.15) !important; }
 
 /* ── Borders ───────────────────────────────────────────────────────────── */
-html.color-mode-grey .dashboard-shell .border-white\/5          { border-color: rgba(255, 255, 255, 0.08) !important; }
-html.color-mode-grey .dashboard-shell .border-white\/10         { border-color: rgba(255, 255, 255, 0.12) !important; }
-html.color-mode-grey .dashboard-shell .border-white\/15         { border-color: rgba(255, 255, 255, 0.18) !important; }
-html.color-mode-grey .dashboard-shell .border-white\/20         { border-color: rgba(255, 255, 255, 0.22) !important; }
-html.color-mode-grey .dashboard-shell .border-white\/30         { border-color: rgba(255, 255, 255, 0.3) !important; }
-html.color-mode-grey .dashboard-shell .border-white\/40         { border-color: rgba(255, 255, 255, 0.35) !important; }
-html.color-mode-grey .dashboard-shell .border-white\/\[0\.04\]  { border-color: rgba(255, 255, 255, 0.06) !important; }
-html.color-mode-grey .dashboard-shell .border-white\/\[0\.06\]  { border-color: rgba(255, 255, 255, 0.08) !important; }
-html.color-mode-grey .dashboard-shell .border-gray-600          { border-color: #5A5A6A !important; }
+.dashboard-shell.color-mode-grey .border-white\/5          { border-color: rgba(255, 255, 255, 0.08) !important; }
+.dashboard-shell.color-mode-grey .border-white\/10         { border-color: rgba(255, 255, 255, 0.12) !important; }
+.dashboard-shell.color-mode-grey .border-white\/15         { border-color: rgba(255, 255, 255, 0.18) !important; }
+.dashboard-shell.color-mode-grey .border-white\/20         { border-color: rgba(255, 255, 255, 0.22) !important; }
+.dashboard-shell.color-mode-grey .border-white\/30         { border-color: rgba(255, 255, 255, 0.3) !important; }
+.dashboard-shell.color-mode-grey .border-white\/40         { border-color: rgba(255, 255, 255, 0.35) !important; }
+.dashboard-shell.color-mode-grey .border-white\/\[0\.04\]  { border-color: rgba(255, 255, 255, 0.06) !important; }
+.dashboard-shell.color-mode-grey .border-white\/\[0\.06\]  { border-color: rgba(255, 255, 255, 0.08) !important; }
+.dashboard-shell.color-mode-grey .border-gray-600          { border-color: #5A5A6A !important; }
 
 /* ── Rings ────────────────────────────────────────────────────────────── */
-html.color-mode-grey .dashboard-shell .ring-white\/20       { --tw-ring-color: rgba(255, 255, 255, 0.22) !important; }
+.dashboard-shell.color-mode-grey .ring-white\/20       { --tw-ring-color: rgba(255, 255, 255, 0.22) !important; }
 
 /* ── Shadows ──────────────────────────────────────────────────────────── */
-html.color-mode-grey .dashboard-shell .shadow-black\/40     { --tw-shadow-color: rgba(0, 0, 0, 0.25) !important; }
-html.color-mode-grey .dashboard-shell .shadow-black\/50     { --tw-shadow-color: rgba(0, 0, 0, 0.3) !important; }
-html.color-mode-grey .dashboard-shell .shadow-black\/60     { --tw-shadow-color: rgba(0, 0, 0, 0.35) !important; }
+.dashboard-shell.color-mode-grey .shadow-black\/40     { --tw-shadow-color: rgba(0, 0, 0, 0.25) !important; }
+.dashboard-shell.color-mode-grey .shadow-black\/50     { --tw-shadow-color: rgba(0, 0, 0, 0.3) !important; }
+.dashboard-shell.color-mode-grey .shadow-black\/60     { --tw-shadow-color: rgba(0, 0, 0, 0.35) !important; }
 
 /* ── Hover states ─────────────────────────────────────────────────────── */
-html.color-mode-grey .dashboard-shell .hover\:text-white:hover       { color: #F0F0F0 !important; }
-html.color-mode-grey .dashboard-shell .hover\:bg-white\/5:hover      { background-color: rgba(255, 255, 255, 0.07) !important; }
-html.color-mode-grey .dashboard-shell .hover\:bg-white\/10:hover     { background-color: rgba(255, 255, 255, 0.1) !important; }
-html.color-mode-grey .dashboard-shell .hover\:border-white\/20:hover { border-color: rgba(255, 255, 255, 0.22) !important; }
+.dashboard-shell.color-mode-grey .hover\:text-white:hover       { color: #F0F0F0 !important; }
+.dashboard-shell.color-mode-grey .hover\:bg-white\/5:hover      { background-color: rgba(255, 255, 255, 0.07) !important; }
+.dashboard-shell.color-mode-grey .hover\:bg-white\/10:hover     { background-color: rgba(255, 255, 255, 0.1) !important; }
+.dashboard-shell.color-mode-grey .hover\:border-white\/20:hover { border-color: rgba(255, 255, 255, 0.22) !important; }
 
 /* ── Input fields ──────────────────────────────────────────────────────── */
-html.color-mode-grey .dashboard-shell input,
-html.color-mode-grey .dashboard-shell textarea {
+.dashboard-shell.color-mode-grey input,
+.dashboard-shell.color-mode-grey textarea {
   color: #E5E5E5 !important;
   background-color: #353545 !important;
 }
 
-html.color-mode-grey .dashboard-shell input::placeholder,
-html.color-mode-grey .dashboard-shell textarea::placeholder {
+.dashboard-shell.color-mode-grey input::placeholder,
+.dashboard-shell.color-mode-grey textarea::placeholder {
   color: #8A8A9A !important;
 }
 
@@ -329,27 +341,27 @@ html.color-mode-grey .dashboard-shell textarea::placeholder {
   background: #2a2535;
 }
 
-html.color-mode-light ::-webkit-scrollbar-track {
+.dashboard-shell.color-mode-light ::-webkit-scrollbar-track {
   background: #e8e8ee;
 }
 
-html.color-mode-light ::-webkit-scrollbar-thumb {
+.dashboard-shell.color-mode-light ::-webkit-scrollbar-thumb {
   background: #c0c0cc;
 }
 
-html.color-mode-light ::-webkit-scrollbar-thumb:hover {
+.dashboard-shell.color-mode-light ::-webkit-scrollbar-thumb:hover {
   background: #a0a0b0;
 }
 
-html.color-mode-grey ::-webkit-scrollbar-track {
+.dashboard-shell.color-mode-grey ::-webkit-scrollbar-track {
   background: #25252f;
 }
 
-html.color-mode-grey ::-webkit-scrollbar-thumb {
+.dashboard-shell.color-mode-grey ::-webkit-scrollbar-thumb {
   background: #48485a;
 }
 
-html.color-mode-grey ::-webkit-scrollbar-thumb:hover {
+.dashboard-shell.color-mode-grey ::-webkit-scrollbar-thumb:hover {
   background: #5a5a6e;
 }
 
@@ -362,7 +374,7 @@ html.color-mode-grey ::-webkit-scrollbar-thumb:hover {
   color: #f6f3fb;
 }
 
-html.color-mode-light ::selection {
+.dashboard-shell.color-mode-light ::selection {
   background: rgba(107, 79, 200, 0.25);
   color: #1A1A2E;
 }
@@ -388,13 +400,13 @@ html.high-contrast .border-white\/5 {
   border-color: rgba(255, 255, 255, 0.35) !important;
 }
 
-html.high-contrast.color-mode-light .text-gray-400,
-html.high-contrast.color-mode-light .text-gray-500,
-html.high-contrast.color-mode-light .text-gray-600 {
+html.high-contrast .dashboard-shell.color-mode-light .text-gray-400,
+html.high-contrast .dashboard-shell.color-mode-light .text-gray-500,
+html.high-contrast .dashboard-shell.color-mode-light .text-gray-600 {
   color: #111111 !important;
 }
 
-html.high-contrast.color-mode-light * {
+html.high-contrast .dashboard-shell.color-mode-light * {
   border-color: rgba(0, 0, 0, 0.3) !important;
 }
 

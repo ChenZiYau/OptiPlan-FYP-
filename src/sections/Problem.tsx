@@ -26,10 +26,10 @@ export function Problem() {
           {problems.map((problem) => (
             <StaggerItem key={problem.number}>
               <GlassCard className="h-full p-6">
-                <span className="inline-block text-4xl font-display font-bold text-opti-accent/30 mb-3">
+                <span className="inline-block text-4xl font-bold text-opti-accent/30 mb-3 tracking-tight">
                   {problem.number}
                 </span>
-                <h3 className="font-display font-semibold text-xl text-opti-text-primary mb-2">
+                <h3 className="font-semibold text-xl text-opti-text-primary mb-2">
                   {problem.title}
                 </h3>
                 <p className="text-opti-text-secondary text-sm leading-relaxed">

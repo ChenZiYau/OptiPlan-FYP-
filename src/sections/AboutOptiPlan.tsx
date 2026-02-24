@@ -30,7 +30,7 @@ export function AboutOptiPlan() {
           {/* 3-in-1 visual card */}
           <AnimatedSection direction="left">
             <GlassCard className="p-8" hover={false}>
-              <p className="text-xs font-mono uppercase tracking-wider text-opti-accent mb-6">
+              <p className="text-xs font-medium uppercase tracking-wider text-opti-accent mb-6">
                 3-in-1 Platform
               </p>
               <div className="grid grid-cols-3 gap-4">
@@ -53,7 +53,7 @@ export function AboutOptiPlan() {
           {/* Text + checklist */}
           <AnimatedSection direction="right" delay={0.15}>
             <div className="space-y-4">
-              <h3 className="font-display font-semibold text-2xl text-opti-text-primary">
+              <h3 className="font-semibold text-2xl text-opti-text-primary">
                 Designed around the student day
               </h3>
               <p className="text-opti-text-secondary leading-relaxed">

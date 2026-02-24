@@ -46,10 +46,10 @@ export function HowItWorks() {
                     </div>
                     <div>
                       <div className="flex items-center gap-3 mb-2">
-                        <span className="font-mono text-xs text-opti-text-secondary">
+                        <span className="text-xs text-opti-text-secondary tabular-nums">
                           {step.number}
                         </span>
-                        <h3 className="font-display font-semibold text-2xl text-opti-text-primary">
+                        <h3 className="font-semibold text-2xl text-opti-text-primary">
                           {step.title}
                         </h3>
                       </div>

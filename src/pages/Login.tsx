@@ -109,12 +109,12 @@ export function Login() {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-opti-accent to-[#8B5CF6] flex items-center justify-center">
                 <span className="text-opti-bg font-bold text-lg">O</span>
               </div>
-              <span className="font-display font-semibold text-2xl text-opti-text-primary">
+              <span className="font-semibold text-2xl text-opti-text-primary">
                 OptiPlan
               </span>
             </Link>
 
-            <h1 className="font-display font-bold text-opti-text-primary leading-tight mb-6" style={{ fontSize: 'clamp(32px, 3.5vw, 52px)' }}>
+            <h1 className="font-bold text-opti-text-primary leading-tight mb-6" style={{ fontSize: 'clamp(32px, 3.5vw, 52px)' }}>
               Welcome back to{' '}
               <span className="text-gradient">OptiPlan</span>
             </h1>
@@ -130,7 +130,7 @@ export function Login() {
                 { value: '2M+', label: 'Tasks completed' },
               ].map((stat) => (
                 <div key={stat.label} className="glass-card p-4 text-center">
-                  <p className="font-display font-bold text-xl text-opti-accent">{stat.value}</p>
+                  <p className="font-bold text-xl text-opti-accent">{stat.value}</p>
                   <p className="text-xs text-opti-text-secondary mt-1">{stat.label}</p>
                 </div>
               ))}
@@ -151,13 +151,13 @@ export function Login() {
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-opti-accent to-[#8B5CF6] flex items-center justify-center">
                   <span className="text-opti-bg font-bold text-sm">O</span>
                 </div>
-                <span className="font-display font-semibold text-xl text-opti-text-primary">OptiPlan</span>
+                <span className="font-semibold text-xl text-opti-text-primary">OptiPlan</span>
               </Link>
             </motion.div>
 
             <motion.div custom={1} variants={fadeIn} className="glass-card p-8">
               <div className="mb-6">
-                <h2 className="font-display font-bold text-2xl text-opti-text-primary">
+                <h2 className="font-bold text-2xl text-opti-text-primary">
                   Welcome back
                 </h2>
                 <p className="mt-2 text-sm text-opti-text-secondary">
@@ -259,7 +259,7 @@ export function Login() {
               {/* Divider */}
               <div className="my-6 flex items-center gap-3">
                 <div className="flex-1 h-px bg-white/10" />
-                <span className="text-xs text-opti-text-secondary font-mono uppercase tracking-wider">Or continue with</span>
+                <span className="text-xs text-opti-text-secondary font-medium uppercase tracking-wider">Or continue with</span>
                 <div className="flex-1 h-px bg-white/10" />
               </div>
 

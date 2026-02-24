@@ -146,12 +146,12 @@ export function SignUp() {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-opti-accent to-[#8B5CF6] flex items-center justify-center">
                 <span className="text-opti-bg font-bold text-lg">O</span>
               </div>
-              <span className="font-display font-semibold text-2xl text-opti-text-primary">
+              <span className="font-semibold text-2xl text-opti-text-primary">
                 OptiPlan
               </span>
             </Link>
 
-            <h1 className="font-display font-bold text-opti-text-primary leading-tight mb-6" style={{ fontSize: 'clamp(32px, 3.5vw, 52px)' }}>
+            <h1 className="font-bold text-opti-text-primary leading-tight mb-6" style={{ fontSize: 'clamp(32px, 3.5vw, 52px)' }}>
               One Dashboard.
               <br />
               <span className="relative inline-block overflow-hidden h-[1.2em]" style={{ width: '5.8em' }}>
@@ -193,7 +193,7 @@ export function SignUp() {
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-opti-accent to-[#8B5CF6] flex items-center justify-center">
                   <span className="text-opti-bg font-bold text-sm">O</span>
                 </div>
-                <span className="font-display font-semibold text-xl text-opti-text-primary">OptiPlan</span>
+                <span className="font-semibold text-xl text-opti-text-primary">OptiPlan</span>
               </Link>
             </motion.div>
 
@@ -203,7 +203,7 @@ export function SignUp() {
                   <div className="mx-auto w-16 h-16 rounded-full bg-emerald-400/10 border border-emerald-400/20 flex items-center justify-center mb-5">
                     <Mail className="w-8 h-8 text-emerald-400" />
                   </div>
-                  <h2 className="font-display font-bold text-2xl text-opti-text-primary mb-2">
+                  <h2 className="font-bold text-2xl text-opti-text-primary mb-2">
                     Check your email
                   </h2>
                   <p className="text-opti-text-secondary text-sm leading-relaxed mb-6 max-w-sm mx-auto">
@@ -223,7 +223,7 @@ export function SignUp() {
               ) : (
               <>
               <div className="mb-6">
-                <h2 className="font-display font-bold text-2xl text-opti-text-primary">
+                <h2 className="font-bold text-2xl text-opti-text-primary">
                   Create your account
                 </h2>
                 <p className="mt-2 text-sm text-opti-text-secondary">
@@ -384,7 +384,7 @@ export function SignUp() {
               {/* Divider */}
               <div className="my-6 flex items-center gap-3">
                 <div className="flex-1 h-px bg-white/10" />
-                <span className="text-xs text-opti-text-secondary font-mono uppercase tracking-wider">Or continue with</span>
+                <span className="text-xs text-opti-text-secondary font-medium uppercase tracking-wider">Or continue with</span>
                 <div className="flex-1 h-px bg-white/10" />
               </div>
 

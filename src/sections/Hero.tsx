@@ -59,7 +59,7 @@ export function Hero() {
             <Button
               variant="secondary"
               size="sm"
-              className="gap-2 bg-opti-accent/10 text-opti-accent border border-opti-accent/20 hover:bg-opti-accent/20 font-mono text-xs uppercase tracking-wider"
+              className="gap-2 bg-opti-accent/10 text-opti-accent border border-opti-accent/20 hover:bg-opti-accent/20 text-xs uppercase tracking-wider font-medium"
               onClick={() => scrollToSection('features')}
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -71,7 +71,7 @@ export function Hero() {
           {/* Animated Headline */}
           <motion.h1
             variants={fadeInUp}
-            className="mt-8 font-display font-bold text-opti-text-primary leading-[0.95] tracking-tight text-5xl md:text-7xl max-w-3xl"
+            className="mt-8 font-bold text-opti-text-primary leading-[0.95] tracking-tight text-5xl md:text-7xl max-w-3xl"
           >
             <span>Make your days</span>
             <span className="relative flex w-full justify-center overflow-hidden text-center md:pb-4 md:pt-1">
@@ -117,7 +117,7 @@ export function Hero() {
                 <div className="w-full md:w-[38%] p-6 border-b md:border-b-0 md:border-r border-white/10">
                   <div className="flex items-center gap-2 mb-4">
                     <Calendar className="w-4 h-4 text-opti-accent" />
-                    <span className="font-display font-semibold text-opti-text-primary">
+                    <span className="font-semibold text-opti-text-primary">
                       March
                     </span>
                   </div>
@@ -125,7 +125,7 @@ export function Hero() {
                     {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
                       <span
                         key={day}
-                        className="text-opti-text-secondary py-1 font-mono"
+                        className="text-opti-text-secondary py-1"
                       >
                         {day}
                       </span>
@@ -155,10 +155,10 @@ export function Hero() {
                 {/* Agenda Section */}
                 <div className="w-full md:w-[62%] p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <span className="font-display font-semibold text-opti-text-primary">
+                    <span className="font-semibold text-opti-text-primary">
                       Today
                     </span>
-                    <span className="text-xs text-opti-text-secondary font-mono">
+                    <span className="text-xs text-opti-text-secondary">
                       3 tasks
                     </span>
                   </div>
@@ -185,7 +185,7 @@ export function Hero() {
                         </div>
                         <div className="flex items-center gap-1 text-opti-text-secondary text-xs">
                           <Clock className="w-3 h-3" />
-                          <span className="font-mono">{item.time}</span>
+                          <span className="tabular-nums">{item.time}</span>
                         </div>
                       </motion.div>
                     ))}
@@ -224,7 +224,7 @@ export function Hero() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 0.5 }}
         transition={{ delay: 1.5 }}
-        className="mt-auto pt-8 text-opti-text-secondary text-xs font-mono"
+        className="mt-auto pt-8 text-opti-text-secondary text-xs"
       >
         <motion.div
           animate={{ y: [0, 8, 0] }}

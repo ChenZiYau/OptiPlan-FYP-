@@ -37,7 +37,7 @@ export function DashboardHeader({ title, onMenuToggle }: DashboardHeaderProps) {
           <Menu className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-lg font-display font-semibold text-white">{title}</h1>
+          <h1 className="text-lg font-semibold text-white tracking-tight">{title}</h1>
           <p className="text-xs text-gray-500 hidden sm:block">
             {getGreeting()}, {firstName}
           </p>

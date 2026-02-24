@@ -16,7 +16,7 @@ export function MacWindow({ title, children, className = '' }: MacWindowProps) {
           <div className="w-3 h-3 rounded-full bg-yellow-400" />
           <div className="w-3 h-3 rounded-full bg-green-400" />
         </div>
-        <span className="flex-1 text-center text-sm text-opti-text-secondary font-mono">
+        <span className="flex-1 text-center text-sm text-opti-text-secondary">
           {title}
         </span>
         <div className="w-[52px]" />

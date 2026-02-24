@@ -387,7 +387,7 @@ export function Navbar() {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-opti-accent to-[#8B5CF6] flex items-center justify-center">
                 <span className="text-[#0B0A1A] font-bold text-sm">O</span>
               </div>
-              <span className="font-display font-semibold text-lg text-white tracking-tight">
+              <span className="font-semibold text-lg text-white tracking-tight">
                 OptiPlan
               </span>
             </motion.a>

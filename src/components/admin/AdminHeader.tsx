@@ -15,7 +15,7 @@ export function AdminHeader({ title, onMenuToggle }: AdminHeaderProps) {
         >
           <Menu className="w-5 h-5" />
         </button>
-        <h1 className="text-lg font-display font-semibold text-white">{title}</h1>
+        <h1 className="text-lg font-semibold text-white tracking-tight">{title}</h1>
       </div>
 
       <div className="flex items-center gap-3">

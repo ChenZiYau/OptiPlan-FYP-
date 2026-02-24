@@ -12,7 +12,7 @@ AI-powered daily planning tool landing page. Converts visitors into early-access
 - **Icons**: lucide-react
 - **Forms**: react-hook-form + zod (available but sections use manual validation currently)
 - **HTTP**: axios (stubbed, not yet wired to real API)
-- **Fonts**: Space Grotesk (headings), Inter (body), IBM Plex Mono (monospace)
+- **Fonts**: Geist Sans (global sans-serif via `@fontsource/geist-sans`), IBM Plex Mono (monospace)
 
 ## Project Structure
 
