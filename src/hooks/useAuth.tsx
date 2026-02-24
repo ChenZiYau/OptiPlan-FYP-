@@ -78,12 +78,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // Upsert user presence
+  const upsertPresence = useCallback(async (userId: string, isOnline: boolean) => {
+    try {
+      await supabase.from('user_presence').upsert({
+        user_id: userId,
+        is_online: isOnline,
+        last_seen: new Date().toISOString(),
+      });
+    } catch { /* ignore */ }
+  }, []);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
         setProfileAndFetchAvatar(s.user);
+        upsertPresence(s.user.id, true);
       } else {
         setProfile(null);
       }
@@ -99,16 +111,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(s?.user ?? null);
       if (s?.user) {
         setProfileAndFetchAvatar(s.user);
+        upsertPresence(s.user.id, true);
       } else {
         setProfile(null);
       }
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
-  }, [setProfileAndFetchAvatar]);
+    // Set offline on window unload
+    const handleUnload = () => {
+      if (user) {
+        // Use sendBeacon for reliability on unload
+        const body = JSON.stringify({
+          user_id: user.id,
+          is_online: false,
+          last_seen: new Date().toISOString(),
+        });
+        navigator.sendBeacon?.(
+          `${import.meta.env.VITE_SUPABASE_URL ?? 'https://zgxmzpzuedqclfvphuqy.supabase.co'}/rest/v1/user_presence?on_conflict=user_id`,
+          new Blob([body], { type: 'application/json' }),
+        );
+      }
+    };
+    window.addEventListener('beforeunload', handleUnload);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('beforeunload', handleUnload);
+    };
+  }, [setProfileAndFetchAvatar, upsertPresence, user]);
 
   async function signOut() {
+    if (user) {
+      await upsertPresence(user.id, false);
+    }
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);

@@ -11,6 +11,13 @@ const pageTitles: Record<string, string> = {
   '/admin/content': 'Website Content',
 };
 
+function getTitle(pathname: string): string {
+  if (pageTitles[pathname]) return pageTitles[pathname];
+  if (pathname.startsWith('/admin/users/delete/')) return 'Delete User';
+  if (pathname.startsWith('/admin/activity/')) return 'Activity Detail';
+  return 'Admin';
+}
+
 export function AdminLayout() {
   const { user, profile, loading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -28,7 +35,7 @@ export function AdminLayout() {
     return <Navigate to="/" replace />;
   }
 
-  const title = pageTitles[location.pathname] ?? 'Admin';
+  const title = getTitle(location.pathname);
 
   return (
     <div className="min-h-screen bg-[#0B0A1A]">

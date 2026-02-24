@@ -9,6 +9,9 @@ import { Overview } from '@/pages/admin/Overview';
 import { UserDatabase } from '@/pages/admin/UserDatabase';
 import { FeedbackPage } from '@/pages/admin/FeedbackPage';
 import { ContentEditor } from '@/pages/admin/ContentEditor';
+import { UserDeleteConfirm } from '@/pages/admin/UserDeleteConfirm';
+import { ActivityDetail } from '@/pages/admin/ActivityDetail';
+import { SiteContentProvider } from '@/hooks/useSiteContent';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { DashboardOverview } from '@/pages/dashboard/DashboardOverview';
 import { FinanceTracker } from '@/pages/dashboard/FinanceTracker';
@@ -28,7 +31,7 @@ function App() {
       <SettingsProvider>
       <AuthProvider>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<SiteContentProvider><LandingPage /></SiteContentProvider>} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/login" element={<Login />} />
 
@@ -53,6 +56,8 @@ function App() {
             <Route path="users" element={<UserDatabase />} />
             <Route path="feedback" element={<FeedbackPage />} />
             <Route path="content" element={<ContentEditor />} />
+            <Route path="users/delete/:userId" element={<UserDeleteConfirm />} />
+            <Route path="activity/:activityId" element={<ActivityDetail />} />
           </Route>
         </Routes>
       </AuthProvider>

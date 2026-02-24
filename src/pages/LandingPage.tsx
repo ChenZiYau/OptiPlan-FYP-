@@ -10,8 +10,11 @@ import { FAQ } from '@/sections/FAQ';
 import { FeedbackForm } from '@/sections/FeedbackForm';
 import { CTA } from '@/sections/CTA';
 import { Footer } from '@/sections/Footer';
+import { useSiteContentData } from '@/hooks/useSiteContent';
 
 export function LandingPage() {
+  const { isVisible } = useSiteContentData();
+
   return (
     <div className="relative min-h-screen bg-opti-bg text-opti-text-primary overflow-x-hidden">
       {/* Global background glow */}
@@ -31,16 +34,16 @@ export function LandingPage() {
 
       {/* Main Content */}
       <main className="relative z-10">
-        <Hero />
-        <Problem />
-        <Features />
-        <Tutorial />
-        <AboutCreator />
-        <AboutOptiPlan />
-        <FAQ />
+        {isVisible('hero') && <Hero />}
+        {isVisible('problems') && <Problem />}
+        {isVisible('features') && <Features />}
+        {isVisible('tutorial') && <Tutorial />}
+        {isVisible('about_creator') && <AboutCreator />}
+        {isVisible('about_optiplan') && <AboutOptiPlan />}
+        {isVisible('faqs') && <FAQ />}
         <FeedbackForm />
-        <Testimonials />
-        <CTA />
+        {isVisible('testimonials') && <Testimonials />}
+        {isVisible('cta') && <CTA />}
       </main>
 
       {/* Footer */}
