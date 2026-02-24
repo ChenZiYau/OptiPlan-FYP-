@@ -19,6 +19,7 @@ import { ChatBotPage } from '@/pages/dashboard/ChatBotPage';
 import { StudyHubPage } from '@/pages/dashboard/StudyHubPage';
 import { WrappedPage } from '@/pages/dashboard/WrappedPage';
 import { WellnessPage } from '@/pages/dashboard/WellnessPage';
+import { AchievementsPage } from '@/pages/dashboard/AchievementsPage';
 import { SettingsPage } from '@/pages/dashboard/SettingsPage';
 
 function App() {
@@ -42,6 +43,7 @@ function App() {
             <Route path="studyhub" element={<StudyHubPage />} />
             <Route path="wrapped" element={<WrappedPage />} />
             <Route path="wellness" element={<WellnessPage />} />
+            <Route path="achievements" element={<AchievementsPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
 

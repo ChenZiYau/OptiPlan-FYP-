@@ -343,20 +343,19 @@ export function WrappedPage() {
   const { items } = useDashboard();
   const { totalMonthlyBudget, monthSpending } = useFinance();
 
-  const allTasks = items.filter(i => i.type === 'task');
-  const completedTasks = allTasks.filter(i => i.status === 'completed');
+  const completedItems = items.filter(i => i.status === 'completed');
   const moneySaved = Math.max(0, totalMonthlyBudget - monthSpending);
 
   const WRAPPED_DATA = {
-    tasksCompleted: completedTasks.length,
-    totalTasks: Math.max(allTasks.length, 1), // avoid division by zero
+    tasksCompleted: completedItems.length,
+    totalTasks: Math.max(items.length, 1), // avoid division by zero
     moneySaved: Math.round(moneySaved),
     totalBudget: Math.round(totalMonthlyBudget),
     flashcardsMastered: 0, // local state only, no backend
     focusHours: 0,         // Pomodoro is local state only
-    topSubject: allTasks.length > 0 ? '—' : '—',
+    topSubject: items.length > 0 ? '—' : '—',
     streakDays: 0,
-    percentile: completedTasks.length > 0 ? Math.min(99, Math.round(completedTasks.length * 3)) : 0,
+    percentile: completedItems.length > 0 ? Math.min(99, Math.round(completedItems.length * 3)) : 0,
   };
 
   function goTo(index: number) {

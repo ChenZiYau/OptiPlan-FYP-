@@ -1,8 +1,16 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
-import type { ReactNode } from 'react';
-import type { DashboardItem, ScheduleEntry } from '@/types/dashboard';
+import type { ReactNode, MutableRefObject } from 'react';
+import type { DashboardItem, ScheduleEntry, Importance, ItemType } from '@/types/dashboard';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
+
+export type TaskStatusChangeCallback = (
+  taskId: string,
+  oldStatus: string,
+  newStatus: string,
+  importance: Importance,
+  itemType: ItemType,
+) => void;
 
 interface DashboardContextValue {
   // Modal
@@ -23,6 +31,9 @@ interface DashboardContextValue {
 
   // Loading
   loading: boolean;
+
+  // Task status change callback (used by gamification)
+  onTaskStatusChange: MutableRefObject<TaskStatusChangeCallback | null>;
 }
 
 const DashboardContext = createContext<DashboardContextValue | null>(null);
@@ -35,6 +46,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const itemsRef = useRef(items);
   itemsRef.current = items;
+  const onTaskStatusChange = useRef<TaskStatusChangeCallback | null>(null);
 
   // Fetch data from Supabase when user is available
   useEffect(() => {
@@ -104,6 +116,18 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const updateItem = useCallback(
     async (id: string, updates: Partial<DashboardItem>) => {
       const snapshot = itemsRef.current;
+
+      // Detect task status change for gamification
+      if (updates.status) {
+        const currentItem = itemsRef.current.find((i) => i.id === id);
+        if (currentItem) {
+          const oldStatus = currentItem.status ?? 'todo';
+          if (oldStatus !== updates.status && onTaskStatusChange.current) {
+            onTaskStatusChange.current(id, oldStatus, updates.status, currentItem.importance, currentItem.type);
+          }
+        }
+      }
+
       setItems((prev) =>
         prev.map((item) => (item.id === id ? { ...item, ...updates } as DashboardItem : item)),
       );
@@ -181,7 +205,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <DashboardContext.Provider value={{ isModalOpen, openModal, closeModal, items, addItem, updateItem, removeItem, schedules, addSchedule, removeSchedule, loading }}>
+    <DashboardContext.Provider value={{ isModalOpen, openModal, closeModal, items, addItem, updateItem, removeItem, schedules, addSchedule, removeSchedule, loading, onTaskStatusChange }}>
       {children}
     </DashboardContext.Provider>
   );

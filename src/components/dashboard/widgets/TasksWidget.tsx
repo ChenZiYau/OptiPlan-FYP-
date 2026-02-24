@@ -23,7 +23,7 @@ export function TasksWidget() {
   const { items, updateItem } = useDashboard();
   const [activeTab, setActiveTab] = useState<TabKey>('todo');
 
-  const taskItems = items.filter(i => i.type === 'task');
+  const taskItems = items;
 
   const filteredTasks = taskItems.filter(t => {
     const status = t.status ?? 'todo';

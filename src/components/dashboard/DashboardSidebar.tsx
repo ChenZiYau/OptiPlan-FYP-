@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutGrid, DollarSign, CheckSquare, CalendarDays,
-  Users, Bot, BookOpen, LogOut, X, Plus, Sparkles, Heart, Settings,
+  Users, Bot, BookOpen, LogOut, X, Plus, Sparkles, Heart, Settings, Trophy,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { HoverTip } from '@/components/HoverTip';
@@ -19,6 +19,7 @@ const navItems: DashboardNavItem[] = [
   { label: 'Study Hub', href: '/dashboard/studyhub', icon: BookOpen },
   { label: 'Wellness', href: '/dashboard/wellness', icon: Heart },
   { label: 'Wrapped', href: '/dashboard/wrapped', icon: Sparkles },
+  { label: 'Achievements', href: '/dashboard/achievements', icon: Trophy },
 ];
 
 interface DashboardSidebarProps {

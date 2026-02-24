@@ -1,5 +1,5 @@
 import { LayoutGrid, List, Search } from 'lucide-react';
-import type { Importance, TaskStatus } from '@/types/dashboard';
+import type { Importance, TaskStatus, ItemType } from '@/types/dashboard';
 
 export type ViewMode = 'kanban' | 'list';
 
@@ -12,6 +12,8 @@ interface TaskFiltersProps {
   onStatusFilterChange: (value: TaskStatus | 'all') => void;
   importanceFilter: Importance | 'all';
   onImportanceFilterChange: (value: Importance | 'all') => void;
+  typeFilter: ItemType | 'all';
+  onTypeFilterChange: (value: ItemType | 'all') => void;
 }
 
 export function TaskFilters({
@@ -23,6 +25,8 @@ export function TaskFilters({
   onStatusFilterChange,
   importanceFilter,
   onImportanceFilterChange,
+  typeFilter,
+  onTypeFilterChange,
 }: TaskFiltersProps) {
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -83,6 +87,18 @@ export function TaskFilters({
         <option value="1">Low</option>
         <option value="2">Medium</option>
         <option value="3">High</option>
+      </select>
+
+      {/* Type filter */}
+      <select
+        value={typeFilter}
+        onChange={(e) => onTypeFilterChange(e.target.value as ItemType | 'all')}
+        className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-sm text-white outline-none focus:border-purple-500/50 transition-all [color-scheme:dark]"
+      >
+        <option value="all">All Types</option>
+        <option value="task">Task</option>
+        <option value="event">Event</option>
+        <option value="study">Study</option>
       </select>
     </div>
   );

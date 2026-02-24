@@ -1,11 +1,17 @@
 import { MoreHorizontal, GripVertical, Calendar, Trash2 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import type { DashboardItem, Importance } from '@/types/dashboard';
+import type { DashboardItem, Importance, ItemType } from '@/types/dashboard';
 
 const IMPORTANCE_CONFIG: Record<Importance, { label: string; color: string; bg: string }> = {
   1: { label: 'Low', color: '#22c55e', bg: 'bg-green-500/10' },
   2: { label: 'Medium', color: '#f59e0b', bg: 'bg-amber-500/10' },
   3: { label: 'High', color: '#ef4444', bg: 'bg-red-500/10' },
+};
+
+const TYPE_CONFIG: Record<ItemType, { label: string; color: string }> = {
+  task: { label: 'Task', color: '#818cf8' },
+  event: { label: 'Event', color: '#38bdf8' },
+  study: { label: 'Study', color: '#a78bfa' },
 };
 
 interface TaskCardProps {
@@ -21,6 +27,7 @@ export function TaskCard({ item, onClick, onDelete, variant = 'kanban', isDraggi
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const imp = IMPORTANCE_CONFIG[item.importance];
+  const typeConf = TYPE_CONFIG[item.type];
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -51,6 +58,13 @@ export function TaskCard({ item, onClick, onDelete, variant = 'kanban', isDraggi
             <p className="text-xs text-gray-500 truncate mt-0.5">{item.description}</p>
           )}
         </div>
+
+        <span
+          className="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full"
+          style={{ backgroundColor: `${typeConf.color}20`, color: typeConf.color }}
+        >
+          {typeConf.label}
+        </span>
 
         <span
           className="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full"
@@ -129,12 +143,20 @@ export function TaskCard({ item, onClick, onDelete, variant = 'kanban', isDraggi
       )}
 
       <div className="flex items-center justify-between">
-        <span
-          className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-          style={{ backgroundColor: `${imp.color}20`, color: imp.color }}
-        >
-          {imp.label}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span
+            className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+            style={{ backgroundColor: `${typeConf.color}20`, color: typeConf.color }}
+          >
+            {typeConf.label}
+          </span>
+          <span
+            className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+            style={{ backgroundColor: `${imp.color}20`, color: imp.color }}
+          >
+            {imp.label}
+          </span>
+        </div>
         <span className="text-[10px] text-gray-500 flex items-center gap-1">
           <Calendar className="w-3 h-3" />
           {item.date}

@@ -6,9 +6,11 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { THEMES } from '@/contexts/SettingsContext';
 import { DashboardProvider } from '@/contexts/DashboardContext';
 import { FinanceProvider } from '@/contexts/FinanceContext';
+import { GamificationProvider } from '@/contexts/GamificationContext';
 import { DashboardSidebar } from './DashboardSidebar';
 import { DashboardHeader } from './DashboardHeader';
 import { TaskModal } from './TaskModal';
+import { LevelUpModal } from './LevelUpModal';
 import { FloatingAIAssistant } from './FloatingAIAssistant';
 
 const pageTitles: Record<string, string> = {
@@ -21,6 +23,7 @@ const pageTitles: Record<string, string> = {
   '/dashboard/studyhub': 'Study Hub',
   '/dashboard/wellness': 'Wellness & Journal',
   '/dashboard/wrapped': 'Wrapped',
+  '/dashboard/achievements': 'Achievements',
 };
 
 function hexToRgbStr(hex: string) {
@@ -90,6 +93,7 @@ export function DashboardLayout() {
   return (
     <DashboardProvider>
       <FinanceProvider>
+        <GamificationProvider>
         <div
           ref={shellRef}
           className={`dashboard-shell dashboard-text-scale-${settings.textScale}${
@@ -108,6 +112,7 @@ export function DashboardLayout() {
             </div>
 
             <TaskModal />
+            <LevelUpModal />
             <FloatingAIAssistant />
             <Toaster
               theme="dark"
@@ -122,6 +127,7 @@ export function DashboardLayout() {
             />
           </div>
         </div>
+        </GamificationProvider>
       </FinanceProvider>
     </DashboardProvider>
   );

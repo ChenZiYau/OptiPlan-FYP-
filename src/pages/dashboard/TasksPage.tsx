@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react';
 import { HoverTip } from '@/components/HoverTip';
 import { motion } from 'framer-motion';
 import { useDashboard } from '@/contexts/DashboardContext';
-import type { DashboardItem, TaskStatus, Importance } from '@/types/dashboard';
+import type { DashboardItem, TaskStatus, Importance, ItemType } from '@/types/dashboard';
 import { TaskFilters } from '@/components/dashboard/tasks/TaskFilters';
 import type { ViewMode } from '@/components/dashboard/tasks/TaskFilters';
 import { KanbanBoard } from '@/components/dashboard/tasks/KanbanBoard';
@@ -18,17 +18,22 @@ export function TasksPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
   const [importanceFilter, setImportanceFilter] = useState<Importance | 'all'>('all');
+  const [typeFilter, setTypeFilter] = useState<ItemType | 'all'>('all');
 
   // Drawer state
   const [drawerItem, setDrawerItem] = useState<DashboardItem | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // Only show task-type items (not events/study)
-  const taskItems = useMemo(() => items.filter((i) => i.type === 'task'), [items]);
+  // All items (tasks, events, study)
+  const taskItems = useMemo(() => items, [items]);
 
   // Apply filters
   const filteredItems = useMemo(() => {
     let result = taskItems;
+
+    if (typeFilter !== 'all') {
+      result = result.filter((i) => i.type === typeFilter);
+    }
 
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -46,7 +51,7 @@ export function TasksPage() {
     }
 
     return result;
-  }, [taskItems, search, statusFilter, importanceFilter]);
+  }, [taskItems, search, statusFilter, importanceFilter, typeFilter]);
 
   const handleStatusChange = useCallback(
     (id: string, status: TaskStatus) => {
@@ -91,7 +96,7 @@ export function TasksPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Tasks</h1>
+          <h1 className="text-2xl font-bold text-white tracking-tight">All Items</h1>
           <p className="text-sm text-gray-400 mt-1">
             {todoCount} to do · {inProgressCount} in progress · {completedCount} completed
           </p>
@@ -117,6 +122,8 @@ export function TasksPage() {
         onStatusFilterChange={setStatusFilter}
         importanceFilter={importanceFilter}
         onImportanceFilterChange={setImportanceFilter}
+        typeFilter={typeFilter}
+        onTypeFilterChange={setTypeFilter}
       />
 
       {/* Content */}
