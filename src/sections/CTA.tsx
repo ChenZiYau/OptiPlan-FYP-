@@ -2,12 +2,26 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatedSection } from '@/components/AnimatedSection';
 import { GlowButton } from '@/components/GlowButton';
+import { useSiteContentData } from '@/hooks/useSiteContent';
+import { siteDefaults } from '@/constants/siteDefaults';
 import { ArrowRight } from 'lucide-react';
+
+interface CTAContent {
+  headline: string;
+  subheadline: string;
+  buttonText: string;
+  disclaimer: string;
+}
+
+const defaults = siteDefaults.cta as unknown as CTAContent;
 
 export function CTA() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { getContent } = useSiteContentData();
+  const content = getContent<CTAContent>('cta') ?? defaults;
+  const tc = ((content as any).textColors ?? {}) as Record<string, string>;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,17 +51,19 @@ export function CTA() {
         <AnimatedSection>
           <h2
             className="font-bold tracking-tight text-opti-text-primary"
-            style={{ fontSize: 'clamp(36px, 5vw, 56px)' }}
+            style={{ fontSize: 'clamp(36px, 5vw, 56px)', color: tc.headline || undefined }}
           >
-            Start your day,{' '}
-            <span className="text-gradient">your way.</span>
+            {content.headline.includes('your way') ? (
+              <>Start your day,{' '}<span className="text-gradient">your way.</span></>
+            ) : (
+              content.headline
+            )}
           </h2>
         </AnimatedSection>
 
         <AnimatedSection delay={0.1}>
-          <p className="mt-6 text-opti-text-secondary text-lg max-w-lg mx-auto">
-            OptiPlan is completely free, why not transform how you plan your day
-            today!
+          <p className="mt-6 text-opti-text-secondary text-lg max-w-lg mx-auto" style={{ color: tc.subheadline || undefined }}>
+            {content.subheadline}
           </p>
         </AnimatedSection>
 
@@ -78,7 +94,7 @@ export function CTA() {
               type="submit"
               className="flex items-center justify-center gap-2 whitespace-nowrap"
             >
-              Get early access
+              {content.buttonText}
               <ArrowRight className="w-4 h-4" />
             </GlowButton>
           </form>
@@ -86,7 +102,7 @@ export function CTA() {
 
         <AnimatedSection delay={0.3}>
           <p className="mt-4 text-opti-text-secondary/60 text-sm">
-            No credit card required.
+            {content.disclaimer}
           </p>
         </AnimatedSection>
       </div>

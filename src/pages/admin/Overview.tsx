@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { UserCircle, Wifi, MessageSquare, UserPlus, Filter, FileText, Trash2, ToggleRight, Edit } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { UserCircle, Wifi, MessageSquare, UserPlus, Filter, FileText, Trash2, ToggleRight, Edit, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { StatCard } from '@/components/admin/StatCard';
 import { useAdminStats, useAdminActivityLog, useUserPresence } from '@/hooks/useAdminData';
 
@@ -10,6 +10,20 @@ function formatDate(dateStr: string) {
     ', ' +
     d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 }
+
+// Map from internal section_key to nice display name
+const sectionLabels: Record<string, string> = {
+  hero: 'Hero',
+  problems: 'Problems',
+  features: 'Features',
+  steps: 'How It Works',
+  tutorial: 'Tutorial',
+  faqs: 'FAQ',
+  testimonials: 'Testimonials',
+  about_creator: 'About Creator',
+  about_optiplan: 'About OptiPlan',
+  cta: 'Call to Action',
+};
 
 const actionIcons: Record<string, typeof FileText> = {
   content_update: Edit,
@@ -32,14 +46,88 @@ const actionLabels: Record<string, string> = {
   section_toggle: 'toggled section visibility',
 };
 
+function renderActivityDetails(item: any) {
+  const adminName = item.admin_name ?? 'Admin';
+  const target = item.target_section ? (sectionLabels[item.target_section] ?? item.target_section) : 'Section';
+
+  if (item.action_type === 'section_toggle') {
+    const isVisible = item.details?.visible;
+    const state = isVisible ? 'On' : 'Off';
+    return (
+      <p className="text-sm text-gray-300">
+        <span className="font-semibold text-white">{adminName}</span> has toggled <strong>{target}</strong> Visibility; <span className={isVisible ? "text-emerald-400 font-medium" : "text-gray-400 font-medium"}>{state}</span>
+      </p>
+    );
+  }
+
+  if (item.action_type === 'content_update') {
+     const hasBeforeAfter = item.details?.current !== undefined;
+     const currentContent = hasBeforeAfter ? item.details.current : item.details?.content;
+     const previousContent = hasBeforeAfter ? item.details.previous : null;
+
+     return (
+       <div className="space-y-2">
+         <p className="text-sm text-gray-300">
+           <span className="font-semibold text-white">{adminName}</span> has updated content for <strong>{target}</strong>
+         </p>
+         <div className="mt-3 text-xs text-gray-400">
+            {hasBeforeAfter && previousContent ? (
+              <div className="space-y-4">
+                {Object.entries(currentContent).map(([key, newVal]) => {
+                  const oldVal = previousContent[key];
+                  if (JSON.stringify(newVal) === JSON.stringify(oldVal)) return null;
+                  
+                  let formattedNew = String(newVal);
+                  let formattedOld = String(oldVal);
+                  if (typeof newVal === 'object' && newVal !== null) formattedNew = 'Array/Object Data (Changed)';
+                  else if (formattedNew.length > 50) formattedNew = formattedNew.substring(0, 50) + '...';
+                  
+                  if (typeof oldVal === 'object' && oldVal !== null) formattedOld = 'Array/Object Data';
+                  else if (formattedOld.length > 50) formattedOld = formattedOld.substring(0, 50) + '...';
+
+                  return (
+                    <div key={key} className="bg-black/20 p-3 rounded-lg border border-white/5 space-y-2">
+                      <p className="text-gray-300 font-semibold uppercase tracking-wider text-[10px] bg-white/5 inline-block px-2 py-0.5 rounded">{key}</p>
+                      
+                      <div className="space-y-1">
+                        <p className="text-red-400/80 font-medium text-[11px] uppercase tracking-wider">Before:</p>
+                        <p className="text-gray-400 line-through pl-2 border-l-2 border-red-500/30">{formattedOld}</p>
+                      </div>
+
+                      <div className="space-y-1">
+                         <p className="text-emerald-400 font-medium text-[11px] uppercase tracking-wider">After:</p>
+                         <p className="text-gray-200 pl-2 border-l-2 border-emerald-500/30">{formattedNew}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="bg-white/5 p-3 rounded-lg border border-white/5">
+                <p className="text-gray-400 italic">Detailed field changes unavailable for this legacy save.</p>
+              </div>
+            )}
+         </div>
+       </div>
+     );
+  }
+
+  // Fallback
+  return (
+    <pre className="text-xs text-gray-400 bg-white/5 p-3 rounded-lg overflow-x-auto">
+      {JSON.stringify(item.details, null, 2)}
+    </pre>
+  );
+}
+
 export function Overview() {
   const { stats, loading: statsLoading } = useAdminStats();
   const { presence } = useUserPresence();
-  const navigate = useNavigate();
 
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [actionType, setActionType] = useState('all');
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
   const { activities, loading: actLoading } = useAdminActivityLog({
     dateFrom: dateFrom || undefined,
@@ -51,6 +139,35 @@ export function Overview() {
 
   // Count users created today
   const todayStr = new Date().toISOString().split('T')[0];
+
+  const groupedActivities = useMemo(() => {
+    const groups: {
+      id: string;
+      action_type: string;
+      admin_name: string;
+      target_section: string | null;
+      items: typeof activities;
+      created_at: string;
+    }[] = [];
+
+    for (const activity of activities) {
+      const lastGroup = groups[groups.length - 1];
+      
+      if (lastGroup && lastGroup.action_type === activity.action_type && lastGroup.admin_name === activity.admin_name) {
+        lastGroup.items.push(activity);
+      } else {
+        groups.push({
+          id: activity.id,
+          action_type: activity.action_type,
+          admin_name: activity.admin_name,
+          target_section: activity.target_section,
+          items: [activity],
+          created_at: activity.created_at,
+        });
+      }
+    }
+    return groups;
+  }, [activities]);
 
   return (
     <div className="space-y-6">
@@ -134,32 +251,76 @@ export function Overview() {
           <div className="p-12 text-center text-gray-500 text-sm">No activity logged yet</div>
         ) : (
           <div>
-            {activities.map((activity, i) => {
-              const Icon = actionIcons[activity.action_type] ?? FileText;
-              const colors = actionColors[activity.action_type] ?? 'from-gray-500/20 to-gray-500/20 border-gray-500/20';
-              const label = actionLabels[activity.action_type] ?? activity.action_type;
+            {groupedActivities.map((group) => {
+              const Icon = actionIcons[group.action_type] ?? FileText;
+              const colors = actionColors[group.action_type] ?? 'from-gray-500/20 to-gray-500/20 border-gray-500/20';
+              const label = actionLabels[group.action_type] ?? group.action_type;
+              const isExpanded = expandedLogId === group.id;
+              const count = group.items.length;
 
               return (
                 <div
-                  key={activity.id}
-                  onClick={() => navigate(`/admin/activity/${activity.id}`)}
-                  className={`flex items-center gap-4 px-6 py-4 cursor-pointer hover:bg-white/[0.02] transition-colors ${
-                    i < activities.length - 1 ? 'border-b border-white/[0.04]' : ''
-                  }`}
+                  key={group.id}
+                  className={`border-b border-white/[0.04] last:border-0`}
                 >
-                  <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${colors} border flex items-center justify-center shrink-0`}>
-                    <Icon className="w-4 h-4 text-gray-300" />
+                  <div
+                    onClick={() => setExpandedLogId(isExpanded ? null : group.id)}
+                    className="flex items-center gap-4 px-6 py-4 cursor-pointer hover:bg-white/[0.02] transition-colors"
+                  >
+                    <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${colors} border flex items-center justify-center shrink-0`}>
+                      <Icon className="w-4 h-4 text-gray-300" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-200">
+                        <span className="font-medium text-white">{group.admin_name}</span>
+                        {' '}{label}
+                        {count > 1 ? (
+                          <span className="text-gray-400 font-medium whitespace-nowrap"> {count} times</span>
+                        ) : group.target_section ? (
+                          <span className="text-gray-500"> — {group.target_section}</span>
+                        ) : null}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {count > 1 
+                          ? `${formatDate(group.items[group.items.length - 1].created_at)} to ${formatDate(group.created_at)}`
+                          : formatDate(group.created_at)
+                        }
+                      </p>
+                    </div>
+                    <ChevronDown
+                      className={`w-4 h-4 text-gray-500 transition-transform duration-200 shrink-0 ${
+                        isExpanded ? 'rotate-180' : ''
+                      }`}
+                    />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-200">
-                      <span className="font-medium text-white">{activity.admin_name}</span>
-                      {' '}{label}
-                      {activity.target_section && (
-                        <span className="text-gray-500"> — {activity.target_section}</span>
-                      )}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">{formatDate(activity.created_at)}</p>
-                  </div>
+
+                  {/* Expandable Details Area */}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden bg-[#131127]"
+                      >
+                        <div className="px-6 py-4 border-t border-white/[0.04] space-y-4">
+                          {group.items.map((item, idx) => (
+                            <div key={item.id} className={idx > 0 ? "pt-4 border-t border-white/[0.04]" : ""}>
+                              <div className="flex justify-between items-center mb-2">
+                                <span className="text-[10px] text-gray-500">
+                                  {formatDate(item.created_at)}
+                                </span>
+                              </div>
+                              <div className="bg-white/5 border border-white/10 p-4 rounded-xl">
+                                {renderActivityDetails(item)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               );
             })}

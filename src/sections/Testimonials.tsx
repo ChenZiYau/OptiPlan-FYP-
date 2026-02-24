@@ -2,9 +2,24 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, useMotionValue, useAnimationFrame } from 'framer-motion';
 import { TestimonialCard } from '@/components/TestimonialCard';
 import { SectionHeader } from '@/components/SectionHeader';
-import { testimonials } from '@/constants/testimonials';
+import { useSiteContentData } from '@/hooks/useSiteContent';
+import { siteDefaults } from '@/constants/siteDefaults';
 
-const duplicated = [...testimonials, ...testimonials];
+interface TestimonialItem {
+  quote: string;
+  name: string;
+  role: string;
+  initials: string;
+}
+
+interface TestimonialsContent {
+  badge: string;
+  title: string;
+  subtitle: string;
+  items: TestimonialItem[];
+}
+
+const defaults = siteDefaults.testimonials as unknown as TestimonialsContent;
 
 // Pixels per second — lower = slower, more readable
 const SPEED = 40;
@@ -14,13 +29,18 @@ export function Testimonials() {
   const x = useMotionValue(0);
   const trackRef = useRef<HTMLDivElement>(null);
   const halfWidth = useRef(0);
+  const { getContent } = useSiteContentData();
+  const content = getContent<TestimonialsContent>('testimonials') ?? defaults;
+  const items = content.items ?? defaults.items;
+  const tc = ((content as any).textColors ?? {}) as Record<string, string>;
+  const duplicated = [...items, ...items];
 
   // Measure half the track (one full set of cards) for the reset point
   useEffect(() => {
     if (trackRef.current) {
       halfWidth.current = trackRef.current.scrollWidth / 2;
     }
-  }, []);
+  }, [items]);
 
   // Manual animation frame loop so we can pause instantly on hover
   useAnimationFrame((_, delta) => {
@@ -44,13 +64,19 @@ export function Testimonials() {
       <div className="relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <SectionHeader
-            badge="Testimonials"
+            badge={content.badge}
             title={
               <>
-                What students <span className="text-gradient">are saying</span>
+                {content.title.includes('are saying') ? (
+                  <>What students <span className="text-gradient">are saying</span></>
+                ) : (
+                  content.title
+                )}
               </>
             }
-            subtitle="Real feedback from students who use OptiPlan every day."
+            subtitle={content.subtitle}
+          titleColor={tc.title}
+          subtitleColor={tc.subtitle}
           />
         </div>
 
@@ -66,7 +92,7 @@ export function Testimonials() {
             style={{ x }}
           >
             {duplicated.map((testimonial, i) => (
-              <TestimonialCard key={`${testimonial.name}-${i}`} {...testimonial} />
+              <TestimonialCard key={`${testimonial.name}-${i}`} {...testimonial} quoteColor={tc.quote} nameColor={tc.name} roleColor={tc.role} />
             ))}
           </motion.div>
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { AdminUser, Feedback, AdminActivityLog, UserPresence, SiteContent } from '@/types/admin';
 
@@ -161,15 +161,17 @@ export function useUserPresence() {
 export function useSiteContent() {
   const [content, setContent] = useState<SiteContent[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasFetched = useRef(false);
 
   const fetchContent = useCallback(async () => {
-    setLoading(true);
+    if (!hasFetched.current) setLoading(true);
     const { data } = await supabase
       .from('site_content')
       .select('*')
       .order('section_key');
     setContent(data ?? []);
     setLoading(false);
+    hasFetched.current = true;
   }, []);
 
   useEffect(() => { fetchContent(); }, [fetchContent]);
@@ -184,6 +186,7 @@ export async function updateSiteContent(
   updates: { content?: Record<string, unknown>; visible?: boolean },
   adminId: string,
   adminName: string,
+  oldContent?: Record<string, unknown>
 ) {
   const { error } = await supabase
     .from('site_content')
@@ -196,13 +199,17 @@ export async function updateSiteContent(
 
   if (error) throw error;
 
+  const detailsPayload = updates.visible !== undefined 
+    ? updates 
+    : { previous: oldContent, current: updates.content };
+
   // Log the activity
   await supabase.from('admin_activity_log').insert({
     admin_id: adminId,
     admin_name: adminName,
     action_type: updates.visible !== undefined ? 'section_toggle' : 'content_update',
     target_section: sectionKey,
-    details: updates,
+    details: detailsPayload,
   });
 }
 

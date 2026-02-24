@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { ChevronDown, Search, Eye, EyeOff, Loader2, Save } from 'lucide-react';
+import { ChevronDown, Search, Eye, EyeOff, Loader2, Save, RotateCcw } from 'lucide-react';
 import { useSiteContent, updateSiteContent } from '@/hooks/useAdminData';
 import { useAuth } from '@/hooks/useAuth';
+import { siteDefaults, sectionColorFields } from '@/constants/siteDefaults';
 import type { SiteContent } from '@/types/admin';
 
 const sectionLabels: Record<string, string> = {
@@ -17,34 +18,102 @@ const sectionLabels: Record<string, string> = {
   cta: 'Call to Action',
 };
 
+const sectionOrder = [
+  'hero',
+  'problems',
+  'features',
+  'steps',
+  'tutorial',
+  'about_creator',
+  'about_optiplan',
+  'faqs',
+  'testimonials',
+  'cta',
+];
+
+// Define maximum character limits for specific field names
+const MAX_LENGTHS: Record<string, number> = {
+  title: 60,
+  description: 150,
+  headline: 80,
+  subheadline: 200,
+  content: 300,
+  name: 50,
+  role: 50,
+  question: 100,
+  answer: 400,
+};
+
 function ContentField({
   label,
   value,
   onChange,
   multiline = false,
+  error,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   multiline?: boolean;
+  error?: string;
 }) {
+  const maxLength = MAX_LENGTHS[label.toLowerCase()] || 500;
+  const isOverLimit = value.length > maxLength;
+  
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1.5">{label}</label>
+      <div className="flex justify-between mb-1.5">
+        <label className="block text-xs font-medium text-gray-500">{label}</label>
+        <span className={`text-[10px] ${isOverLimit ? 'text-red-400 font-bold' : 'text-gray-500'}`}>
+          {value.length} / {maxLength}
+        </span>
+      </div>
       {multiline ? (
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
           rows={3}
-          className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-gray-200 placeholder:text-gray-600 outline-none focus:border-purple-500/40 transition-colors resize-none"
+          className={`w-full px-3 py-2 rounded-lg bg-white/5 border ${isOverLimit || error ? 'border-red-500/50 focus:border-red-500/80' : 'border-white/10 focus:border-purple-500/40'} text-sm text-gray-200 placeholder:text-gray-600 outline-none transition-colors resize-none`}
         />
       ) : (
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-gray-200 placeholder:text-gray-600 outline-none focus:border-purple-500/40 transition-colors"
+          className={`w-full px-3 py-2 rounded-lg bg-white/5 border ${isOverLimit || error ? 'border-red-500/50 focus:border-red-500/80' : 'border-white/10 focus:border-purple-500/40'} text-sm text-gray-200 placeholder:text-gray-600 outline-none transition-colors`}
         />
+      )}
+      {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
+      {isOverLimit && !error && <p className="mt-1 text-xs text-red-400">Exceeds character limit of {maxLength}</p>}
+    </div>
+  );
+}
+
+function ColorField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <input
+        type="color"
+        value={value || '#ffffff'}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-8 h-8 rounded cursor-pointer border border-white/10 bg-transparent"
+      />
+      <span className="text-xs text-gray-400 flex-1">{label}</span>
+      {value && (
+        <button
+          onClick={() => onChange('')}
+          className="text-[10px] text-gray-500 hover:text-red-400 transition-colors"
+        >
+          Reset
+        </button>
       )}
     </div>
   );
@@ -85,23 +154,39 @@ function ArrayField({
 function SectionEditor({
   section,
   onSave,
+  onReset,
   saving,
+  resetting,
 }: {
   section: SiteContent;
   onSave: (content: Record<string, unknown>) => void;
+  onReset: () => void;
   saving: boolean;
+  resetting: boolean;
 }) {
   const [editContent, setEditContent] = useState<Record<string, unknown>>(
     JSON.parse(JSON.stringify(section.content))
   );
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const textColors = (editContent.textColors ?? {}) as Record<string, string>;
+  const colorFields = sectionColorFields[section.section_key] ?? [];
 
   const updateField = (key: string, value: unknown) => {
     setEditContent(prev => ({ ...prev, [key]: value }));
+    setErrorMsg(null);
   };
 
-  // Render string fields
+  const updateColor = (key: string, value: string) => {
+    setEditContent(prev => ({
+      ...prev,
+      textColors: { ...(prev.textColors as Record<string, string> ?? {}), [key]: value },
+    }));
+  };
+
+  // Render string fields (exclude textColors object)
   const stringFields = Object.entries(editContent).filter(
-    ([, v]) => typeof v === 'string'
+    ([k, v]) => typeof v === 'string' && k !== 'textColors'
   );
 
   // Render array fields (items)
@@ -196,14 +281,87 @@ function SectionEditor({
         );
       })}
 
-      <button
-        onClick={() => onSave(editContent)}
-        disabled={saving}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-sm font-medium text-white hover:opacity-90 transition-opacity disabled:opacity-50"
-      >
-        {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-        Save Section
-      </button>
+      {colorFields.length > 0 && (
+        <div>
+          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Text Colors</label>
+          <div className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-4 space-y-3">
+            {colorFields.map(({ key, label }) => (
+              <ColorField
+                key={key}
+                label={label}
+                value={textColors[key] ?? ''}
+                onChange={(v) => updateColor(key, v)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {errorMsg && (
+        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-500">
+          {errorMsg}
+        </div>
+      )}
+
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => {
+            // Recursive limit validation
+            let hasError = false;
+
+            const validateObject = (obj: any) => {
+              for (const [k, v] of Object.entries(obj)) {
+                if (typeof v === 'string') {
+                  const max = MAX_LENGTHS[k.toLowerCase()] || 500;
+                  if (v.length > max) {
+                    hasError = true;
+                    setErrorMsg(`Field "${k}" exceeds its character limit of ${max}`);
+                    return;
+                  }
+                } else if (Array.isArray(v)) {
+                  v.forEach(item => {
+                    if (typeof item === 'object' && item !== null) {
+                      validateObject(item);
+                    } else if (typeof item === 'string') {
+                      if (item.length > 200) {
+                          hasError = true;
+                          setErrorMsg(`An array item exceeds its character limit of 200`);
+                          return;
+                      }
+                    }
+                  })
+                } else if (typeof v === 'object' && v !== null) {
+                  validateObject(v);
+                }
+              }
+            };
+
+            validateObject(editContent);
+
+            if (!hasError) {
+              onSave(editContent);
+            }
+          }}
+          disabled={saving || resetting}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-sm font-medium text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+          Save Section
+        </button>
+
+        <button
+          onClick={() => {
+            if (window.confirm('Reset this section to its default content? This will overwrite your current edits.')) {
+              onReset();
+            }
+          }}
+          disabled={saving || resetting}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-sm font-medium text-gray-300 hover:bg-white/10 transition-colors disabled:opacity-50"
+        >
+          {resetting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
+          Reset to Default
+        </button>
+      </div>
     </div>
   );
 }
@@ -214,11 +372,24 @@ export function ContentEditor() {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [saving, setSaving] = useState<string | null>(null);
+  const [resetting, setResetting] = useState<string | null>(null);
   const [togglingVisibility, setTogglingVisibility] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const filteredSections = content.filter((s) =>
     (sectionLabels[s.section_key] ?? s.section_key).toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  ).sort((a, b) => {
+    const indexA = sectionOrder.indexOf(a.section_key);
+    const indexB = sectionOrder.indexOf(b.section_key);
+    const rankA = indexA === -1 ? 999 : indexA;
+    const rankB = indexB === -1 ? 999 : indexB;
+    return rankA - rankB;
+  });
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const handleSave = async (section: SiteContent, newContent: Record<string, unknown>) => {
     if (!profile) return;
@@ -229,33 +400,81 @@ export function ContentEditor() {
         { content: newContent },
         profile.id,
         profile.display_name ?? profile.email,
+        section.content
       );
-      refetch();
-    } catch (err) {
+      await refetch();
+      showToast(`${sectionLabels[section.section_key] ?? section.section_key} saved successfully`, 'success');
+    } catch (err: any) {
       console.error('Failed to save:', err);
+      showToast(`Failed to save: ${err?.message || err}`, 'error');
     }
     setSaving(null);
+  };
+
+  const handleReset = async (section: SiteContent) => {
+    if (!profile) return;
+    const defaults = siteDefaults[section.section_key];
+    if (!defaults) {
+      showToast('No default content available for this section', 'error');
+      return;
+    }
+    setResetting(section.section_key);
+    try {
+      await updateSiteContent(
+        section.section_key,
+        { content: defaults },
+        profile.id,
+        profile.display_name ?? profile.email,
+        section.content
+      );
+      await refetch();
+      // Close and re-open the section to refresh the editor state
+      setExpandedSection(null);
+      setTimeout(() => setExpandedSection(section.section_key), 50);
+      showToast(`${sectionLabels[section.section_key] ?? section.section_key} reset to default`, 'success');
+    } catch (err: any) {
+      console.error('Failed to reset:', err);
+      showToast(`Failed to reset: ${err?.message || err}`, 'error');
+    }
+    setResetting(null);
   };
 
   const handleToggleVisibility = async (section: SiteContent) => {
     if (!profile) return;
     setTogglingVisibility(section.section_key);
+    const newVisibility = !section.visible;
+    const label = sectionLabels[section.section_key] ?? section.section_key;
     try {
       await updateSiteContent(
         section.section_key,
-        { visible: !section.visible },
+        { visible: newVisibility },
         profile.id,
         profile.display_name ?? profile.email,
       );
-      refetch();
-    } catch (err) {
+      await refetch();
+      showToast(`${label} is now ${newVisibility ? 'visible' : 'hidden'}`, 'success');
+    } catch (err: any) {
       console.error('Failed to toggle:', err);
+      showToast(`Failed to toggle: ${err?.message || err}`, 'error');
     }
     setTogglingVisibility(null);
   };
 
   return (
     <div className="space-y-6">
+      {/* Toast notification */}
+      {toast && (
+        <div
+          className={`fixed top-6 right-6 z-50 px-4 py-3 rounded-lg border text-sm font-medium shadow-lg transition-all ${
+            toast.type === 'success'
+              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+              : 'bg-red-500/10 border-red-500/20 text-red-400'
+          }`}
+        >
+          {toast.message}
+        </div>
+      )}
+
       {/* Header Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-sm font-semibold text-white">Website Content Editor</h2>
@@ -333,7 +552,9 @@ export function ContentEditor() {
                     <SectionEditor
                       section={section}
                       onSave={(newContent) => handleSave(section, newContent)}
+                      onReset={() => handleReset(section)}
                       saving={saving === section.section_key}
+                      resetting={resetting === section.section_key}
                     />
                   </div>
                 )}

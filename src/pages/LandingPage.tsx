@@ -37,7 +37,7 @@ export function LandingPage() {
         {isVisible('hero') && <Hero />}
         {isVisible('problems') && <Problem />}
         {isVisible('features') && <Features />}
-        {isVisible('tutorial') && <Tutorial />}
+        {isVisible('steps') && <Tutorial />}
         {isVisible('about_creator') && <AboutCreator />}
         {isVisible('about_optiplan') && <AboutOptiPlan />}
         {isVisible('faqs') && <FAQ />}

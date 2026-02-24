@@ -1,22 +1,42 @@
 import { AnimatedSection } from '@/components/AnimatedSection';
 import { MacWindow } from '@/components/MacWindow';
 import { SectionHeader } from '@/components/SectionHeader';
+import { useSiteContentData } from '@/hooks/useSiteContent';
+import { siteDefaults } from '@/constants/siteDefaults';
 import { Play } from 'lucide-react';
 
+interface TutorialContent {
+  badge: string;
+  title: string;
+  subtitle: string;
+}
+
+const defaults = siteDefaults.tutorial as unknown as TutorialContent;
+
 export function Tutorial() {
+  const { getContent } = useSiteContentData();
+  const content = getContent<TutorialContent>('tutorial') ?? defaults;
+  const tc = ((content as any).textColors ?? {}) as Record<string, string>;
+
   return (
     <section id="how-it-works" className="relative py-32 overflow-hidden">
       <div className="absolute inset-0 bg-radial-glow opacity-40 pointer-events-none" />
 
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeader
-          badge="How It Works"
+          badge={content.badge}
           title={
             <>
-              See OptiPlan <span className="text-gradient">in action</span>
+              {content.title.includes('in action') ? (
+                <>See OptiPlan <span className="text-gradient">in action</span></>
+              ) : (
+                content.title
+              )}
             </>
           }
-          subtitle="A quick walkthrough of how OptiPlan keeps your day on track."
+          subtitle={content.subtitle}
+          titleColor={tc.title}
+          subtitleColor={tc.subtitle}
         />
 
         <AnimatedSection delay={0.3}>

@@ -1,32 +1,62 @@
 import { StaggerContainer, StaggerItem } from '@/components/AnimatedSection';
 import { FlipCard } from '@/components/FlipCard';
 import { SectionHeader } from '@/components/SectionHeader';
-import { features } from '@/constants/features';
+import { useSiteContentData } from '@/hooks/useSiteContent';
+import { siteDefaults } from '@/constants/siteDefaults';
+import { features as featureConstants } from '@/constants/features';
 import { Check } from 'lucide-react';
 
+interface FeatureItem {
+  title: string;
+  description: string;
+  checklist: string[];
+  backContent: string;
+}
+
+interface FeaturesContent {
+  badge: string;
+  title: string;
+  subtitle: string;
+  items: FeatureItem[];
+}
+
+const defaults = siteDefaults.features as unknown as FeaturesContent;
+
 export function Features() {
+  const { getContent } = useSiteContentData();
+  const content = getContent<FeaturesContent>('features') ?? defaults;
+  const items = content.items ?? defaults.items;
+  const tc = ((content as any).textColors ?? {}) as Record<string, string>;
+
   return (
     <section id="features" className="relative py-32 overflow-hidden">
       <div className="absolute inset-0 bg-radial-glow opacity-50 pointer-events-none" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeader
-          badge="Features"
+          badge={content.badge}
           title={
             <>
-              Everything you need to{' '}
-              <span className="text-gradient">stay productive</span>
+              {content.title.includes('stay productive') ? (
+                <>Everything you need to{' '}<span className="text-gradient">stay productive</span></>
+              ) : (
+                content.title
+              )}
             </>
           }
-          subtitle="A complete productivity suite designed to help students plan less and accomplish more."
+          subtitle={content.subtitle}
+          titleColor={tc.title}
+          subtitleColor={tc.subtitle}
         />
 
         <StaggerContainer
           className="grid grid-cols-1 md:grid-cols-3 gap-6"
           staggerDelay={0.1}
         >
-          {features.map((feature, index) => {
+          {items.map((feature, index) => {
             const isPopular = index === 1;
+            // Use the icon/color from constants (not editable via CMS)
+            const constant = featureConstants[index];
 
             return (
               <StaggerItem key={feature.title}>
@@ -42,15 +72,17 @@ export function Features() {
                     glowing={isPopular}
                     front={
                       <div className="flex flex-col h-full">
-                        <div
-                          className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4`}
-                        >
-                          <feature.icon className="w-6 h-6 text-white" />
-                        </div>
-                        <h3 className="font-semibold text-xl text-opti-text-primary mb-2">
+                        {constant && (
+                          <div
+                            className={`w-12 h-12 rounded-xl bg-gradient-to-br ${constant.color} flex items-center justify-center mb-4`}
+                          >
+                            <constant.icon className="w-6 h-6 text-white" />
+                          </div>
+                        )}
+                        <h3 className="font-semibold text-xl text-opti-text-primary mb-2" style={{ color: tc.itemTitle || undefined }}>
                           {feature.title}
                         </h3>
-                        <p className="text-opti-text-secondary text-sm leading-relaxed mb-4">
+                        <p className="text-opti-text-secondary text-sm leading-relaxed mb-4" style={{ color: tc.itemDescription || undefined }}>
                           {feature.description}
                         </p>
                         <ul className="mt-auto space-y-2">
@@ -65,7 +97,7 @@ export function Features() {
                     }
                     back={
                       <div className="flex flex-col h-full justify-center">
-                        <feature.icon className="w-8 h-8 text-opti-accent mb-4" />
+                        {constant && <constant.icon className="w-8 h-8 text-opti-accent mb-4" />}
                         <h3 className="font-semibold text-lg text-opti-text-primary mb-3">
                           {feature.title}
                         </h3>

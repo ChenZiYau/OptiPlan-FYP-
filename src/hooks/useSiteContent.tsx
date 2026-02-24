@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { SiteContent } from '@/types/admin';
@@ -16,17 +16,34 @@ export function SiteContentProvider({ children }: { children: ReactNode }) {
   const [contentMap, setContentMap] = useState<Map<string, SiteContent>>(new Map());
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetch() {
-      const { data } = await supabase
-        .from('site_content')
-        .select('*');
-      const map = new Map((data ?? []).map((c: SiteContent) => [c.section_key, c]));
-      setContentMap(map);
-      setLoading(false);
-    }
-    fetch();
+  const fetchContent = useCallback(async () => {
+    const { data } = await supabase
+      .from('site_content')
+      .select('*');
+    const map = new Map((data ?? []).map((c: SiteContent) => [c.section_key, c]));
+    setContentMap(map);
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    fetchContent();
+
+    // Subscribe to realtime changes so admin edits are reflected immediately
+    const channel = supabase
+      .channel('site_content_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'site_content' },
+        () => {
+          fetchContent();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchContent]);
 
   function getContent<T = Record<string, unknown>>(sectionKey: string): T | null {
     const entry = contentMap.get(sectionKey);

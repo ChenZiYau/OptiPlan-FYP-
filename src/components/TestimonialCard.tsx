@@ -5,9 +5,12 @@ interface TestimonialCardProps {
   name: string;
   role: string;
   initials: string;
+  quoteColor?: string;
+  nameColor?: string;
+  roleColor?: string;
 }
 
-export function TestimonialCard({ quote, name, role, initials }: TestimonialCardProps) {
+export function TestimonialCard({ quote, name, role, initials, quoteColor, nameColor, roleColor }: TestimonialCardProps) {
   return (
     <div className="glass-card w-[340px] sm:w-[380px] shrink-0 p-6 flex flex-col">
       {/* Stars */}
@@ -18,7 +21,7 @@ export function TestimonialCard({ quote, name, role, initials }: TestimonialCard
       </div>
 
       {/* Quote */}
-      <p className="text-opti-text-primary leading-relaxed flex-1 mb-6 italic text-sm">
+      <p className="text-opti-text-primary leading-relaxed flex-1 mb-6 italic text-sm" style={{ color: quoteColor || undefined }}>
         "{quote}"
       </p>
 
@@ -28,8 +31,8 @@ export function TestimonialCard({ quote, name, role, initials }: TestimonialCard
           {initials}
         </div>
         <div>
-          <p className="font-semibold text-opti-text-primary text-sm">{name}</p>
-          <p className="text-xs text-opti-text-secondary">{role}</p>
+          <p className="font-semibold text-opti-text-primary text-sm" style={{ color: nameColor || undefined }}>{name}</p>
+          <p className="text-xs text-opti-text-secondary" style={{ color: roleColor || undefined }}>{role}</p>
         </div>
       </div>
     </div>

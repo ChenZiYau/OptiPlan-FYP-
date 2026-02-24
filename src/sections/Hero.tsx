@@ -4,8 +4,22 @@ import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { Calendar, Clock, MoveRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSmoothScroll } from '@/hooks/useSmoothScroll';
+import { useAuth } from '@/hooks/useAuth';
+import { useSiteContentData } from '@/hooks/useSiteContent';
 import { agendaItems } from '@/constants/hero';
+import { siteDefaults } from '@/constants/siteDefaults';
 import { fadeInUp, heroCardVariants } from '@/animations/variants';
+
+interface HeroContent {
+  badge: string;
+  headline: string;
+  subheadline: string;
+  ctaPrimary: string;
+  ctaSecondary: string;
+  rotatingWords: string[];
+}
+
+const defaults = siteDefaults.hero as unknown as HeroContent;
 
 const containerVariants: Variants = {
   hidden: {},
@@ -20,6 +34,11 @@ const containerVariants: Variants = {
 export function Hero() {
   const { scrollToSection } = useSmoothScroll();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { getContent } = useSiteContentData();
+
+  const content = getContent<HeroContent>('hero') ?? defaults;
+  const tc = ((content as any).textColors ?? {}) as Record<string, string>;
 
   // ── Dynamic calendar data ──────────────────────────────────────────
   const now = useMemo(() => new Date(), []);
@@ -59,10 +78,7 @@ export function Hero() {
 
   // Animated rotating words
   const [titleNumber, setTitleNumber] = useState(0);
-  const titles = useMemo(
-    () => ['productive', 'focused', 'organized', 'balanced', 'effortless'],
-    []
-  );
+  const titles = content.rotatingWords ?? defaults.rotatingWords;
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -97,7 +113,7 @@ export function Hero() {
               onClick={() => scrollToSection('features')}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              AI-Powered Planning
+              <span style={{ color: tc.badge || undefined }}>{content.badge}</span>
               <MoveRight className="w-3.5 h-3.5" />
             </Button>
           </motion.div>
@@ -106,8 +122,9 @@ export function Hero() {
           <motion.h1
             variants={fadeInUp}
             className="mt-8 font-bold text-opti-text-primary leading-[0.95] tracking-tight text-5xl md:text-7xl max-w-3xl"
+            style={{ color: tc.headline || undefined }}
           >
-            <span>Make your days</span>
+            <span>{content.headline}</span>
             <span className="relative flex w-full justify-center overflow-hidden text-center md:pb-4 md:pt-1">
               &nbsp;
               {titles.map((title, index) => (
@@ -135,9 +152,9 @@ export function Hero() {
           <motion.p
             variants={fadeInUp}
             className="mt-6 text-opti-text-secondary text-lg md:text-xl leading-relaxed tracking-tight max-w-2xl"
+            style={{ color: tc.subheadline || undefined }}
           >
-            AI-powered daily planning that turns your calendar into a clear,
-            actionable timeline. Plan less. Do more.
+            {content.subheadline}
           </motion.p>
 
           {/* Hero Card */}
@@ -279,15 +296,25 @@ export function Hero() {
               className="gap-4 border-white/10 bg-white/5 text-opti-text-primary hover:bg-white/10 hover:text-opti-accent"
               onClick={() => scrollToSection('how-it-works')}
             >
-              See how it works <MoveRight className="w-4 h-4" />
+              {content.ctaSecondary} <MoveRight className="w-4 h-4" />
             </Button>
-            <Button
-              size="lg"
-              className="gap-4 bg-opti-accent text-opti-bg hover:bg-opti-accent/90 font-semibold"
-              onClick={() => navigate('/signup')}
-            >
-              Get OptiPlan <MoveRight className="w-4 h-4" />
-            </Button>
+            {user ? (
+              <Button
+                size="lg"
+                className="gap-4 bg-opti-accent text-opti-bg hover:bg-opti-accent/90 font-semibold"
+                onClick={() => navigate('/dashboard')}
+              >
+                Go to Dashboard <MoveRight className="w-4 h-4" />
+              </Button>
+            ) : (
+              <Button
+                size="lg"
+                className="gap-4 bg-opti-accent text-opti-bg hover:bg-opti-accent/90 font-semibold"
+                onClick={() => navigate('/signup')}
+              >
+                {content.ctaPrimary} <MoveRight className="w-4 h-4" />
+              </Button>
+            )}
           </motion.div>
         </motion.div>
       </div>
