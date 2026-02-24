@@ -1,13 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, type Variants } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { Calendar, Clock, MoveRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSmoothScroll } from '@/hooks/useSmoothScroll';
 import { agendaItems } from '@/constants/hero';
 import { fadeInUp, heroCardVariants } from '@/animations/variants';
-
-const calendarDays = Array.from({ length: 31 }, (_, i) => i + 1);
 
 const containerVariants: Variants = {
   hidden: {},
@@ -22,6 +20,42 @@ const containerVariants: Variants = {
 export function Hero() {
   const { scrollToSection } = useSmoothScroll();
   const navigate = useNavigate();
+
+  // ── Dynamic calendar data ──────────────────────────────────────────
+  const now = useMemo(() => new Date(), []);
+  const today = now.getDate();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  const monthLabel = now.toLocaleString('default', { month: 'long' });
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const startDay = new Date(currentYear, currentMonth, 1).getDay(); // 0=Sun
+
+  const calendarDays = useMemo(
+    () => Array.from({ length: daysInMonth }, (_, i) => i + 1),
+    [daysInMonth]
+  );
+
+  const formattedToday = now.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+
+  // Calendar popover preview
+  const [showPopover, setShowPopover] = useState(false);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showPopover) return;
+    function handleClick(e: MouseEvent) {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setShowPopover(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showPopover]);
 
   // Animated rotating words
   const [titleNumber, setTitleNumber] = useState(0);
@@ -111,14 +145,14 @@ export function Hero() {
             variants={heroCardVariants}
             className="mt-12 w-full max-w-4xl perspective-1000"
           >
-            <div className="glass-card shadow-card overflow-hidden">
+            <div className="glass-card shadow-card">
               <div className="flex flex-col md:flex-row">
                 {/* Calendar Section */}
                 <div className="w-full md:w-[38%] p-6 border-b md:border-b-0 md:border-r border-white/10">
                   <div className="flex items-center gap-2 mb-4">
                     <Calendar className="w-4 h-4 text-opti-accent" />
                     <span className="font-semibold text-opti-text-primary">
-                      March
+                      {monthLabel} {currentYear}
                     </span>
                   </div>
                   <div className="grid grid-cols-7 gap-1 text-center text-xs">
@@ -130,20 +164,59 @@ export function Hero() {
                         {day}
                       </span>
                     ))}
+                    {/* Empty spacer cells for weekday alignment */}
+                    {Array.from({ length: startDay }, (_, i) => (
+                      <span key={`empty-${i}`} />
+                    ))}
                     {calendarDays.map((day) => (
-                      <motion.span
-                        key={day}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.5 + day * 0.01 }}
-                        className={`py-1 rounded-md cursor-pointer transition-colors ${
-                          day === 14
-                            ? 'bg-opti-accent text-opti-bg font-semibold'
-                            : 'text-opti-text-secondary hover:bg-white/5'
-                        }`}
-                      >
-                        {day}
-                      </motion.span>
+                      <div key={day} className={day === today ? 'relative' : ''} ref={day === today ? popoverRef : undefined}>
+                        <motion.span
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.5 + day * 0.01 }}
+                          onClick={day === today ? () => setShowPopover(v => !v) : undefined}
+                          className={`block py-1 rounded-md cursor-pointer transition-colors ${
+                            day === today
+                              ? 'bg-opti-accent text-opti-bg font-semibold ring-2 ring-opti-accent/40 ring-offset-1 ring-offset-transparent'
+                              : 'text-opti-text-secondary hover:bg-white/5'
+                          }`}
+                        >
+                          {day}
+                        </motion.span>
+
+                        {/* Event popover on today's date */}
+                        {day === today && (
+                          <AnimatePresence>
+                            {showPopover && (
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                                transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                                className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 bg-[#131127] border border-white/10 rounded-xl w-56 shadow-2xl flex flex-col text-center z-50"
+                              >
+                                {/* Header */}
+                                <div className="px-4 pt-3 pb-2 border-b border-white/[0.06]">
+                                  <p className="text-sm font-bold text-white">{formattedToday}</p>
+                                  <p className="text-xs text-opti-accent mt-0.5">1 item</p>
+                                </div>
+                                {/* Body */}
+                                <div className="px-4 py-3">
+                                  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                                    📝 Task
+                                  </p>
+                                  <p className="text-lg font-bold text-white mt-1">
+                                    Your Task
+                                  </p>
+                                  <span className="inline-block bg-red-500/10 text-red-500 border border-red-500/20 rounded-full px-3 py-1 text-xs mt-2">
+                                    High
+                                  </span>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        )}
+                      </div>
                     ))}
                   </div>
                   <div className="mt-4 flex items-center gap-2 text-xs text-opti-text-secondary">

@@ -121,20 +121,6 @@ export function Login() {
             <p className="text-opti-text-secondary text-lg leading-relaxed max-w-lg">
               Your intelligent productivity companion is ready to help you achieve more.
             </p>
-
-            {/* Decorative stats */}
-            <div className="mt-12 grid grid-cols-3 gap-6">
-              {[
-                { value: '10k+', label: 'Active users' },
-                { value: '98%', label: 'Satisfaction' },
-                { value: '2M+', label: 'Tasks completed' },
-              ].map((stat) => (
-                <div key={stat.label} className="glass-card p-4 text-center">
-                  <p className="font-bold text-xl text-opti-accent">{stat.value}</p>
-                  <p className="text-xs text-opti-text-secondary mt-1">{stat.label}</p>
-                </div>
-              ))}
-            </div>
           </motion.div>
         </div>
 
