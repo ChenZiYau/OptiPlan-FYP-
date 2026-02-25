@@ -490,7 +490,7 @@ export function CollabPage() {
                           variants={fadeUp}
                           className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:border-white/10 transition-colors group"
                         >
-                          <p className="text-xs text-gray-200 mb-2">{task.title}</p>
+                          <p className="text-xs text-gray-200 mb-2 min-w-0 break-words">{task.title}</p>
                           <div className="flex items-center justify-between">
                             <div title={assignee.name}>
                               <MemberAvatar member={assignee} size="sm" />

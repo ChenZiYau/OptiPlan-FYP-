@@ -225,7 +225,7 @@ export function StudyHubPage() {
       </div>
 
       {/* ── Tab Navigation ──────────────────────────────────────────────── */}
-      <div className="flex rounded-xl bg-white/5 p-1.5 w-fit">
+      <div className="flex overflow-x-auto whitespace-nowrap rounded-xl bg-white/5 p-1.5 w-full sm:w-fit pb-1.5 mb-2 sm:mb-0">
         {tabs.map((tab) => {
           const tipMap: Record<Tab, string> = { notes: 'AI-generated notes', flashcards: 'Review with flashcards', quiz: 'Test your knowledge', gpa: 'Track your GPA & grades' };
           return (

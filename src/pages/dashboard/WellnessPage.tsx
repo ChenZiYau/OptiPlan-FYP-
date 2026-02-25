@@ -176,21 +176,21 @@ export function WellnessPage() {
           >
             <h3 className="text-sm font-semibold text-white mb-1">How are you feeling today?</h3>
             <p className="text-xs text-gray-500 mb-4">Tap to log your mood</p>
-            <div className="flex justify-between gap-2">
+            <div className="flex justify-between gap-1 sm:gap-2">
               {MOODS.map((mood, i) => (
                 <HoverTip key={i} label={`Log as ${mood.label}`}>
                   <button
                     onClick={() => { setSelectedMood(i); toast.success(`Mood logged: ${mood.label} ${mood.emoji}`); }}
-                    className="flex-1 flex flex-col items-center gap-1.5 group"
+                    className="flex-1 flex flex-col items-center gap-1.5 group min-w-0"
                   >
-                    <div className={`w-12 h-12 rounded-2xl text-2xl flex items-center justify-center transition-all ${
+                    <div className={`w-full max-w-[3rem] aspect-square rounded-xl sm:rounded-2xl text-lg sm:text-2xl flex items-center justify-center transition-all ${
                       selectedMood === i
                         ? `ring-2 ring-purple-500 ring-offset-2 ring-offset-[#18162e] scale-110 bg-gradient-to-br ${mood.color}`
                         : 'bg-white/5 group-hover:bg-white/10'
                     }`}>
                       {mood.emoji}
                     </div>
-                    <span className={`text-[10px] transition-colors ${selectedMood === i ? 'text-purple-400 font-semibold' : 'text-gray-600'}`}>
+                    <span className={`text-[10px] w-full text-center truncate transition-colors ${selectedMood === i ? 'text-purple-400 font-semibold' : 'text-gray-600'}`}>
                       {mood.label}
                     </span>
                   </button>

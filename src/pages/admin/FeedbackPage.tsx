@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { MessageSquare, Bug, Lightbulb, Inbox, ChevronDown, Search } from 'lucide-react';
 import { StatCard } from '@/components/admin/StatCard';
+import { CustomDropdown } from '@/components/ui/custom-dropdown';
 import { useAdminFeedback, useAdminStats, logAdminActivity } from '@/hooks/useAdminData';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
@@ -32,6 +33,20 @@ const statusColors: Record<string, string> = {
   reviewed: 'bg-blue-500/10 text-blue-400',
   resolved: 'bg-emerald-500/10 text-emerald-400',
 };
+
+const categoryOptions = [
+  { label: 'All Categories', value: 'all' },
+  { label: 'Bug Reports', value: 'bug' },
+  { label: 'Feature Requests', value: 'feature' },
+  { label: 'General', value: 'general' },
+  { label: 'Other', value: 'other' },
+];
+
+const statusOptions = [
+  { label: 'New', value: 'new' },
+  { label: 'Reviewed', value: 'reviewed' },
+  { label: 'Resolved', value: 'resolved' },
+];
 
 export function FeedbackPage() {
   const { feedback, loading, refetch } = useAdminFeedback();
@@ -139,17 +154,13 @@ export function FeedbackPage() {
               onChange={(e) => setDateTo(e.target.value)}
               className="px-2 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-gray-300 outline-none"
             />
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-sm text-gray-300 outline-none cursor-pointer"
-            >
-              <option value="all">All Categories</option>
-              <option value="bug">Bug Reports</option>
-              <option value="feature">Feature Requests</option>
-              <option value="general">General</option>
-              <option value="other">Other</option>
-            </select>
+            <div className="w-40 relative z-20">
+              <CustomDropdown
+                value={categoryFilter}
+                onChange={setCategoryFilter}
+                options={categoryOptions}
+              />
+            </div>
           </div>
         </div>
 
@@ -232,16 +243,14 @@ export function FeedbackPage() {
                         </div>
                         <div className="flex items-center gap-3 pt-2 border-t border-white/[0.06]">
                           <span className="text-xs text-gray-500">Status:</span>
-                          <select
-                            value={item.status}
-                            disabled={updatingStatus === item.id}
-                            onChange={(e) => handleStatusChange(item.id, e.target.value)}
-                            className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-gray-300 outline-none cursor-pointer disabled:opacity-50"
-                          >
-                            <option value="new">New</option>
-                            <option value="reviewed">Reviewed</option>
-                            <option value="resolved">Resolved</option>
-                          </select>
+                          <div className="w-32 relative">
+                            <CustomDropdown
+                              value={item.status}
+                              disabled={updatingStatus === item.id}
+                              onChange={(val) => handleStatusChange(item.id, val)}
+                              options={statusOptions}
+                            />
+                          </div>
                           {updatingStatus === item.id && (
                             <span className="text-xs text-gray-500">Updating...</span>
                           )}

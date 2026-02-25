@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { UserCircle, Wifi, MessageSquare, UserPlus, Filter, FileText, Trash2, ToggleRight, Edit, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StatCard } from '@/components/admin/StatCard';
+import { CustomDropdown } from '@/components/ui/custom-dropdown';
 import { useAdminStats, useAdminActivityLog, useUserPresence } from '@/hooks/useAdminData';
 
 function formatDate(dateStr: string) {
@@ -45,6 +46,14 @@ const actionLabels: Record<string, string> = {
   feedback_status_change: 'changed feedback status',
   section_toggle: 'toggled section visibility',
 };
+
+const actionOptions = [
+  { label: 'All Types', value: 'all' },
+  { label: 'Content Update', value: 'content_update' },
+  { label: 'User Deletion', value: 'user_delete' },
+  { label: 'Feedback Status', value: 'feedback_status_change' },
+  { label: 'Section Toggle', value: 'section_toggle' },
+];
 
 function renderActivityDetails(item: any) {
   const adminName = item.admin_name ?? 'Admin';
@@ -221,17 +230,13 @@ export function Overview() {
               className="px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-xs text-gray-300 outline-none"
               placeholder="To"
             />
-            <select
-              value={actionType}
-              onChange={(e) => setActionType(e.target.value)}
-              className="px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-xs text-gray-300 outline-none cursor-pointer"
-            >
-              <option value="all">All Types</option>
-              <option value="content_update">Content Update</option>
-              <option value="user_delete">User Deletion</option>
-              <option value="feedback_status_change">Feedback Status</option>
-              <option value="section_toggle">Section Toggle</option>
-            </select>
+            <div className="w-40 relative z-20">
+              <CustomDropdown
+                value={actionType}
+                onChange={setActionType}
+                options={actionOptions}
+              />
+            </div>
           </div>
         </div>
 

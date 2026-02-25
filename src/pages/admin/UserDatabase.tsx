@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, UserCircle, Shield, Search, Pencil, Trash2 } from 'lucide-react';
 import { StatCard } from '@/components/admin/StatCard';
+import { CustomDropdown } from '@/components/ui/custom-dropdown';
 import { useAdminUsers, useAdminStats, useUserPresence } from '@/hooks/useAdminData';
 
 function formatDate(dateStr: string) {
@@ -33,6 +34,12 @@ function getInitials(name: string | null, email: string): string {
   }
   return email.substring(0, 2).toUpperCase();
 }
+
+const roleOptions = [
+  { label: 'All Roles', value: 'all' },
+  { label: 'User', value: 'user' },
+  { label: 'Admin', value: 'admin' },
+];
 
 export function UserDatabase() {
   const { users, loading, refetch } = useAdminUsers();
@@ -91,15 +98,13 @@ export function UserDatabase() {
                 className="bg-transparent text-sm text-gray-300 placeholder:text-gray-600 outline-none w-36"
               />
             </div>
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-sm text-gray-300 outline-none cursor-pointer"
-            >
-              <option value="all">All Roles</option>
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
-            </select>
+            <div className="w-32 relative z-20">
+              <CustomDropdown
+                value={roleFilter}
+                onChange={setRoleFilter}
+                options={roleOptions}
+              />
+            </div>
             <button
               onClick={() => refetch()}
               className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-sm font-medium text-white hover:opacity-90 transition-opacity"

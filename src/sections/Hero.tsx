@@ -288,12 +288,12 @@ export function Hero() {
           {/* CTA Buttons */}
           <motion.div
             variants={fadeInUp}
-            className="mt-10 flex flex-row gap-3"
+            className="mt-10 flex flex-col sm:flex-row gap-4 w-full sm:w-auto px-4 sm:px-0"
           >
             <Button
               size="lg"
               variant="outline"
-              className="gap-4 border-white/10 bg-white/5 text-opti-text-primary hover:bg-white/10 hover:text-opti-accent"
+              className="gap-4 border-white/10 bg-white/5 text-opti-text-primary hover:bg-white/10 hover:text-opti-accent w-full sm:w-auto"
               onClick={() => scrollToSection('how-it-works')}
             >
               {content.ctaSecondary} <MoveRight className="w-4 h-4" />
@@ -301,7 +301,7 @@ export function Hero() {
             {user ? (
               <Button
                 size="lg"
-                className="gap-4 bg-opti-accent text-opti-bg hover:bg-opti-accent/90 font-semibold"
+                className="gap-4 bg-opti-accent text-opti-bg hover:bg-opti-accent/90 font-semibold w-full sm:w-auto mt-2 sm:mt-0"
                 onClick={() => navigate('/dashboard')}
               >
                 Go to Dashboard <MoveRight className="w-4 h-4" />
@@ -309,7 +309,7 @@ export function Hero() {
             ) : (
               <Button
                 size="lg"
-                className="gap-4 bg-opti-accent text-opti-bg hover:bg-opti-accent/90 font-semibold"
+                className="gap-4 bg-opti-accent text-opti-bg hover:bg-opti-accent/90 font-semibold w-full sm:w-auto mt-2 sm:mt-0"
                 onClick={() => navigate('/signup')}
               >
                 {content.ctaPrimary} <MoveRight className="w-4 h-4" />

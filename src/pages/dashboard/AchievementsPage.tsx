@@ -48,7 +48,7 @@ export function AchievementsPage() {
         </p>
 
         {/* XP breakdown */}
-        <div className="flex gap-4 mt-4 pt-4 border-t border-white/5">
+        <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-white/5">
           <div className="flex items-center gap-2 text-xs text-gray-400">
             <Zap className="w-3.5 h-3.5 text-green-400" />
             <span>Task: <span className="text-white font-medium">+15 XP</span></span>

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ChevronDown, Search, Eye, EyeOff, Loader2, Save, RotateCcw } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { ChevronDown, Search, Eye, EyeOff, Loader2, Save, RotateCcw, X, Pipette } from 'lucide-react';
 import { useSiteContent, updateSiteContent } from '@/hooks/useAdminData';
 import { useAuth } from '@/hooks/useAuth';
 import { siteDefaults, sectionColorFields } from '@/constants/siteDefaults';
@@ -89,6 +89,62 @@ function ContentField({
   );
 }
 
+// ── Helpers for hex ↔ RGB conversion ─────────────────────────────────
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const h = hex.replace('#', '');
+  return {
+    r: parseInt(h.substring(0, 2), 16) || 0,
+    g: parseInt(h.substring(2, 4), 16) || 0,
+    b: parseInt(h.substring(4, 6), 16) || 0,
+  };
+}
+
+function rgbToHex(r: number, g: number, b: number): string {
+  const clamp = (v: number) => Math.max(0, Math.min(255, Math.round(v)));
+  return `#${[clamp(r), clamp(g), clamp(b)].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+}
+
+// ── Helpers for HSV ↔ RGB conversion ─────────────────────────────────
+function rgbToHsv(r: number, g: number, b: number): { h: number; s: number; v: number } {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const d = max - min;
+  let h = 0;
+  const s = max === 0 ? 0 : d / max;
+  const v = max;
+  if (d !== 0) {
+    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+    else if (max === g) h = ((b - r) / d + 2) / 6;
+    else h = ((r - g) / d + 4) / 6;
+  }
+  return { h: h * 360, s, v };
+}
+
+function hsvToRgb(h: number, s: number, v: number): { r: number; g: number; b: number } {
+  h = ((h % 360) + 360) % 360;
+  const c = v * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = v - c;
+  let r = 0, g = 0, b = 0;
+  if (h < 60) { r = c; g = x; }
+  else if (h < 120) { r = x; g = c; }
+  else if (h < 180) { g = c; b = x; }
+  else if (h < 240) { g = x; b = c; }
+  else if (h < 300) { r = x; b = c; }
+  else { r = c; b = x; }
+  return {
+    r: Math.round((r + m) * 255),
+    g: Math.round((g + m) * 255),
+    b: Math.round((b + m) * 255),
+  };
+}
+
+// ── Preset color swatches ────────────────────────────────────────────
+const PRESET_COLORS = [
+  '#ffffff', '#a3a3a3', '#737373', '#ef4444', '#f97316', '#eab308',
+  '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#f43f5e',
+];
+
 function ColorField({
   label,
   value,
@@ -98,22 +154,369 @@ function ColorField({
   value: string;
   onChange: (v: string) => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const satValRef = useRef<HTMLCanvasElement>(null);
+  const hueRef = useRef<HTMLCanvasElement>(null);
+
+  // Draft color — only committed to parent on "Apply"
+  const [draft, setDraft] = useState(value || '#ffffff');
+  const [hue, setHue] = useState(() => {
+    const { h } = rgbToHsv(...Object.values(hexToRgb(value || '#ffffff')) as [number, number, number]);
+    return h;
+  });
+  const [hexInput, setHexInput] = useState(value || '');
+
+  const draftRgb = hexToRgb(draft);
+  const draftHsv = rgbToHsv(draftRgb.r, draftRgb.g, draftRgb.b);
+
+  // Sync draft when value changes externally (e.g. reset)
+  useEffect(() => {
+    const hex = value || '#ffffff';
+    setDraft(hex);
+    setHexInput(value || '');
+    const { h } = rgbToHsv(...Object.values(hexToRgb(hex)) as [number, number, number]);
+    setHue(h);
+  }, [value]);
+
+  // Reset draft when opening
+  useEffect(() => {
+    if (open) {
+      const hex = value || '#ffffff';
+      setDraft(hex);
+      setHexInput(value || '');
+      const { h } = rgbToHsv(...Object.values(hexToRgb(hex)) as [number, number, number]);
+      setHue(h);
+    }
+  }, [open, value]);
+
+  // Close popover on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  // ── Draw saturation/value canvas ────────────────────────────────
+  useEffect(() => {
+    const canvas = satValRef.current;
+    if (!canvas || !open) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const w = canvas.width, h = canvas.height;
+
+    const pureRgb = hsvToRgb(hue, 1, 1);
+    ctx.fillStyle = `rgb(${pureRgb.r},${pureRgb.g},${pureRgb.b})`;
+    ctx.fillRect(0, 0, w, h);
+
+    const white = ctx.createLinearGradient(0, 0, w, 0);
+    white.addColorStop(0, 'rgba(255,255,255,1)');
+    white.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = white;
+    ctx.fillRect(0, 0, w, h);
+
+    const black = ctx.createLinearGradient(0, 0, 0, h);
+    black.addColorStop(0, 'rgba(0,0,0,0)');
+    black.addColorStop(1, 'rgba(0,0,0,1)');
+    ctx.fillStyle = black;
+    ctx.fillRect(0, 0, w, h);
+  }, [hue, open]);
+
+  // ── Draw hue bar ────────────────────────────────────────────────
+  useEffect(() => {
+    const canvas = hueRef.current;
+    if (!canvas || !open) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const w = canvas.width, h = canvas.height;
+    const grad = ctx.createLinearGradient(0, 0, w, 0);
+    for (let i = 0; i <= 6; i++) {
+      const { r, g, b } = hsvToRgb((i / 6) * 360, 1, 1);
+      grad.addColorStop(i / 6, `rgb(${r},${g},${b})`);
+    }
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+  }, [open]);
+
+  // ── Helper to update draft from hex ─────────────────────────────
+  const setDraftFromHex = useCallback((hex: string) => {
+    setDraft(hex);
+    setHexInput(hex);
+  }, []);
+
+  // ── Pointer drag handler for sat/val canvas ─────────────────────
+  const handleSatValInteraction = useCallback((canvas: HTMLCanvasElement, clientX: number, clientY: number) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const y = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+    const { r, g, b } = hsvToRgb(hue, x, 1 - y);
+    setDraftFromHex(rgbToHex(r, g, b));
+  }, [hue, setDraftFromHex]);
+
+  const handleHueInteraction = useCallback((canvas: HTMLCanvasElement, clientX: number) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const newHue = x * 360;
+    setHue(newHue);
+    const curHsv = rgbToHsv(...Object.values(hexToRgb(draft)) as [number, number, number]);
+    const { r, g, b } = hsvToRgb(newHue, curHsv.s, curHsv.v);
+    setDraftFromHex(rgbToHex(r, g, b));
+  }, [draft, setDraftFromHex]);
+
+  const startDrag = (
+    canvas: HTMLCanvasElement,
+    handler: (canvas: HTMLCanvasElement, x: number, y: number) => void,
+    e: React.PointerEvent
+  ) => {
+    handler(canvas, e.clientX, e.clientY);
+    const onMove = (ev: PointerEvent) => handler(canvas, ev.clientX, ev.clientY);
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  };
+
+  // Has the draft changed from the saved value?
+  const hasChanges = draft !== (value || '#ffffff') || (!!draft && draft !== '#ffffff' && !value);
+
+  // Indicator positions
+  const indicatorX = draftHsv.s * 100;
+  const indicatorY = (1 - draftHsv.v) * 100;
+  const hueIndicatorX = (hue / 360) * 100;
+
   return (
-    <div className="flex items-center gap-3">
-      <input
-        type="color"
-        value={value || '#ffffff'}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-8 h-8 rounded cursor-pointer border border-white/10 bg-transparent"
-      />
-      <span className="text-xs text-gray-400 flex-1">{label}</span>
-      {value && (
+    <div className="relative">
+      <div className="flex items-center gap-3">
+        {/* Swatch trigger */}
         <button
-          onClick={() => onChange('')}
-          className="text-[10px] text-gray-500 hover:text-red-400 transition-colors"
+          type="button"
+          onClick={() => setOpen(!open)}
+          className="group flex items-center gap-2.5 flex-1 py-1.5 rounded-md hover:bg-white/[0.03] transition-colors -mx-1 px-1"
         >
-          Reset
+          <div
+            className="w-7 h-7 rounded-md border border-white/15 shrink-0 shadow-inner transition-transform group-hover:scale-110"
+            style={{
+              backgroundColor: value || undefined,
+              backgroundImage: !value ? 'linear-gradient(135deg, #333 25%, transparent 25%, transparent 50%, #333 50%, #333 75%, transparent 75%)' : undefined,
+              backgroundSize: !value ? '8px 8px' : undefined,
+            }}
+          />
+          <span className="text-xs text-gray-400 flex-1 text-left">{label}</span>
+          {value && (
+            <span className="text-[10px] text-gray-600 font-mono">{value}</span>
+          )}
+          <Pipette className="w-3 h-3 text-gray-600 group-hover:text-gray-400 transition-colors" />
         </button>
+
+        {/* Reset */}
+        {value && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onChange('');
+              setHexInput('');
+            }}
+            className="text-[10px] text-gray-500 hover:text-red-400 transition-colors shrink-0"
+          >
+            Reset
+          </button>
+        )}
+      </div>
+
+      {/* Popover */}
+      {open && (
+        <div
+          ref={popoverRef}
+          className="absolute left-0 top-full mt-2 z-50 w-64 rounded-xl bg-[#1a1830] border border-white/10 shadow-2xl p-3 space-y-3"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">{label}</span>
+            <button type="button" onClick={() => setOpen(false)} className="text-gray-500 hover:text-gray-300">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Saturation/Value area */}
+          <div className="relative rounded-lg overflow-hidden cursor-crosshair" style={{ height: 150 }}>
+            <canvas
+              ref={satValRef}
+              width={256}
+              height={150}
+              className="w-full h-full"
+              onPointerDown={(e) => satValRef.current && startDrag(satValRef.current, handleSatValInteraction, e)}
+            />
+            <div
+              className="absolute w-4 h-4 rounded-full border-2 border-white shadow-md pointer-events-none -translate-x-1/2 -translate-y-1/2"
+              style={{ left: `${indicatorX}%`, top: `${indicatorY}%`, backgroundColor: draft }}
+            />
+          </div>
+
+          {/* Hue bar */}
+          <div className="relative rounded-full overflow-hidden cursor-pointer" style={{ height: 14 }}>
+            <canvas
+              ref={hueRef}
+              width={256}
+              height={14}
+              className="w-full h-full"
+              onPointerDown={(e) => hueRef.current && startDrag(hueRef.current, (c, x) => handleHueInteraction(c, x), e)}
+            />
+            <div
+              className="absolute top-0 w-3.5 h-full rounded-full border-2 border-white shadow-md pointer-events-none -translate-x-1/2"
+              style={{ left: `${hueIndicatorX}%` }}
+            />
+          </div>
+
+          {/* RGB sliders */}
+          <div className="space-y-1.5">
+            {(['r', 'g', 'b'] as const).map((ch) => {
+              const channelColors = { r: '#ef4444', g: '#22c55e', b: '#3b82f6' };
+              return (
+                <div key={ch} className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold text-gray-500 uppercase w-3">{ch}</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={255}
+                    value={draftRgb[ch]}
+                    onChange={(e) => {
+                      const newRgb = { ...draftRgb, [ch]: Number(e.target.value) };
+                      const hex = rgbToHex(newRgb.r, newRgb.g, newRgb.b);
+                      setDraftFromHex(hex);
+                      const { h } = rgbToHsv(newRgb.r, newRgb.g, newRgb.b);
+                      setHue(h);
+                    }}
+                    className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer"
+                    style={{
+                      background: `linear-gradient(to right, ${rgbToHex(
+                        ch === 'r' ? 0 : draftRgb.r,
+                        ch === 'g' ? 0 : draftRgb.g,
+                        ch === 'b' ? 0 : draftRgb.b
+                      )}, ${rgbToHex(
+                        ch === 'r' ? 255 : draftRgb.r,
+                        ch === 'g' ? 255 : draftRgb.g,
+                        ch === 'b' ? 255 : draftRgb.b
+                      )})`,
+                      accentColor: channelColors[ch],
+                    }}
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    max={255}
+                    value={draftRgb[ch]}
+                    onChange={(e) => {
+                      const v = Math.max(0, Math.min(255, Number(e.target.value) || 0));
+                      const newRgb = { ...draftRgb, [ch]: v };
+                      const hex = rgbToHex(newRgb.r, newRgb.g, newRgb.b);
+                      setDraftFromHex(hex);
+                      const { h } = rgbToHsv(newRgb.r, newRgb.g, newRgb.b);
+                      setHue(h);
+                    }}
+                    className="w-10 text-[10px] text-center text-gray-300 bg-white/5 border border-white/10 rounded px-1 py-0.5 outline-none focus:border-purple-500/40"
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Hex input */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-gray-500 uppercase w-3">#</span>
+            <input
+              type="text"
+              value={hexInput.replace('#', '')}
+              onChange={(e) => {
+                let raw = e.target.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 6);
+                setHexInput('#' + raw);
+                if (raw.length === 6) {
+                  const hex = '#' + raw;
+                  setDraft(hex);
+                  const { h } = rgbToHsv(...Object.values(hexToRgb(hex)) as [number, number, number]);
+                  setHue(h);
+                }
+              }}
+              className="flex-1 text-xs text-gray-300 font-mono bg-white/5 border border-white/10 rounded px-2 py-1 outline-none focus:border-purple-500/40"
+              placeholder="ffffff"
+              maxLength={6}
+            />
+            <div
+              className="w-6 h-6 rounded border border-white/15"
+              style={{ backgroundColor: draft }}
+            />
+          </div>
+
+          {/* Preset swatches */}
+          <div>
+            <p className="text-[10px] text-gray-600 mb-1.5">Presets</p>
+            <div className="flex flex-wrap gap-1.5">
+              {PRESET_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => {
+                    setDraftFromHex(c);
+                    const { h } = rgbToHsv(...Object.values(hexToRgb(c)) as [number, number, number]);
+                    setHue(h);
+                  }}
+                  className={`w-5 h-5 rounded-md border transition-transform hover:scale-125 ${
+                    draft === c ? 'border-white ring-1 ring-purple-500 scale-110' : 'border-white/15'
+                  }`}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Before/After preview + Apply button */}
+          <div className="flex items-center gap-2 pt-1 border-t border-white/[0.06]">
+            <div className="flex items-center gap-1.5 flex-1">
+              <div
+                className="w-5 h-5 rounded border border-white/15"
+                style={{
+                  backgroundColor: value || undefined,
+                  backgroundImage: !value ? 'linear-gradient(135deg, #333 25%, transparent 25%, transparent 50%, #333 50%, #333 75%, transparent 75%)' : undefined,
+                  backgroundSize: !value ? '6px 6px' : undefined,
+                }}
+                title="Current"
+              />
+              <span className="text-[10px] text-gray-600">→</span>
+              <div
+                className="w-5 h-5 rounded border border-white/15"
+                style={{ backgroundColor: draft }}
+                title="New"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+              }}
+              className="px-3 py-1 text-[11px] text-gray-400 hover:text-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onChange(draft);
+                setOpen(false);
+              }}
+              disabled={!hasChanges}
+              className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-[11px] font-medium text-white hover:opacity-90 transition-opacity disabled:opacity-40"
+            >
+              Apply
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -108,7 +108,7 @@ export function SchedulesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-white tracking-tight">Weekly Schedule</h2>
           <p className="text-sm text-gray-500 mt-0.5">{schedules.length} subject{schedules.length !== 1 ? 's' : ''} scheduled</p>
@@ -116,7 +116,7 @@ export function SchedulesPage() {
         <HoverTip label="Add a new class or event">
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition-colors"
+            className="flex items-center justify-center sm:justify-start gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition-colors w-full sm:w-auto"
           >
             <Plus className="w-4 h-4" />
             Add Subject
