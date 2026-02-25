@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import * as LucideIcons from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { uuid } from '@/lib/utils';
 
 export interface Habit {
   id: string;
@@ -61,7 +62,7 @@ export function useHabits() {
   const addHabit = useCallback((habit: Omit<Habit, 'id'>) => {
     const newHabit: HabitWithIcon = {
       ...habit,
-      id: crypto.randomUUID(),
+      id: uuid(),
       icon: resolveIcon(habit.iconName),
     };
     saveHabits([...habits, newHabit]);

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Send, Trash2 } from 'lucide-react';
+import { uuid } from '@/lib/utils';
 import type { DashboardItem, TaskStatus, Importance, TaskNote } from '@/types/dashboard';
 import { ImportanceSlider } from '@/components/dashboard/ImportanceSlider';
 
@@ -73,7 +74,7 @@ export function TaskDetailDrawer({ item, open, onClose, onUpdate, onDelete }: Ta
   const handleAddNote = () => {
     if (!noteText.trim()) return;
     const newNote: TaskNote = {
-      id: crypto.randomUUID(),
+      id: uuid(),
       text: noteText.trim(),
       createdAt: new Date().toISOString(),
     };

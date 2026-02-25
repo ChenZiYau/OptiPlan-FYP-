@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, Trash2 } from 'lucide-react';
+import { uuid } from '@/lib/utils';
 import { HoverTip } from '@/components/HoverTip';
 import { useDashboard } from '@/contexts/DashboardContext';
 import { InteractiveCalendar } from '@/components/dashboard/InteractiveCalendar';
@@ -94,7 +95,7 @@ export function SchedulesPage() {
   const handleAdd = () => {
     if (!subjectName.trim() || selectedDays.length === 0) return;
     addSchedule({
-      id: crypto.randomUUID(),
+      id: uuid(),
       subjectName: subjectName.trim(),
       color,
       days: selectedDays.sort(),

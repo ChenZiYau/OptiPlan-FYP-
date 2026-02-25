@@ -5,6 +5,7 @@ import {
   Sparkles, Check, X, Loader2, Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { uuid } from '@/lib/utils';
 import { useFinance } from '@/contexts/FinanceContext';
 import { useDashboard } from '@/contexts/DashboardContext';
 import { EXPENSE_CATEGORIES, CATEGORY_COLORS, type ExpenseCategory } from '@/hooks/useFinanceData';
@@ -71,7 +72,7 @@ function todayISO(): string {
 }
 
 function uid(): string {
-  return crypto.randomUUID();
+  return uuid();
 }
 
 function pickColor(schedules: ScheduleEntry[]): string {

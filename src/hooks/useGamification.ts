@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
+import { uuid } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
   XP_REWARDS,
@@ -176,7 +177,7 @@ export function useGamificationData(): GamificationHookData {
     setLastActiveDate(newLastActive);
 
     const optimisticEntries: XPHistoryEntry[] = entries.map((e) => ({
-      id: crypto.randomUUID(),
+      id: uuid(),
       user_id: user.id,
       amount: e.amount,
       reason: e.reason,
@@ -277,7 +278,7 @@ export function useGamificationData(): GamificationHookData {
     setLevel(newLevel);
 
     const negativeEntry: XPHistoryEntry = {
-      id: crypto.randomUUID(),
+      id: uuid(),
       user_id: user.id,
       amount: -revokeAmount,
       reason: 'task_revoked',

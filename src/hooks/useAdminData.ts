@@ -2,7 +2,33 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { AdminUser, Feedback, AdminActivityLog, UserPresence, SiteContent } from '@/types/admin';
 
+/**
+ * Returns the current Supabase session user ID, re-rendering when auth state
+ * changes.  Admin-data hooks use this to delay their first fetch until the
+ * session has been restored (fixes blank pages on hard-refresh).
+ */
+function useSessionUid(): string | null {
+  const [uid, setUid] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Restore session from storage
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUid(session?.user?.id ?? null);
+    });
+
+    // Keep in sync with auth changes (login / logout / token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUid(session?.user?.id ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  return uid;
+}
+
 export function useAdminUsers() {
+  const uid = useSessionUid();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -16,12 +42,15 @@ export function useAdminUsers() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  useEffect(() => {
+    if (uid) fetchUsers();
+  }, [uid, fetchUsers]);
 
   return { users, loading, refetch: fetchUsers };
 }
 
 export function useAdminFeedback() {
+  const uid = useSessionUid();
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,12 +64,15 @@ export function useAdminFeedback() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchFeedback(); }, [fetchFeedback]);
+  useEffect(() => {
+    if (uid) fetchFeedback();
+  }, [uid, fetchFeedback]);
 
   return { feedback, loading, refetch: fetchFeedback };
 }
 
 export function useAdminStats() {
+  const uid = useSessionUid();
   const [stats, setStats] = useState({
     totalUsers: 0,
     regularUsers: 0,
@@ -52,6 +84,8 @@ export function useAdminStats() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!uid) return;
+
     async function fetch() {
       const [profilesRes, feedbackRes] = await Promise.all([
         supabase.from('profiles').select('role'),
@@ -72,12 +106,13 @@ export function useAdminStats() {
       setLoading(false);
     }
     fetch();
-  }, []);
+  }, [uid]);
 
   return { stats, loading };
 }
 
 export function useRecentActivity() {
+  const uid = useSessionUid();
   const [activities, setActivities] = useState<AdminActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -92,7 +127,9 @@ export function useRecentActivity() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchActivities(); }, [fetchActivities]);
+  useEffect(() => {
+    if (uid) fetchActivities();
+  }, [uid, fetchActivities]);
 
   return { activities, loading, refetch: fetchActivities };
 }
@@ -105,6 +142,7 @@ interface ActivityFilters {
 }
 
 export function useAdminActivityLog(filters?: ActivityFilters) {
+  const uid = useSessionUid();
   const [activities, setActivities] = useState<AdminActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -133,16 +171,21 @@ export function useAdminActivityLog(filters?: ActivityFilters) {
     setLoading(false);
   }, [filters?.dateFrom, filters?.dateTo, filters?.actionType, filters?.adminName]);
 
-  useEffect(() => { fetchActivities(); }, [fetchActivities]);
+  useEffect(() => {
+    if (uid) fetchActivities();
+  }, [uid, fetchActivities]);
 
   return { activities, loading, refetch: fetchActivities };
 }
 
 export function useUserPresence() {
+  const uid = useSessionUid();
   const [presence, setPresence] = useState<UserPresence[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!uid) return;
+
     async function fetch() {
       const { data } = await supabase
         .from('user_presence')
@@ -151,7 +194,7 @@ export function useUserPresence() {
       setLoading(false);
     }
     fetch();
-  }, []);
+  }, [uid]);
 
   const presenceMap = new Map(presence.map(p => [p.user_id, p]));
 
@@ -159,6 +202,7 @@ export function useUserPresence() {
 }
 
 export function useSiteContent() {
+  const uid = useSessionUid();
   const [content, setContent] = useState<SiteContent[]>([]);
   const [loading, setLoading] = useState(true);
   const hasFetched = useRef(false);
@@ -174,7 +218,9 @@ export function useSiteContent() {
     hasFetched.current = true;
   }, []);
 
-  useEffect(() => { fetchContent(); }, [fetchContent]);
+  useEffect(() => {
+    if (uid) fetchContent();
+  }, [uid, fetchContent]);
 
   const contentMap = new Map(content.map(c => [c.section_key, c]));
 
@@ -199,8 +245,8 @@ export async function updateSiteContent(
 
   if (error) throw error;
 
-  const detailsPayload = updates.visible !== undefined 
-    ? updates 
+  const detailsPayload = updates.visible !== undefined
+    ? updates
     : { previous: oldContent, current: updates.content };
 
   // Log the activity

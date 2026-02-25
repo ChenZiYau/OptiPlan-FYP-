@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckSquare, CalendarDays, BookOpen } from 'lucide-react';
+import { uuid } from '@/lib/utils';
 import { useDashboard } from '@/contexts/DashboardContext';
 import { ImportanceSlider } from './ImportanceSlider';
 import type { ItemType, Importance, DashboardItem } from '@/types/dashboard';
@@ -58,7 +59,7 @@ export function TaskModal() {
     if (!title.trim()) return;
 
     const base = {
-      id: crypto.randomUUID(),
+      id: uuid(),
       title: title.trim(),
       description: description.trim(),
       date: resolvedDate,

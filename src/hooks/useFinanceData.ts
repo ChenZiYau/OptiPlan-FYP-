@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
+import { uuid } from '@/lib/utils';
 import type {
   FinanceSettings,
   Transaction,
@@ -341,7 +342,7 @@ export function useFinanceData(): FinanceData {
         return [
           ...prev,
           {
-            id: crypto.randomUUID(),
+            id: uuid(),
             user_id: user.id,
             category,
             limit_amount: limitAmount,
