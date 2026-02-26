@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, createContext, useCallback } from 'react';
+import { useState, useEffect, useContext, createContext, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { User, Session } from '@supabase/supabase-js';
@@ -66,6 +66,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const userRef = useRef<User | null>(null);
+  userRef.current = user;
 
   // Set profile synchronously, then fetch avatar in background
   const setProfileAndFetchAvatar = useCallback((u: User) => {
@@ -118,12 +120,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    // Set offline on window unload
+    // Set offline on window unload — read from ref to avoid adding `user` as a dep
     const handleUnload = () => {
-      if (user) {
+      const u = userRef.current;
+      if (u) {
         // Use sendBeacon for reliability on unload
         const body = JSON.stringify({
-          user_id: user.id,
+          user_id: u.id,
           is_online: false,
           last_seen: new Date().toISOString(),
         });
@@ -139,7 +142,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       subscription.unsubscribe();
       window.removeEventListener('beforeunload', handleUnload);
     };
-  }, [setProfileAndFetchAvatar, upsertPresence, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setProfileAndFetchAvatar, upsertPresence]);
 
   async function signOut() {
     if (user) {
@@ -213,10 +217,10 @@ const defaultValue: AuthContextValue = {
   session: null,
   profile: null,
   loading: false,
-  signOut: async () => {},
-  updateProfile: async () => {},
-  updatePassword: async () => {},
-  uploadAvatar: async () => {},
+  signOut: async () => { },
+  updateProfile: async () => { },
+  updatePassword: async () => { },
+  uploadAvatar: async () => { },
 };
 
 export function useAuth(): AuthContextValue {

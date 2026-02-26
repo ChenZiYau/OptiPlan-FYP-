@@ -1,6 +1,7 @@
 import { Menu } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useDashboard } from '@/contexts/DashboardContext';
+import { useGamification } from '@/contexts/GamificationContext';
+import { xpProgressInLevel } from '@/types/gamification';
 
 interface DashboardHeaderProps {
   title: string;
@@ -16,15 +17,12 @@ function getGreeting() {
 
 export function DashboardHeader({ title, onMenuToggle }: DashboardHeaderProps) {
   const { profile } = useAuth();
-  const { items } = useDashboard();
+  const { totalXP, level } = useGamification();
   const firstName = profile?.display_name?.split(' ')[0] ?? 'there';
 
-  // Dynamic XP: 10 XP per completed task, level up every 100 XP
-  const completedCount = items.filter(i => i.type === 'task' && i.status === 'completed').length;
-  const totalXP = completedCount * 10;
-  const level = Math.floor(totalXP / 100) + 1;
-  const currentInLevel = totalXP % 100;
-  const nextLevel = 100;
+  // Use the same curved XP formula as AchievementsPage & XPWidget
+  const progress = xpProgressInLevel(totalXP);
+  const progressPct = Math.min((progress.current / progress.required) * 100, 100);
 
   return (
     <header className="sticky top-0 z-30 h-16 bg-[#0B0A1A]/80 dm-surface backdrop-blur-xl border-b border-white/[0.06] flex items-center justify-between px-4 sm:px-6">
@@ -51,11 +49,11 @@ export function DashboardHeader({ title, onMenuToggle }: DashboardHeaderProps) {
           <div className="w-16 sm:w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500"
-              style={{ width: `${(currentInLevel / nextLevel) * 100}%` }}
+              style={{ width: `${progressPct}%` }}
             />
           </div>
           <span className="text-[10px] text-gray-400 hidden sm:inline">
-            {currentInLevel}/{nextLevel}
+            {progress.current}/{progress.required}
           </span>
         </div>
       </div>

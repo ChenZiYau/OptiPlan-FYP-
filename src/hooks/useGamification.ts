@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { uuid } from '@/lib/utils';
@@ -117,11 +117,12 @@ export function useGamificationData(): GamificationHookData {
 
     const s = stateRef.current;
 
-    // Deduplication: check if we already awarded XP for this task
-    const alreadyAwarded = s.xpHistory.some(
-      (h) => h.task_id === taskId && h.reason === 'task_complete' && h.amount > 0,
-    );
-    if (alreadyAwarded) return;
+    // Deduplication: skip if this task currently has active (non-revoked) XP.
+    // revokeXP adds a negative entry rather than removing the original, so we
+    // check the net sum — a positive net means the task is still rewarded.
+    const taskEntries = s.xpHistory.filter((h) => h.task_id === taskId);
+    const netTaskXP = taskEntries.reduce((sum, h) => sum + h.amount, 0);
+    if (netTaskXP > 0) return;
 
     // Calculate base XP by item type
     const baseXP = XP_REWARDS[itemType] ?? 15;
@@ -263,13 +264,13 @@ export function useGamificationData(): GamificationHookData {
 
     const s = stateRef.current;
 
-    // Find all positive history entries for this task
-    const taskEntries = s.xpHistory.filter(
-      (h) => h.task_id === taskId && h.reason === 'task_complete' && h.amount > 0,
-    );
-    if (taskEntries.length === 0) return;
+    // Calculate the net active XP for this task (positives minus previous
+    // revocations). This prevents double-subtraction after award/revoke cycles.
+    const taskEntries = s.xpHistory.filter((h) => h.task_id === taskId);
+    const netTaskXP = taskEntries.reduce((sum, h) => sum + h.amount, 0);
+    if (netTaskXP <= 0) return; // nothing to revoke
 
-    const revokeAmount = taskEntries.reduce((sum, e) => sum + e.amount, 0);
+    const revokeAmount = netTaskXP;
     const newTotalXP = Math.max(0, s.totalXP - revokeAmount);
     const newLevel = getLevelFromXP(newTotalXP);
 
@@ -355,17 +356,24 @@ export function useGamificationData(): GamificationHookData {
 
   const dismissLevelUp = useCallback(() => setPendingLevelUp(null), []);
 
-  return {
-    totalXP,
-    level,
-    streak,
-    lastActiveDate,
-    xpHistory,
-    unlockedAchievements,
-    loading,
-    pendingLevelUp,
-    dismissLevelUp,
-    awardXP,
-    revokeXP,
-  };
+  return useMemo(
+    () => ({
+      totalXP,
+      level,
+      streak,
+      lastActiveDate,
+      xpHistory,
+      unlockedAchievements,
+      loading,
+      pendingLevelUp,
+      dismissLevelUp,
+      awardXP,
+      revokeXP,
+    }),
+    [
+      totalXP, level, streak, lastActiveDate, xpHistory,
+      unlockedAchievements, loading, pendingLevelUp,
+      dismissLevelUp, awardXP, revokeXP,
+    ],
+  );
 }

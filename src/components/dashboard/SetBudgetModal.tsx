@@ -8,6 +8,11 @@ import {
   DEFAULT_CATEGORY_BUDGET,
 } from '@/hooks/useFinanceData';
 
+/** Hard limit for total monthly budget */
+const MAX_TOTAL_BUDGET = 100_000_000;
+/** Hard limit for each individual category budget */
+const MAX_CATEGORY_BUDGET = 50_000_000;
+
 const CATEGORY_EMOJIS: Record<string, string> = {
   Food: '🍔',
   Transport: '🚗',
@@ -35,6 +40,10 @@ export function SetBudgetModal({ open, onOpenChange }: SetBudgetModalProps) {
 
   const [saving, setSaving] = useState(false);
 
+  // Validation error state
+  const [totalBudgetError, setTotalBudgetError] = useState('');
+  const [categoryErrors, setCategoryErrors] = useState<Record<string, string>>({});
+
   // Sync state when modal opens
   useEffect(() => {
     if (open) {
@@ -52,11 +61,13 @@ export function SetBudgetModal({ open, onOpenChange }: SetBudgetModalProps) {
 
   function handleReset() {
     setTotalBudget('');
+    setTotalBudgetError('');
     const limits: Record<string, string> = {};
     for (const cat of EXPENSE_CATEGORIES) {
       limits[cat] = String(DEFAULT_CATEGORY_BUDGET);
     }
     setCategoryLimits(limits);
+    setCategoryErrors({});
   }
 
   async function handleSave() {
@@ -85,7 +96,26 @@ export function SetBudgetModal({ open, onOpenChange }: SetBudgetModalProps) {
     }
   }
 
+  function handleTotalBudgetChange(val: string) {
+    const num = parseFloat(val);
+    if (!isNaN(num) && num > MAX_TOTAL_BUDGET) {
+      setTotalBudgetError(`Maximum budget is $${MAX_TOTAL_BUDGET.toLocaleString()}`);
+      return;
+    }
+    setTotalBudgetError('');
+    setTotalBudget(val);
+  }
+
   function setCatLimit(cat: string, val: string) {
+    const num = parseFloat(val);
+    if (!isNaN(num) && num > MAX_CATEGORY_BUDGET) {
+      setCategoryErrors((prev) => ({
+        ...prev,
+        [cat]: `Maximum is $${MAX_CATEGORY_BUDGET.toLocaleString()}`,
+      }));
+      return;
+    }
+    setCategoryErrors((prev) => ({ ...prev, [cat]: '' }));
     setCategoryLimits((prev) => ({ ...prev, [cat]: val }));
   }
 
@@ -131,11 +161,18 @@ export function SetBudgetModal({ open, onOpenChange }: SetBudgetModalProps) {
                 type="number"
                 step="0.01"
                 min="0"
+                max={MAX_TOTAL_BUDGET}
                 value={totalBudget}
-                onChange={(e) => setTotalBudget(e.target.value)}
+                onChange={(e) => handleTotalBudgetChange(e.target.value)}
                 placeholder={String(EXPENSE_CATEGORIES.length * DEFAULT_CATEGORY_BUDGET)}
-                className="w-full bg-[#0B0A1A] border border-white/10 rounded-lg p-3 text-white text-lg font-semibold placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className={`w-full bg-[#0B0A1A] border rounded-lg p-3 text-white text-lg font-semibold placeholder:text-gray-600 focus:outline-none focus:ring-2 transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${totalBudgetError
+                    ? 'border-red-500 focus:ring-red-500/40'
+                    : 'border-white/10 focus:ring-purple-500/40'
+                  }`}
               />
+              {totalBudgetError && (
+                <p className="text-red-400 text-xs mt-1">{totalBudgetError}</p>
+              )}
             </div>
 
             {/* Category Limits Section */}
@@ -154,11 +191,18 @@ export function SetBudgetModal({ open, onOpenChange }: SetBudgetModalProps) {
                     type="number"
                     step="0.01"
                     min="0"
+                    max={MAX_CATEGORY_BUDGET}
                     value={categoryLimits[cat] ?? ''}
                     onChange={(e) => setCatLimit(cat, e.target.value)}
                     placeholder="500"
-                    className="w-full bg-[#0B0A1A] border border-white/10 rounded-lg p-3 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className={`w-full bg-[#0B0A1A] border rounded-lg p-3 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${categoryErrors[cat]
+                        ? 'border-red-500 focus:ring-red-500/40'
+                        : 'border-white/10 focus:ring-purple-500/40'
+                      }`}
                   />
+                  {categoryErrors[cat] && (
+                    <p className="text-red-400 text-xs mt-1">{categoryErrors[cat]}</p>
+                  )}
                 </div>
               ))}
             </div>

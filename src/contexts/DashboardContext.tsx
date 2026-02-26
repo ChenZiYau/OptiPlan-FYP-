@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { ReactNode, MutableRefObject } from 'react';
 import type { DashboardItem, ScheduleEntry, Importance, ItemType } from '@/types/dashboard';
 import { supabase } from '@/lib/supabase';
@@ -204,8 +204,21 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     [user],
   );
 
+  const contextValue = useMemo(
+    () => ({
+      isModalOpen, openModal, closeModal, items, addItem,
+      updateItem, removeItem, schedules, addSchedule,
+      removeSchedule, loading, onTaskStatusChange,
+    }),
+    [
+      isModalOpen, items, schedules, loading,
+      openModal, closeModal, addItem, updateItem, removeItem,
+      addSchedule, removeSchedule, onTaskStatusChange,
+    ],
+  );
+
   return (
-    <DashboardContext.Provider value={{ isModalOpen, openModal, closeModal, items, addItem, updateItem, removeItem, schedules, addSchedule, removeSchedule, loading, onTaskStatusChange }}>
+    <DashboardContext.Provider value={contextValue}>
       {children}
     </DashboardContext.Provider>
   );

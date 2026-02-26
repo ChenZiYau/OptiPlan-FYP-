@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Flame, Trophy, Zap } from 'lucide-react';
 import { useGamification } from '@/contexts/GamificationContext';
@@ -8,27 +9,30 @@ export function XPWidget() {
 
   if (loading) {
     return (
-      <motion.div layout className="rounded-2xl bg-[#18162e] border border-white/10 p-5 animate-pulse">
+      <div className="rounded-2xl bg-[#18162e] border border-white/10 p-5 animate-pulse">
         <div className="h-4 bg-white/5 rounded w-24 mb-4" />
         <div className="h-8 bg-white/5 rounded w-16 mb-3" />
         <div className="h-2 bg-white/5 rounded w-full" />
-      </motion.div>
+      </div>
     );
   }
 
-  const progress = xpProgressInLevel(totalXP);
-  const progressPct = Math.min((progress.current / progress.required) * 100, 100);
+  const progress = useMemo(() => xpProgressInLevel(totalXP), [totalXP]);
+  const progressPct = useMemo(() => Math.min((progress.current / progress.required) * 100, 100), [progress]);
 
   // Last 3 unlocked achievements
-  const recentAchievements = [...unlockedAchievements]
-    .sort((a, b) => b.unlocked_at.localeCompare(a.unlocked_at))
-    .slice(0, 3)
-    .map((ua) => ACHIEVEMENTS.find((d) => d.id === ua.achievement_id))
-    .filter(Boolean);
+  const recentAchievements = useMemo(
+    () =>
+      [...unlockedAchievements]
+        .sort((a, b) => b.unlocked_at.localeCompare(a.unlocked_at))
+        .slice(0, 3)
+        .map((ua) => ACHIEVEMENTS.find((d) => d.id === ua.achievement_id))
+        .filter(Boolean),
+    [unlockedAchievements],
+  );
 
   return (
-    <motion.div
-      layout
+    <div
       className="rounded-2xl bg-[#18162e] border border-white/10 p-5 hover:border-white/20 transition-colors"
     >
       {/* Header */}
@@ -100,6 +104,6 @@ export function XPWidget() {
           Complete tasks to earn achievements!
         </p>
       )}
-    </motion.div>
+    </div>
   );
 }
