@@ -34,17 +34,15 @@ export function TaskFilters({
       <div className="flex bg-white/5 rounded-lg p-0.5 border border-white/10">
         <button
           onClick={() => onViewModeChange('kanban')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-            viewMode === 'kanban' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'
-          }`}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === 'kanban' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'
+            }`}
         >
           <LayoutGrid className="w-3.5 h-3.5" /> Board
         </button>
         <button
           onClick={() => onViewModeChange('list')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-            viewMode === 'list' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'
-          }`}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === 'list' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'
+            }`}
         >
           <List className="w-3.5 h-3.5" /> List
         </button>
@@ -66,12 +64,13 @@ export function TaskFilters({
       <select
         value={statusFilter}
         onChange={(e) => onStatusFilterChange(e.target.value as TaskStatus | 'all')}
-        className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-sm text-white outline-none focus:border-purple-500/50 transition-all [color-scheme:dark]"
+        className="px-3 py-1.5 rounded-lg bg-[#1a1735] border border-white/10 text-sm text-white outline-none cursor-pointer hover:border-purple-500/40 focus:border-purple-500/50 transition-all appearance-none bg-[length:16px_16px] bg-[right_8px_center] bg-no-repeat pr-8"
+        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")` }}
       >
-        <option value="all">All Status</option>
-        <option value="todo">To Do</option>
-        <option value="in-progress">In Progress</option>
-        <option value="completed">Completed</option>
+        <option value="all" className="bg-[#1a1735] text-white">All Status</option>
+        <option value="todo" className="bg-[#1a1735] text-white">To Do</option>
+        <option value="in-progress" className="bg-[#1a1735] text-white">In Progress</option>
+        <option value="completed" className="bg-[#1a1735] text-white">Completed</option>
       </select>
 
       {/* Importance filter */}
@@ -81,24 +80,26 @@ export function TaskFilters({
           const v = e.target.value;
           onImportanceFilterChange(v === 'all' ? 'all' : (Number(v) as Importance));
         }}
-        className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-sm text-white outline-none focus:border-purple-500/50 transition-all [color-scheme:dark]"
+        className="px-3 py-1.5 rounded-lg bg-[#1a1735] border border-white/10 text-sm text-white outline-none cursor-pointer hover:border-purple-500/40 focus:border-purple-500/50 transition-all appearance-none bg-[length:16px_16px] bg-[right_8px_center] bg-no-repeat pr-8"
+        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")` }}
       >
-        <option value="all">All Importance</option>
-        <option value="1">Low</option>
-        <option value="2">Medium</option>
-        <option value="3">High</option>
+        <option value="all" className="bg-[#1a1735] text-white">All Importance</option>
+        <option value="1" className="bg-[#1a1735] text-white">Low</option>
+        <option value="2" className="bg-[#1a1735] text-white">Medium</option>
+        <option value="3" className="bg-[#1a1735] text-white">High</option>
       </select>
 
       {/* Type filter */}
       <select
         value={typeFilter}
         onChange={(e) => onTypeFilterChange(e.target.value as ItemType | 'all')}
-        className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-sm text-white outline-none focus:border-purple-500/50 transition-all [color-scheme:dark]"
+        className="px-3 py-1.5 rounded-lg bg-[#1a1735] border border-white/10 text-sm text-white outline-none cursor-pointer hover:border-purple-500/40 focus:border-purple-500/50 transition-all appearance-none bg-[length:16px_16px] bg-[right_8px_center] bg-no-repeat pr-8"
+        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")` }}
       >
-        <option value="all">All Types</option>
-        <option value="task">Task</option>
-        <option value="event">Event</option>
-        <option value="study">Study</option>
+        <option value="all" className="bg-[#1a1735] text-white">All Types</option>
+        <option value="task" className="bg-[#1a1735] text-white">Task</option>
+        <option value="event" className="bg-[#1a1735] text-white">Event</option>
+        <option value="study" className="bg-[#1a1735] text-white">Study</option>
       </select>
     </div>
   );
