@@ -5,7 +5,7 @@
 
 export const siteDefaults: Record<string, Record<string, unknown>> = {
   hero: {
-    badge: 'AI-Powered Planning',
+    badge: '',
     headline: 'Make your days',
     subheadline:
       'AI-powered daily planning that turns your calendar into a clear, actionable timeline. Plan less. Do more.',
@@ -134,7 +134,6 @@ export const siteDefaults: Record<string, Record<string, unknown>> = {
     checklist: [
       'Replace 3+ apps with one dashboard',
       'Built specifically for student workflows',
-      'Free tier — no credit card required',
       'Works offline for library study sessions',
     ],
   },
@@ -229,7 +228,7 @@ export const siteDefaults: Record<string, Record<string, unknown>> = {
     subheadline:
       'OptiPlan is completely free, why not transform how you plan your day today!',
     buttonText: 'Get early access',
-    disclaimer: 'No credit card required.',
+    disclaimer: '',
   },
 };
 
@@ -242,7 +241,6 @@ export const sectionColorFields: Record<string, { key: string; label: string }[]
   hero: [
     { key: 'headline', label: 'Headline' },
     { key: 'subheadline', label: 'Subheadline' },
-    { key: 'badge', label: 'Badge' },
   ],
   problems: [
     { key: 'title', label: 'Title' },

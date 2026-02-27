@@ -11,14 +11,16 @@ import { FeedbackForm } from '@/sections/FeedbackForm';
 import { CTA } from '@/sections/CTA';
 import { Footer } from '@/sections/Footer';
 import { useSiteContentData } from '@/hooks/useSiteContent';
+import { AnimatedShaderBackground } from '@/components/ui/animated-shader-background';
+import { MeshGradientBackground } from '@/components/ui/mesh-gradient-background';
 
 export function LandingPage() {
   const { isVisible } = useSiteContentData();
 
   return (
     <div className="relative min-h-screen bg-opti-bg text-opti-text-primary overflow-x-hidden">
-      {/* Global background glow */}
-      <div className="fixed inset-0 bg-radial-glow pointer-events-none z-0" />
+      {/* Animated shader background */}
+      <AnimatedShaderBackground />
 
       {/* Grain overlay for texture */}
       <div
@@ -35,16 +37,23 @@ export function LandingPage() {
       {/* Main Content */}
       <main className="relative z-10">
         {isVisible('hero') && <Hero />}
-        {isVisible('problems') && <Problem />}
-        {isVisible('features') && <Features />}
         {isVisible('steps') && <Tutorial />}
-        {isVisible('about_creator') && <AboutCreator />}
-        {isVisible('about_optiplan') && <AboutOptiPlan />}
-        {isVisible('faqs') && <FAQ />}
-        <FeedbackForm />
-        {isVisible('testimonials') && <Testimonials />}
-        {isVisible('cta') && <CTA />}
       </main>
+
+      {/* Sections from Problem onwards with MeshGradient background */}
+      <div className="relative">
+        <MeshGradientBackground />
+        <div className="relative z-10">
+          {isVisible('problems') && <Problem />}
+          {isVisible('features') && <Features />}
+          {isVisible('about_creator') && <AboutCreator />}
+          {isVisible('about_optiplan') && <AboutOptiPlan />}
+          {isVisible('faqs') && <FAQ />}
+          <FeedbackForm />
+          {isVisible('testimonials') && <Testimonials />}
+          {isVisible('cta') && <CTA />}
+        </div>
+      </div>
 
       {/* Footer */}
       <Footer />

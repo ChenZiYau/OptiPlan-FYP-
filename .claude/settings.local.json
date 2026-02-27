@@ -24,7 +24,11 @@
       "Bash(npm view:*)",
       "Bash(cd \"C:\\\\Users\\\\yauyau\\\\Desktop\\\\Kimi_Agent_OptiPlan SaaS Landing Page\\\\app\" && npx vite --port 5173 2>&1)",
       "Bash(cd C:\\\\Users\\\\yauyau\\\\Desktop\\\\Kimi_Agent_OptiPlan SaaS Landing Page\\\\app:*)",
-      "Bash(cd \"C:\\\\Users\\\\ressh\\\\OneDrive\\\\Desktop\\\\OptiPlan-FYP-\" && npx tsc --noEmit 2>&1)"
+      "Bash(cd \"C:\\\\Users\\\\ressh\\\\OneDrive\\\\Desktop\\\\OptiPlan-FYP-\" && npx tsc --noEmit 2>&1)",
+      "Bash(grep animated-shader:*)",
+      "Bash(grep:*)",
+      "Bash(cd \"C:\\\\Users\\\\yauyau\\\\Desktop\\\\Kimi_Agent_OptiPlan SaaS Landing Page\\\\app\" && npm ls reactflow 2>&1)",
+      "Bash(cd:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

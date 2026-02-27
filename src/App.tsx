@@ -2,8 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/hooks/useAuth';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import { LandingPage } from '@/pages/LandingPage';
-import { SignUp } from '@/pages/SignUp';
-import { Login } from '@/pages/Login';
+import { Auth } from '@/pages/Auth';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Overview } from '@/pages/admin/Overview';
 import { UserDatabase } from '@/pages/admin/UserDatabase';
@@ -32,8 +31,8 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<SiteContentProvider><LandingPage /></SiteContentProvider>} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Auth />} />
+          <Route path="/login" element={<Auth />} />
 
           {/* User dashboard — protected by DashboardLayout (any authenticated user) */}
           <Route path="/dashboard" element={<DashboardLayout />}>

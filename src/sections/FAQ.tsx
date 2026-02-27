@@ -72,7 +72,7 @@ function FAQItem({
 }
 
 export function FAQ() {
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
   const { getContent } = useSiteContentData();
   const content = getContent<FAQContent>('faqs') ?? defaults;
   const items = content.items ?? defaults.items;

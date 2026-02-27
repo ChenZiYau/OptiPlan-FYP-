@@ -362,7 +362,7 @@ export const UNSENT_MARKER = '__UNSENT__';
 
 export async function unsendGroupMessage(messageId: string, groupId: string, senderId: string) {
   // RLS prevents UPDATE/DELETE on group_messages. We use an append-only tombstone pattern.
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('group_messages')
     .insert([{
       group_id: groupId,

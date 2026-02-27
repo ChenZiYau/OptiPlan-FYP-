@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence, type Variants } from 'framer-motion';
-import { Calendar, Clock, MoveRight, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence, useScroll, useTransform, type Variants } from 'framer-motion';
+import { Calendar, Clock, MoveRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useSmoothScroll } from '@/hooks/useSmoothScroll';
+
 import { useAuth } from '@/hooks/useAuth';
 import { useSiteContentData } from '@/hooks/useSiteContent';
 import { agendaItems } from '@/constants/hero';
@@ -32,10 +32,18 @@ const containerVariants: Variants = {
 };
 
 export function Hero() {
-  const { scrollToSection } = useSmoothScroll();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { getContent } = useSiteContentData();
+
+  // Scroll-based zoom-in + fade-out
+  const sectionRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ['start start', 'end start'],
+  });
+  const scale = useTransform(scrollYProgress, [0, 1], [1, 1.5]);
+  const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
   const content = getContent<HeroContent>('hero') ?? defaults;
   const tc = ((content as any).textColors ?? {}) as Record<string, string>;
@@ -92,32 +100,21 @@ export function Hero() {
   }, [titleNumber, titles]);
 
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20 pb-24">
+    <section ref={sectionRef} className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20 pb-24">
       {/* Background glow */}
       <div className="absolute inset-0 bg-radial-glow pointer-events-none" />
 
-      {/* Content */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Content — zooms in and fades out on scroll */}
+      <motion.div
+        style={{ scale, opacity }}
+        className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 will-change-transform"
+      >
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
           className="flex flex-col items-center text-center"
         >
-          {/* Badge */}
-          <motion.div variants={fadeInUp}>
-            <Button
-              variant="secondary"
-              size="sm"
-              className="gap-2 bg-opti-accent/10 text-opti-accent border border-opti-accent/20 hover:bg-opti-accent/20 text-xs uppercase tracking-wider font-medium"
-              onClick={() => scrollToSection('features')}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span style={{ color: tc.badge || undefined }}>{content.badge}</span>
-              <MoveRight className="w-3.5 h-3.5" />
-            </Button>
-          </motion.div>
-
           {/* Animated Headline */}
           <motion.h1
             variants={fadeInUp}
@@ -285,56 +282,32 @@ export function Hero() {
             </div>
           </motion.div>
 
-          {/* CTA Buttons */}
+          {/* CTA Button */}
           <motion.div
             variants={fadeInUp}
-            className="mt-10 flex flex-col sm:flex-row gap-4 w-full sm:w-auto px-4 sm:px-0"
+            className="mt-10 flex w-full sm:w-auto px-4 sm:px-0"
           >
-            <Button
-              size="lg"
-              variant="outline"
-              className="gap-4 border-white/10 bg-white/5 text-opti-text-primary hover:bg-white/10 hover:text-opti-accent w-full sm:w-auto"
-              onClick={() => scrollToSection('how-it-works')}
-            >
-              {content.ctaSecondary} <MoveRight className="w-4 h-4" />
-            </Button>
             {user ? (
               <Button
                 size="lg"
-                className="gap-4 bg-opti-accent text-opti-bg hover:bg-opti-accent/90 font-semibold w-full sm:w-auto mt-2 sm:mt-0"
+                className="gap-4 bg-opti-accent text-opti-bg hover:bg-opti-accent/90 font-semibold w-full sm:w-auto mt-2 sm:mt-0 px-10 py-4 text-lg"
                 onClick={() => navigate('/dashboard')}
               >
-                Go to Dashboard <MoveRight className="w-4 h-4" />
+                Go to Dashboard <MoveRight className="w-5 h-5" />
               </Button>
             ) : (
               <Button
                 size="lg"
-                className="gap-4 bg-opti-accent text-opti-bg hover:bg-opti-accent/90 font-semibold w-full sm:w-auto mt-2 sm:mt-0"
+                className="gap-4 bg-opti-accent text-opti-bg hover:bg-opti-accent/90 font-semibold w-full sm:w-auto mt-2 sm:mt-0 px-10 py-4 text-lg"
                 onClick={() => navigate('/signup')}
               >
-                {content.ctaPrimary} <MoveRight className="w-4 h-4" />
+                {content.ctaPrimary} <MoveRight className="w-5 h-5" />
               </Button>
             )}
           </motion.div>
         </motion.div>
-      </div>
-
-      {/* Scroll hint */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.5 }}
-        transition={{ delay: 1.5 }}
-        className="mt-auto pt-8 text-opti-text-secondary text-xs"
-      >
-        <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          className="flex flex-col items-center gap-2"
-        >
-          <span>Scroll to explore</span>
-          <div className="w-px h-8 bg-gradient-to-b from-opti-accent to-transparent" />
-        </motion.div>
       </motion.div>
+
     </section>
   );
 }

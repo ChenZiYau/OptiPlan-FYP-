@@ -100,11 +100,13 @@ export function CTA() {
           </form>
         </AnimatedSection>
 
-        <AnimatedSection delay={0.3}>
-          <p className="mt-4 text-opti-text-secondary/60 text-sm" style={{ color: tc.disclaimer || undefined }}>
-            {content.disclaimer}
-          </p>
-        </AnimatedSection>
+        {content.disclaimer && (
+          <AnimatedSection delay={0.3}>
+            <p className="mt-4 text-opti-text-secondary/60 text-sm" style={{ color: tc.disclaimer || undefined }}>
+              {content.disclaimer}
+            </p>
+          </AnimatedSection>
+        )}
       </div>
     </section>
   );

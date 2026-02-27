@@ -5,7 +5,7 @@ import {
   Instagram,
   AlertTriangle,
   Layers,
-  PlayCircle,
+
   HelpCircle,
   MessageSquare,
 } from 'lucide-react';
@@ -53,12 +53,6 @@ export const navEntries: NavEntry[] = [
           href: 'features',
           description: 'Smart scheduling, notes & budget',
           icon: Layers,
-        },
-        {
-          label: 'How it Works',
-          href: 'how-it-works',
-          description: 'See OptiPlan in action',
-          icon: PlayCircle,
         },
       ],
     },
