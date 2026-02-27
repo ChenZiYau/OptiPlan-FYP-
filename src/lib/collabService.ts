@@ -217,7 +217,7 @@ export async function updateFriendNote(myUid: string, friendUid: string, note: s
 
 export async function createGroup(name: string, userId: string) {
   const inviteCode = generateGroupCode();
-  
+
   // Create group
   const { data: group, error: groupError } = await supabase
     .from('groups')
@@ -239,7 +239,7 @@ export async function createGroup(name: string, userId: string) {
 
 export async function joinGroupByCode(code: string, userId: string) {
   const upperCode = code.toUpperCase();
-  
+
   // Find group
   const { data: group, error: groupError } = await supabase
     .from('groups')
@@ -276,7 +276,7 @@ export async function getUserGroups(userId: string) {
     .eq('user_id', userId);
 
   if (error) throw error;
-  
+
   return data.map((d: any) => d.groups);
 }
 
@@ -293,7 +293,7 @@ export async function getGroupMembers(groupId: string) {
     .eq('group_id', groupId);
 
   if (error) throw error;
-  
+
   return data.map((d: any) => ({
     uid: d.users.uid,
     username: d.users.username,
@@ -319,7 +319,7 @@ export async function getGroupMessages(groupId: string) {
     .order('created_at', { ascending: true });
 
   if (error) throw error;
-  
+
   return data.map((d: any) => ({
     id: d.id,
     content: d.content,
@@ -345,7 +345,7 @@ export async function sendGroupMessage(groupId: string, senderId: string, conten
     .single();
 
   if (error) throw error;
-  
+
   const usersArray = data.users as any;
   const username = Array.isArray(usersArray) ? usersArray[0]?.username : usersArray?.username;
 
@@ -356,6 +356,23 @@ export async function sendGroupMessage(groupId: string, senderId: string, conten
     sender_id: data.sender_id,
     sender_username: username || 'Unknown User',
   };
+}
+
+export const UNSENT_MARKER = '__UNSENT__';
+
+export async function unsendGroupMessage(messageId: string, groupId: string, senderId: string) {
+  // RLS prevents UPDATE/DELETE on group_messages. We use an append-only tombstone pattern.
+  const { data, error } = await supabase
+    .from('group_messages')
+    .insert([{
+      group_id: groupId,
+      sender_id: senderId,
+      content: `${UNSENT_MARKER}:${messageId}`
+    }])
+    .select();
+
+  if (error) throw error;
+  return true;
 }
 
 // ── Resources ────────────────────────────────────────────────────
@@ -400,7 +417,7 @@ export async function addGroupLink(groupId: string, addedBy: string, url: string
     .single();
 
   if (error) throw error;
-  
+
   const usersArray = data.users as any;
   const username = Array.isArray(usersArray) ? usersArray[0]?.username : usersArray?.username;
 
@@ -437,13 +454,13 @@ export async function getGroupFiles(groupId: string) {
 export async function uploadGroupFile(groupId: string, uploadedBy: string, file: File) {
   // Validate file type
   const allowedTypes = [
-    'application/pdf', 
-    'application/msword', 
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
-    'application/vnd.ms-powerpoint', 
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-powerpoint',
     'application/vnd.openxmlformats-officedocument.presentationml.presentation'
   ];
-  
+
   if (!allowedTypes.includes(file.type)) {
     throw new Error('Invalid file type. Only PDF, Word, and PowerPoint files are allowed.');
   }
@@ -451,7 +468,7 @@ export async function uploadGroupFile(groupId: string, uploadedBy: string, file:
   // Upload to Supabase Storage (assuming a 'group_files' bucket exists)
   const ext = file.name.split('.').pop() || '';
   const filePath = `${groupId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
-  
+
   const { error: uploadError } = await supabase.storage
     .from('group_files')
     .upload(filePath, file);
@@ -467,10 +484,10 @@ export async function uploadGroupFile(groupId: string, uploadedBy: string, file:
   // Insert DB record
   const { data, error: insertError } = await supabase
     .from('group_files')
-    .insert([{ 
-      group_id: groupId, 
-      uploaded_by: uploadedBy, 
-      file_url: fileUrl, 
+    .insert([{
+      group_id: groupId,
+      uploaded_by: uploadedBy,
+      file_url: fileUrl,
       file_name: file.name,
       file_type: file.type
     }])
@@ -488,7 +505,7 @@ export async function uploadGroupFile(groupId: string, uploadedBy: string, file:
     .single();
 
   if (insertError) throw insertError;
-  
+
   const usersArray = data.users as any;
   const username = Array.isArray(usersArray) ? usersArray[0]?.username : usersArray?.username;
 
@@ -629,7 +646,7 @@ export async function getGroupSchedules(groupId: string, weekOffset: number = 0)
     .eq('week_offset', weekOffset);
 
   if (error) throw error;
-  
+
   return (data || []).map(d => ({
     groupId: d.group_id,
     userId: d.user_id,
