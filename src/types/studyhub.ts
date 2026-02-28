@@ -71,6 +71,7 @@ export interface QuizQuestionData {
 export interface MindMapNode {
   id: string;
   label: string;
+  details: string;
   type: string;
 }
 

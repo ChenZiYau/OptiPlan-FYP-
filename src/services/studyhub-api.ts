@@ -9,7 +9,7 @@ import type {
   QuizQuestionData,
 } from '@/types/studyhub';
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 // ── Ingest (upload file → chunk → embed → store) ────────────────────────────
 
@@ -48,6 +48,7 @@ export async function chatWithNotebook(
   notebookId: string,
   message: string,
   token: string,
+  context?: string,
 ): Promise<ChatResponse> {
   const res = await fetch(`${API_BASE}/chat`, {
     method: 'POST',
@@ -55,7 +56,7 @@ export async function chatWithNotebook(
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ notebook_id: notebookId, message }),
+    body: JSON.stringify({ notebook_id: notebookId, message, ...(context ? { context } : {}) }),
   });
 
   if (!res.ok) throw new Error(await res.text());

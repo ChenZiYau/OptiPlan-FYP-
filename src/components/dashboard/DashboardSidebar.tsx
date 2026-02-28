@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutGrid, DollarSign, CheckSquare, CalendarDays,
   Users, Bot, BookOpen, LogOut, X, Plus, Sparkles, Heart, Settings, Trophy,
+  ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { HoverTip } from '@/components/HoverTip';
@@ -25,9 +26,11 @@ const navItems: DashboardNavItem[] = [
 interface DashboardSidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
-export function DashboardSidebar({ isOpen, onClose }: DashboardSidebarProps) {
+export function DashboardSidebar({ isOpen, onClose, collapsed, onToggleCollapse }: DashboardSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
@@ -65,51 +68,82 @@ export function DashboardSidebar({ isOpen, onClose }: DashboardSidebarProps) {
       )}
 
       <aside
-        className={`fixed top-0 left-0 z-50 h-screen w-[250px] bg-[#0B0A1A] dm-sidebar border-r border-white/10 flex flex-col transition-transform duration-300 lg:translate-x-0 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`group/sidebar fixed top-0 left-0 z-50 h-screen bg-[#0B0A1A] dm-sidebar border-r border-white/10 flex flex-col transition-all duration-300 lg:translate-x-0 ${
+          collapsed ? 'w-16' : 'w-[250px]'
+        } ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
+        {/* Edge handle — hover-reveal collapse/expand toggle */}
+        <button
+          onClick={onToggleCollapse}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="hidden lg:flex absolute top-1/2 -translate-y-1/2 -right-3 z-[60] w-6 h-6 items-center justify-center rounded-full bg-[#1a1735] border border-white/10 text-gray-500 hover:text-white hover:bg-purple-600 hover:border-purple-500 opacity-0 group-hover/sidebar:opacity-100 transition-all duration-200 shadow-lg"
+        >
+          {collapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
+        </button>
+
         {/* Brand */}
-        <div className="flex items-center justify-between px-5 h-16 shrink-0">
-          <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+        <div className={`flex items-center h-16 shrink-0 ${collapsed ? 'justify-center px-2' : 'justify-between px-5'}`}>
+          <Link to="/" className={`flex items-center gap-2.5 ${collapsed ? 'justify-center' : ''}`}>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shrink-0">
               <span className="text-white font-bold text-sm">O</span>
             </div>
-            <span className="font-semibold text-lg text-white tracking-tight">
-              OptiPlan
-            </span>
+            {!collapsed && (
+              <span className="font-semibold text-lg text-white tracking-tight">
+                OptiPlan
+              </span>
+            )}
           </Link>
-          <button
-            onClick={onClose}
-            aria-label="Close menu"
-            className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          {!collapsed && (
+            <button
+              onClick={onClose}
+              aria-label="Close menu"
+              className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {/* Quick action */}
-        <div className="px-3 pb-2">
-          <HoverTip label="Create a new task">
+        <div className={`pb-2 ${collapsed ? 'px-2' : 'px-3'}`}>
+          <HoverTip label="Create a new task" side={collapsed ? 'right' : 'top'}>
             <button
               onClick={openModal}
-              className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition-colors"
+              className={`w-full flex items-center rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition-colors ${
+                collapsed ? 'justify-center px-0 py-2.5' : 'gap-2 px-3 py-2.5'
+              }`}
             >
-              <Plus className="w-4 h-4" />
-              New Task
+              <Plus className="w-4 h-4 shrink-0" />
+              {!collapsed && 'New Task'}
             </button>
           </HoverTip>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 pt-4 overflow-y-auto">
-          <p className="px-3 mb-3 text-[10px] font-semibold tracking-[0.15em] text-gray-600 uppercase">
-            Menu
-          </p>
+        <nav className={`flex-1 pt-4 overflow-y-auto ${collapsed ? 'px-2' : 'px-3'}`}>
+          {!collapsed && (
+            <p className="px-3 mb-3 text-[10px] font-semibold tracking-[0.15em] text-gray-600 uppercase">
+              Menu
+            </p>
+          )}
           <div className="space-y-1">
             {navItems.map((item) => {
               const active = isActive(item.href);
-              return (
+              return collapsed ? (
+                <HoverTip key={item.href} label={item.label} side="right">
+                  <Link
+                    to={item.href}
+                    onClick={onClose}
+                    className={`flex items-center justify-center w-full py-2.5 rounded-lg transition-all duration-200 ${
+                      active
+                        ? 'bg-purple-900/20 text-white'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <item.icon className={`w-[18px] h-[18px] ${active ? 'text-purple-400' : ''}`} />
+                  </Link>
+                </HoverTip>
+              ) : (
                 <Link
                   key={item.href}
                   to={item.href}
@@ -128,70 +162,100 @@ export function DashboardSidebar({ isOpen, onClose }: DashboardSidebarProps) {
           </div>
         </nav>
 
-        {/* Settings link */}
-        <div className="px-3 pb-2 shrink-0">
-          <Link
-            to="/dashboard/settings"
-            onClick={onClose}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-              isActive('/dashboard/settings')
-                ? 'bg-purple-900/20 text-white border-l-4 border-purple-500 pl-2'
-                : 'text-gray-400 hover:text-white hover:bg-white/5 border-l-4 border-transparent pl-2'
-            }`}
-          >
-            <Settings className={`w-[18px] h-[18px] ${isActive('/dashboard/settings') ? 'text-purple-400' : ''}`} />
-            Settings
-          </Link>
-        </div>
-
-        {/* User profile */}
-        <div className="px-3 pb-4 shrink-0">
-          <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
-            <div className="flex items-center gap-3">
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="Avatar" className="w-9 h-9 rounded-full object-cover shrink-0" />
-              ) : (
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-xs shrink-0">
-                  {initials}
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">{displayName}</p>
-                <p className="text-xs text-gray-500">Free Plan</p>
-              </div>
-              <HoverTip label="Log out" side="right">
-                <button
-                  onClick={() => setShowLogoutConfirm(true)}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                  aria-label="Log out"
-                  title="Log out"
+        {/* User profile + Settings + Logout */}
+        <div className={`pb-4 shrink-0 ${collapsed ? 'px-2' : 'px-3'}`}>
+          {collapsed ? (
+            <div className="space-y-1">
+              <HoverTip label="Settings" side="right">
+                <Link
+                  to="/dashboard/settings"
+                  onClick={onClose}
+                  className={`flex items-center justify-center w-full py-2.5 rounded-lg transition-all duration-200 ${
+                    isActive('/dashboard/settings')
+                      ? 'bg-purple-900/20 text-white'
+                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`}
                 >
-                  <LogOut className="w-4 h-4" />
+                  <Settings className={`w-[18px] h-[18px] ${isActive('/dashboard/settings') ? 'text-purple-400' : ''}`} />
+                </Link>
+              </HoverTip>
+              <HoverTip label={displayName} side="right">
+                <button
+                  onClick={() => setShowLogoutConfirm((v) => !v)}
+                  className="w-full flex items-center justify-center py-2"
+                >
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt="Avatar" className="w-9 h-9 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-xs">
+                      {initials}
+                    </div>
+                  )}
                 </button>
               </HoverTip>
             </div>
-
-            {/* Logout confirmation */}
-            {showLogoutConfirm && (
-              <div className="mt-3 pt-3 border-t border-white/10">
-                <p className="text-xs text-gray-400 mb-2">Are you sure you want to log out?</p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setShowLogoutConfirm(false)}
-                    className="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 transition"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSignOut}
-                    className="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition"
-                  >
-                    Log out
-                  </button>
+          ) : (
+            <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
+              <div className="flex items-center gap-3">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Avatar" className="w-9 h-9 rounded-full object-cover shrink-0" />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-xs shrink-0">
+                    {initials}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-white truncate">{displayName}</p>
+                  <p className="text-xs text-gray-500">Free Plan</p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <HoverTip label="Settings" side="top">
+                    <Link
+                      to="/dashboard/settings"
+                      onClick={onClose}
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
+                        isActive('/dashboard/settings')
+                          ? 'text-purple-400 bg-purple-500/10'
+                          : 'text-gray-500 hover:text-white hover:bg-white/10'
+                      }`}
+                    >
+                      <Settings className="w-4 h-4" />
+                    </Link>
+                  </HoverTip>
+                  <HoverTip label="Log out" side="top">
+                    <button
+                      onClick={() => setShowLogoutConfirm(true)}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                      aria-label="Log out"
+                    >
+                      <LogOut className="w-4 h-4" />
+                    </button>
+                  </HoverTip>
                 </div>
               </div>
-            )}
-          </div>
+
+              {/* Logout confirmation */}
+              {showLogoutConfirm && (
+                <div className="mt-3 pt-3 border-t border-white/10">
+                  <p className="text-xs text-gray-400 mb-2">Are you sure you want to log out?</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowLogoutConfirm(false)}
+                      className="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSignOut}
+                      className="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition"
+                    >
+                      Log out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </aside>
     </>

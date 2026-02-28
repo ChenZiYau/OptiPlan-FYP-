@@ -1,16 +1,27 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Send, Loader2, Trash2, MessageSquare } from 'lucide-react';
 import { useStudyHub } from '@/contexts/StudyHubContext';
 import { useChat } from '@/hooks/useChat';
 import { ChatMessage } from './ChatMessage';
 import { HoverTip } from '@/components/HoverTip';
 
-export function ChatPanel() {
+export interface ChatPanelHandle {
+  sendQuestion: (question: string, context?: string) => void;
+}
+
+export const ChatPanel = forwardRef<ChatPanelHandle>(function ChatPanel(_props, ref) {
   const { activeNotebookId } = useStudyHub();
   const { messages, loading, sending, sendMessage, clearMessages } = useChat(activeNotebookId);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    sendQuestion(question: string, context?: string) {
+      if (!question.trim() || sending) return;
+      sendMessage(question.trim(), context);
+    },
+  }), [sending, sendMessage]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -43,7 +54,7 @@ export function ChatPanel() {
   }
 
   return (
-    <div className="rounded-xl bg-[#18162e] border border-white/10 overflow-hidden flex flex-col" style={{ height: '480px' }}>
+    <div className="rounded-xl bg-[#18162e] border border-white/10 overflow-hidden flex flex-col h-full">
       {/* Header */}
       <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
@@ -115,4 +126,4 @@ export function ChatPanel() {
       </form>
     </div>
   );
-}
+});

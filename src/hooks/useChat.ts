@@ -32,7 +32,7 @@ export function useChat(notebookId: string | null) {
   }, [fetchMessages]);
 
   // Send a message and get AI response
-  const sendMessage = useCallback(async (content: string) => {
+  const sendMessage = useCallback(async (content: string, context?: string) => {
     if (!notebookId || !session?.access_token || !content.trim()) return;
 
     // Optimistically add user message
@@ -48,7 +48,7 @@ export function useChat(notebookId: string | null) {
     setSending(true);
 
     try {
-      const response = await chatWithNotebook(notebookId, content.trim(), session.access_token);
+      const response = await chatWithNotebook(notebookId, content.trim(), session.access_token, context);
 
       // Add assistant message
       const assistantMsg: ChatMessageData = {

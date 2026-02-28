@@ -3,7 +3,6 @@ import { FileText, Trash2, Loader2 } from 'lucide-react';
 import { useStudyHub } from '@/contexts/StudyHubContext';
 import { useSources } from '@/hooks/useSources';
 import { FileUploader } from './FileUploader';
-import { ChatPanel } from './ChatPanel';
 import type { Source } from '@/types/studyhub';
 
 export function SourcesTab() {
@@ -91,8 +90,6 @@ export function SourcesTab() {
         </div>
       </div>
 
-      {/* RAG Chat */}
-      <ChatPanel />
     </div>
   );
 }

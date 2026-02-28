@@ -37,6 +37,17 @@ export function DashboardLayout() {
   const { user, loading } = useAuth();
   const { settings } = useSettings();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try { return localStorage.getItem('sidebar-collapsed') === 'true'; } catch { return false; }
+  });
+
+  const toggleSidebarCollapse = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      try { localStorage.setItem('sidebar-collapsed', String(next)); } catch {}
+      return next;
+    });
+  };
   const location = useLocation();
   const shellRef = useRef<HTMLDivElement>(null);
 
@@ -102,9 +113,14 @@ export function DashboardLayout() {
           }`}
         >
           <div className="min-h-screen bg-[#0B0A1A]">
-            <DashboardSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+            <DashboardSidebar
+              isOpen={sidebarOpen}
+              onClose={() => setSidebarOpen(false)}
+              collapsed={sidebarCollapsed}
+              onToggleCollapse={toggleSidebarCollapse}
+            />
 
-            <div className="lg:ml-[250px] min-h-screen flex flex-col">
+            <div className={`min-h-screen flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-[250px]'}`}>
               <DashboardHeader title={title} onMenuToggle={() => setSidebarOpen(true)} />
               <main className="flex-1 p-4 sm:p-6">
                 <Outlet />

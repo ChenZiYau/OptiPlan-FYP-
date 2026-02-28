@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Plus, Trash2, Loader2 } from 'lucide-react';
+import { BookOpen, Plus, Trash2, Loader2, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useNotebooks } from '@/hooks/useNotebooks';
 import { useStudyHub } from '@/contexts/StudyHubContext';
 
@@ -10,6 +10,7 @@ export function NotebookSelector() {
   const [showCreate, setShowCreate] = useState(false);
   const [title, setTitle] = useState('');
   const [creating, setCreating] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   async function handleCreate() {
     const t = title.trim();
@@ -28,20 +29,66 @@ export function NotebookSelector() {
     if (activeNotebookId === id) setActiveNotebookId(null);
   }
 
+  // ── Collapsed state: thin icon strip ──
+  if (collapsed) {
+    return (
+      <div className="w-12 shrink-0 border-r border-white/10 bg-white/[0.02] flex flex-col items-center h-full py-3 gap-2 transition-all">
+        <button
+          onClick={() => setCollapsed(false)}
+          className="w-8 h-8 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white flex items-center justify-center transition-colors"
+          title="Expand notebooks"
+        >
+          <PanelLeftOpen className="w-4 h-4" />
+        </button>
+
+        <div className="w-6 border-t border-white/10 my-1" />
+
+        {/* Mini notebook icons */}
+        <div className="flex-1 overflow-y-auto flex flex-col items-center gap-1">
+          {notebooks.map((nb) => (
+            <button
+              key={nb.id}
+              onClick={() => setActiveNotebookId(nb.id)}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold transition-colors ${
+                activeNotebookId === nb.id
+                  ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                  : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'
+              }`}
+              title={nb.title}
+            >
+              {nb.title.charAt(0).toUpperCase()}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Expanded state: full sidebar ──
   return (
-    <div className="w-64 shrink-0 border-r border-white/10 bg-white/[0.02] flex flex-col h-full">
+    <div className="w-64 shrink-0 border-r border-white/10 bg-white/[0.02] flex flex-col h-full transition-all">
       {/* Header */}
       <div className="px-4 py-4 border-b border-white/10 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-white flex items-center gap-2">
           <BookOpen className="w-4 h-4 text-purple-400" />
           Notebooks
         </h2>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 flex items-center justify-center transition-colors"
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setShowCreate(true)}
+            className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 flex items-center justify-center transition-colors"
+            title="New notebook"
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => setCollapsed(true)}
+            className="w-7 h-7 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white flex items-center justify-center transition-colors"
+            title="Collapse sidebar"
+          >
+            <PanelLeftClose className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* Create form */}
