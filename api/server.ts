@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import Groq from "groq-sdk";
-import { OfficeParser } from "officeparser";
+import { parseOfficeAsync } from "officeparser";
 import { config } from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -43,19 +43,22 @@ const GROQ_TIMEOUT = isVercel ? 50_000 : 120_000;
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Extract text from a file buffer using officeparser (supports PDF, PPTX, DOCX, RTF, ODT, ODP) */
+/** Extract text from a file buffer using officeparser v4 (supports PDF, PPTX, DOCX, PPT, DOC, RTF, ODT, ODP) */
 async function extractText(buffer: Buffer, filename: string): Promise<string> {
   const ext = filename.toLowerCase().split(".").pop();
-  const supported = ["pdf", "pptx", "docx", "rtf", "odt", "odp", "ods", "xlsx"];
+  const supported = ["pdf", "pptx", "docx", "ppt", "doc", "rtf", "odt", "odp"];
 
   if (!supported.includes(ext || "")) {
     throw new Error(`Unsupported file extension: .${ext}`);
   }
 
   try {
-    // officeparser v7 returns OfficeParserAST with .toText() method
-    const ast = await OfficeParser.parseOffice(buffer);
-    return ast.toText();
+    // officeparser v4: parseOfficeAsync returns Promise<string>
+    // tempFilesLocation needed on Vercel (read-only FS except /tmp)
+    const text = await parseOfficeAsync(buffer, {
+      tempFilesLocation: isVercel ? "/tmp" : undefined,
+    });
+    return text;
   } catch (parseError: any) {
     throw new Error(
       `Failed to parse ${ext?.toUpperCase()} file: ${parseError.message}`,
