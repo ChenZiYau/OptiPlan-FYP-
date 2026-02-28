@@ -7,6 +7,7 @@ import {
   Layers,
   HelpCircle,
   TrendingUp,
+  BookOpen,
 } from 'lucide-react';
 import { StudyHubProvider } from '@/contexts/StudyHubContext';
 import { NotebookSelector } from '@/components/studyhub/NotebookSelector';
@@ -16,13 +17,15 @@ import { MindMapTab } from '@/components/studyhub/MindMapTab';
 import { GpaTab } from '@/components/studyhub/GpaTab';
 import { FlashcardsTab } from '@/components/studyhub/FlashcardsTab';
 import { QuizTab } from '@/components/studyhub/QuizTab';
+import { NotesTab } from '@/components/studyhub/NotesTab';
 
 // ── Tab Types ────────────────────────────────────────────────────────────────
 
-type Tab = 'sources' | 'mindmap' | 'flashcards' | 'quiz' | 'gpa';
+type Tab = 'sources' | 'notes' | 'mindmap' | 'flashcards' | 'quiz' | 'gpa';
 
 const TABS: { key: Tab; label: string; icon: typeof FileText; tip: string }[] = [
   { key: 'sources', label: 'Sources', icon: FileText, tip: 'Upload & view source documents' },
+  { key: 'notes', label: 'Notes', icon: BookOpen, tip: 'AI-generated study notes' },
   { key: 'mindmap', label: 'Mind Map', icon: Network, tip: 'Knowledge graph visualization' },
   { key: 'flashcards', label: 'Flashcards', icon: Layers, tip: 'Review with flashcards' },
   { key: 'quiz', label: 'Quiz', icon: HelpCircle, tip: 'Test your knowledge' },
@@ -99,6 +102,7 @@ function StudyHubInner() {
               transition={{ duration: 0.2 }}
             >
               {activeTab === 'sources' && <SourcesTab />}
+              {activeTab === 'notes' && <NotesTab />}
               {activeTab === 'mindmap' && <MindMapTab />}
               {activeTab === 'flashcards' && <FlashcardsTab />}
               {activeTab === 'quiz' && <QuizTab />}

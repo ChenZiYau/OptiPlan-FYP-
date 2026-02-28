@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useEffect } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -63,7 +63,7 @@ export function MindMapTab() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   // Update nodes/edges when data changes
-  useMemo(() => {
+  useEffect(() => {
     if (data) {
       setNodes(layoutNodes(data.nodes));
       setEdges(toFlowEdges(data.edges));

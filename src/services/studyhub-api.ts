@@ -105,6 +105,30 @@ export async function generateFlashcards(
   return res.json();
 }
 
+// ── Notes ────────────────────────────────────────────────────────────────────
+
+export interface GenerateNotesResponse {
+  notes: string;
+  metadata: { model: string; chunk_count: number };
+}
+
+export async function generateNotes(
+  notebookId: string,
+  token: string,
+): Promise<GenerateNotesResponse> {
+  const res = await fetch(`${API_BASE}/generate-notes`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ notebook_id: notebookId }),
+  });
+
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 // ── Quiz ─────────────────────────────────────────────────────────────────────
 
 export async function generateQuiz(

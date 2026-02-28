@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createClient } from '@supabase/supabase-js';
+import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 
 // ── Load env ────────────────────────────────────────────────────────────────
 
@@ -118,38 +119,13 @@ const chatModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
 // ── Chunking & Embedding Helpers ───────────────────────────────────────────
 
-function chunkText(text: string, maxLen = 500): string[] {
-  const paragraphs = text.split(/\n\n+/).filter(p => p.trim().length > 0);
-  const chunks: string[] = [];
-
-  for (const para of paragraphs) {
-    if (para.length <= maxLen) {
-      chunks.push(para.trim());
-      continue;
-    }
-    // Split long paragraphs on sentence boundaries
-    const sentences = para.split(/(?<=[.?!])\s+/);
-    let current = '';
-    for (const sentence of sentences) {
-      if (current.length + sentence.length + 1 > maxLen && current.length > 0) {
-        chunks.push(current.trim());
-        current = '';
-      }
-      current += (current ? ' ' : '') + sentence;
-    }
-    if (current.trim()) {
-      // Hard-split if a single sentence is still too long
-      if (current.length > maxLen) {
-        for (let i = 0; i < current.length; i += maxLen) {
-          chunks.push(current.slice(i, i + maxLen).trim());
-        }
-      } else {
-        chunks.push(current.trim());
-      }
-    }
-  }
-
-  return chunks.filter(c => c.length > 0);
+async function chunkText(text: string): Promise<string[]> {
+  const splitter = new RecursiveCharacterTextSplitter({
+    chunkSize: 1000,
+    chunkOverlap: 200,
+  });
+  const docs = await splitter.createDocuments([text]);
+  return docs.map(d => d.pageContent).filter(c => c.length > 0);
 }
 
 async function embedChunks(chunks: string[]): Promise<number[][]> {
@@ -170,135 +146,101 @@ app.get('/api/health', (_req, res) => {
 
 // ── Route: POST /api/generate-notes ─────────────────────────────────────────
 
-app.post('/api/generate-notes', (req, res, next) => {
-  upload.single('file')(req, res, (err) => {
-    if (err) {
-      if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(413).json({
-          error: 'File is too large. Maximum size is 15MB.',
-          details: err.message,
-        });
-      }
-      return res.status(400).json({
-        error: err.message || 'File upload failed.',
-        details: err.message,
-      });
-    }
-    next();
-  });
-}, async (req, res) => {
+app.post('/api/generate-notes', async (req, res) => {
   try {
-    // 1. Validate file exists
-    if (!req.file) {
-      return res.status(400).json({
-        error: 'No file uploaded. Please attach a PDF, PPTX, or DOCX file.',
-        details: 'req.file is undefined',
-      });
+    const { notebook_id } = req.body;
+    if (!notebook_id) {
+      return res.status(400).json({ error: 'notebook_id is required.' });
     }
 
-    const { originalname, size } = req.file;
-    console.log(`[api] 📄 Received: ${originalname} (${(size / 1024).toFixed(1)}KB)`);
+    console.log(`[notes] Generating for notebook ${notebook_id}`);
 
-    // 2. Extract text from document
-    let rawText: string;
+    // 1. Fetch all chunks for this notebook
+    const { data: chunks, error: chunkErr } = await getSupabaseClient(req)
+      .from('chunks')
+      .select('content')
+      .eq('notebook_id', notebook_id)
+      .order('chunk_index', { ascending: true });
+
+    if (chunkErr) {
+      return res.status(500).json({ error: `Failed to retrieve chunks: ${chunkErr.message}` });
+    }
+
+    if (!chunks || chunks.length === 0) {
+      return res.status(400).json({ error: 'No sources found in this notebook. Upload documents in the Sources tab first.' });
+    }
+
+    console.log(`[notes] Found ${chunks.length} chunks`);
+
+    // 2. Build context from chunks
+    const contextText = chunks.map((c: any, i: number) => `[Chunk ${i + 1}]\n${c.content}`).join('\n\n---\n\n');
+
+    // 3. Call Groq/Llama to generate notes
+    // Truncate context to fit within 8k token window (~20k chars)
+    const truncatedContext = contextText.length > 20000
+      ? contextText.slice(0, 20000) + '\n\n[... remaining chunks truncated to fit context window ...]'
+      : contextText;
+
+    const notesPrompt = `You are an expert academic tutor and a master of aesthetic, highly-structured Markdown formatting. I will provide you with raw text chunks extracted from a student's study material (which might be messy, unstructured PPTX slides or PDFs).
+
+Your task is to TRANSFORM and SYNTHESIZE this raw text into beautiful, engaging, and highly structured Markdown study notes. Do NOT simply repeat or echo the chunks — you must reorganize, deduplicate, and rewrite them into polished notes.
+
+STRICT FORMATTING RULES:
+1. **Title & Introduction**: Start with a single \`# \` Header for the main topic, followed by a brief, engaging introductory paragraph.
+2. **Clean & Synthesize (CRITICAL)**: Slide extractions often repeat the slide title (e.g., "ISLAM ISLAM", "BUDDHISM BUDDHISM"). You MUST identify these repeated headers, remove the redundancy, and elegantly combine fragmented bullet points into cohesive paragraphs or structured lists under a single, unified section header.
+3. **Visual Hierarchy**: Use \`## \` for main sections and \`### \` for subsections. Do NOT create repetitive headers of the same name.
+4. **Key-Value Pairs**: For structured data (like dates, founders, specific terms), use bulleted bolded key-value pairs (e.g., \`- **Founded:** 6th Century BCE\`).
+5. **Markdown Tables (CRITICAL)**: You MUST include at least 1-2 Markdown tables to compare entities, concepts, or summarize structured info. Make the tables detailed and neat.
+6. **Formatting**: Liberally use **bold** for keywords, > blockquotes for important quotes or critical insights, and bullet points for lists. Ensure everything is neatly labelled.
+7. **Content**: Base your notes ONLY on the provided text. Do not hallucinate outside information. If the text is empty or unreadable, reply stating that no valid content was found.`;
+
+    let notes: string;
     try {
-      rawText = await extractText(req.file.buffer, originalname);
-    } catch (parseErr: any) {
-      console.error(`[api] ❌ Parse error: ${parseErr.message}`);
-      return res.status(422).json({
-        error: `Failed to extract text from "${originalname}". The file may be corrupted, password-protected, or contain only images.`,
-        details: parseErr.message,
-      });
-    }
-
-    // 3. Validate extracted text has enough content
-    const cleanText = rawText.replace(/\s+/g, ' ').trim();
-    if (!cleanText || cleanText.length < 30) {
-      return res.status(422).json({
-        error: 'The uploaded file contains too little readable text. It may be image-based or empty.',
-        details: `Extracted only ${cleanText.length} characters`,
-      });
-    }
-
-    console.log(`[api] 📝 Extracted ${cleanText.length} chars from ${originalname}`);
-
-    // 4. Truncate for context window
-    const truncated = truncateForContext(cleanText);
-
-    // 5. Call Groq API
-    console.log(`[api] 🤖 Calling Groq (llama3-8b-8192)...`);
-
-    let chatCompletion;
-    try {
-      chatCompletion = await groq.chat.completions.create({
-        model: 'llama3-8b-8192',
+      const chatCompletion = await groq.chat.completions.create({
+        model: 'llama-3.1-8b-instant',
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: notesPrompt },
           {
             role: 'user',
-            content: `Here is the raw text extracted from my study material "${originalname}":\n\n---\n${truncated}\n---\n\nPlease generate structured Markdown study notes from this content.`,
+            content: `DOCUMENT CHUNKS:\n\n${truncatedContext}\n\nNow generate the structured Markdown study notes. Remember: SYNTHESIZE and RESTRUCTURE — do NOT just repeat the raw text.`,
           },
         ],
         temperature: 0.3,
         max_tokens: 4096,
       });
+      notes = chatCompletion.choices?.[0]?.message?.content || '';
     } catch (groqErr: any) {
-      console.error(`[api] ❌ Groq API error:`, groqErr.message);
-
-      if (groqErr.status === 401) {
-        return res.status(500).json({
-          error: 'Invalid Groq API key. Please check your .env file.',
-          details: 'Groq returned 401 Unauthorized',
-        });
-      }
+      console.error(`[notes] Groq error:`, groqErr.message);
       if (groqErr.status === 429) {
-        return res.status(429).json({
-          error: 'Groq rate limit reached. Please wait a moment and try again.',
-          details: groqErr.message,
-        });
+        return res.status(429).json({ error: 'Rate limit reached. Please wait a moment and try again.' });
       }
-      if (groqErr.status === 413 || groqErr.message?.includes('too long')) {
-        return res.status(422).json({
-          error: 'Document text is too long for the model. Try a shorter document.',
-          details: groqErr.message,
-        });
-      }
-
-      return res.status(502).json({
-        error: 'Groq AI service is temporarily unavailable. Please try again in a moment.',
-        details: groqErr.message || 'Unknown Groq error',
-      });
+      return res.status(502).json({ error: `Notes generation failed: ${groqErr.message}` });
     }
 
-    // 6. Validate Groq response
-    const notes = chatCompletion.choices?.[0]?.message?.content;
     if (!notes || notes.trim().length === 0) {
-      return res.status(502).json({
-        error: 'Groq returned an empty response. Please try again.',
-        details: 'choices[0].message.content was empty',
-      });
+      return res.status(502).json({ error: 'AI returned an empty response. Please try again.' });
     }
 
-    console.log(`[api] ✅ Groq returned ${notes.length} chars of notes`);
+    console.log(`[notes] Generated ${notes.length} chars`);
 
-    // 7. Return notes
+    // 4. Persist to generated_notes
+    const { error: insertErr } = await getSupabaseClient(req)
+      .from('generated_notes')
+      .insert({ notebook_id, content: notes, model: 'llama-3.1-8b-instant' });
+
+    if (insertErr) {
+      console.error('[notes] Insert error:', insertErr.message);
+    }
+
+    // 5. Return
     return res.json({
       notes,
-      metadata: {
-        filename: originalname,
-        extractedChars: cleanText.length,
-        truncated: cleanText.length > 20000,
-        model: 'llama3-8b-8192',
-      },
+      metadata: { model: 'llama-3.1-8b-instant', chunk_count: chunks.length },
     });
 
   } catch (err: any) {
-    // Catch-all: something completely unexpected
-    console.error('[api] 💥 Unexpected error:', err);
-    return res.status(500).json({
-      error: 'An unexpected server error occurred. Please try again.',
-      details: err.message || String(err),
-    });
+    console.error('[notes] Unexpected error:', err);
+    return res.status(500).json({ error: err.message || 'Unexpected server error.' });
   }
 });
 
@@ -345,7 +287,7 @@ app.post('/api/ingest', (req, res, next) => {
     console.log(`[ingest] Extracted ${cleanText.length} chars`);
 
     // 2. Chunk
-    const chunks = chunkText(rawText);
+    const chunks = await chunkText(cleanText);
     console.log(`[ingest] Split into ${chunks.length} chunks`);
 
     // 3. Embed
@@ -478,26 +420,29 @@ app.post('/api/chat', async (req, res) => {
 
     const userPrompt = `DOCUMENT CONTEXT:\n\n${contextBlocks}\n\n---\n\nUSER QUESTION: ${message}`;
 
-    // 5. Call Gemini for answer generation
+    // 5. Call Groq for answer generation
     let aiReply: string;
     try {
-      const result = await chatModel.generateContent({
-        contents: [
-          { role: 'user', parts: [{ text: RAG_SYSTEM_PROMPT + '\n\n' + userPrompt }] },
+      const chatCompletion = await groq.chat.completions.create({
+        model: 'llama-3.1-8b-instant',
+        messages: [
+          { role: 'system', content: RAG_SYSTEM_PROMPT },
+          { role: 'user', content: userPrompt },
         ],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 4096 },
+        temperature: 0.3,
+        max_tokens: 4096,
       });
-      aiReply = result.response.text();
-    } catch (genErr: any) {
-      console.error(`[chat] Gemini generation error:`, genErr.message);
-      return res.status(502).json({ error: `AI generation failed: ${genErr.message}` });
+      aiReply = chatCompletion.choices?.[0]?.message?.content || '';
+    } catch (groqErr: any) {
+      console.error(`[chat] Groq error:`, groqErr.message);
+      return res.status(502).json({ error: `AI generation failed: ${groqErr.message}` });
     }
 
     if (!aiReply || aiReply.trim().length === 0) {
-      return res.status(502).json({ error: 'Gemini returned an empty response.' });
+      return res.status(502).json({ error: 'AI returned an empty response.' });
     }
 
-    console.log(`[chat] Gemini returned ${aiReply.length} chars`);
+    console.log(`[chat] Groq returned ${aiReply.length} chars`);
 
     // 6. Build citations array from matched chunks
     const citations = matchedChunks.map((chunk: any) => ({
@@ -562,20 +507,21 @@ app.post('/api/generate-mindmap', async (req, res) => {
     // 2. Build context from chunks
     const contextText = chunks.map((c: any, i: number) => `[Chunk ${i + 1}]\n${c.content}`).join('\n\n');
 
-    // 3. Call Gemini to extract entities and relationships
+    // 3. Call Groq to extract entities and relationships
     let graphJson: { nodes: any[]; edges: any[] };
     try {
-      const result = await chatModel.generateContent({
-        contents: [
-          { role: 'user', parts: [{ text: MINDMAP_PROMPT + '\n\nDOCUMENT CHUNKS:\n\n' + contextText }] },
+      const chatCompletion = await groq.chat.completions.create({
+        model: 'llama-3.1-8b-instant',
+        messages: [
+          { role: 'system', content: MINDMAP_PROMPT },
+          { role: 'user', content: `DOCUMENT CHUNKS:\n\n${contextText}` },
         ],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
+        temperature: 0.2,
+        response_format: { type: 'json_object' },
       });
 
-      const raw = result.response.text().trim();
-      // Strip markdown code fences if present
-      const jsonStr = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
-      graphJson = JSON.parse(jsonStr);
+      const raw = chatCompletion.choices?.[0]?.message?.content || '{}';
+      graphJson = JSON.parse(raw);
 
       if (!Array.isArray(graphJson.nodes) || !Array.isArray(graphJson.edges)) {
         throw new Error('Invalid graph structure: missing nodes or edges array');
@@ -651,7 +597,7 @@ app.post('/api/generate-flashcards', async (req, res) => {
     let parsedJson: { flashcards: any[] };
     try {
       const chatCompletion = await groq.chat.completions.create({
-        model: 'llama3-8b-8192',
+        model: 'llama-3.1-8b-instant',
         messages: [
           { role: 'system', content: FLASHCARDS_PROMPT },
           { role: 'user', content: `DOCUMENT CHUNKS:\n\n${contextText}` }
@@ -668,10 +614,10 @@ app.post('/api/generate-flashcards', async (req, res) => {
       }
     } catch (genErr: any) {
       console.error(`[flashcards] Generation error:`, genErr.message);
-      return res.status(502).json({ error: `Flashcards generation failed: \${genErr.message}` });
+      return res.status(502).json({ error: `Flashcards generation failed: ${genErr.message}` });
     }
 
-    console.log(`[flashcards] Generated \${parsedJson.flashcards.length} flashcards`);
+    console.log(`[flashcards] Generated ${parsedJson.flashcards.length} flashcards`);
 
     // Delete existing flashcards for this notebook (simplifies sync for this phase)
     await getSupabaseClient(req).from('flashcards').delete().eq('notebook_id', notebook_id);
@@ -689,7 +635,7 @@ app.post('/api/generate-flashcards', async (req, res) => {
       const { error: insertErr } = await getSupabaseClient(req).from('flashcards').insert(flashcardRows);
       if (insertErr) {
         console.error(`[flashcards] Insert error:`, insertErr);
-        return res.status(500).json({ error: `Failed to save flashcards: \${insertErr.message}` });
+        return res.status(500).json({ error: `Failed to save flashcards: ${insertErr.message}` });
       }
     }
 
@@ -745,7 +691,7 @@ app.post('/api/generate-quiz', async (req, res) => {
     let parsedJson: { questions: any[] };
     try {
       const chatCompletion = await groq.chat.completions.create({
-        model: 'llama3-8b-8192',
+        model: 'llama-3.1-8b-instant',
         messages: [
           { role: 'system', content: QUIZ_PROMPT },
           { role: 'user', content: `DOCUMENT CHUNKS:\n\n${contextText}` }
@@ -762,10 +708,10 @@ app.post('/api/generate-quiz', async (req, res) => {
       }
     } catch (genErr: any) {
       console.error(`[quiz] Generation error:`, genErr.message);
-      return res.status(502).json({ error: `Quiz generation failed: \${genErr.message}` });
+      return res.status(502).json({ error: `Quiz generation failed: ${genErr.message}` });
     }
 
-    console.log(`[quiz] Generated \${parsedJson.questions.length} questions`);
+    console.log(`[quiz] Generated ${parsedJson.questions.length} questions`);
 
     // Delete existing quiz for this notebook (simplifies sync for this phase)
     await getSupabaseClient(req).from('quiz_questions').delete().eq('notebook_id', notebook_id);
@@ -784,7 +730,7 @@ app.post('/api/generate-quiz', async (req, res) => {
       const { error: insertErr } = await getSupabaseClient(req).from('quiz_questions').insert(quizRows);
       if (insertErr) {
         console.error(`[quiz] Insert error:`, insertErr);
-        return res.status(500).json({ error: `Failed to save quiz: \${insertErr.message}` });
+        return res.status(500).json({ error: `Failed to save quiz: ${insertErr.message}` });
       }
     }
 
@@ -800,7 +746,7 @@ app.post('/api/generate-quiz', async (req, res) => {
 // ── Start ───────────────────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
-  console.log(`\\n  🚀 Study Hub API running on http://localhost:\${PORT}`);
+  console.log(`\n  🚀 Study Hub API running on http://localhost:${PORT}`);
   console.log(`  📄 POST /api/generate-notes — Upload PDF/PPTX/DOCX → AI notes`);
   console.log(`  📥 POST /api/ingest        — Upload → chunk → embed → store`);
   console.log(`  💬 POST /api/chat          — RAG chat with citations`);
