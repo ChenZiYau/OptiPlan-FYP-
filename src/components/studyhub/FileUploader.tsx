@@ -12,8 +12,19 @@ export function FileUploader({ onUpload, uploading }: FileUploaderProps) {
   const [lastResult, setLastResult] = useState<{ filename: string; chunks: number } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB (Supabase Storage limit)
+
   const handleFile = useCallback(async (file: File) => {
     setLastResult(null);
+
+    // Frontend file size gate
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error('File too large', {
+        description: `Maximum file size is 50MB. Your file is ${(file.size / (1024 * 1024)).toFixed(1)}MB.`,
+      });
+      return;
+    }
+
     try {
       const result = await onUpload(file);
       if (result) {

@@ -1,12 +1,15 @@
+console.log("[server] Module init: starting imports...");
 import express from "express";
 import cors from "cors";
 import Groq from "groq-sdk";
-import { parseOfficeAsync } from "officeparser";
 import { config } from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { createClient } from "@supabase/supabase-js";
-import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+console.log("[server] Module init: all imports loaded OK");
+
+// NOTE: officeparser and @langchain/textsplitters are lazy-imported inside
+// their respective functions to avoid crashing Vercel on module init.
 
 // ── Load env (local dev only; Vercel injects env vars automatically) ──────
 
@@ -53,11 +56,16 @@ async function extractText(buffer: Buffer, filename: string): Promise<string> {
   }
 
   try {
+    console.log(`[extractText] Lazy-importing officeparser...`);
+    const { parseOfficeAsync } = await import("officeparser");
+    console.log(`[extractText] officeparser loaded, parsing ${ext}...`);
+
     // officeparser v4: parseOfficeAsync returns Promise<string>
     // tempFilesLocation needed on Vercel (read-only FS except /tmp)
     const text = await parseOfficeAsync(buffer, {
       tempFilesLocation: isVercel ? "/tmp" : undefined,
     });
+    console.log(`[extractText] Parse complete, ${text.length} chars`);
     return text;
   } catch (parseError: any) {
     throw new Error(
@@ -92,6 +100,8 @@ function getSupabaseClient(req: any) {
 // ── Chunking Helper ────────────────────────────────────────────────────────
 
 async function chunkText(text: string): Promise<string[]> {
+  console.log(`[chunkText] Lazy-importing @langchain/textsplitters...`);
+  const { RecursiveCharacterTextSplitter } = await import("@langchain/textsplitters");
   const splitter = new RecursiveCharacterTextSplitter({
     chunkSize: 1000,
     chunkOverlap: 200,
@@ -245,6 +255,7 @@ STRICT FORMATTING RULES:
 // storage path. This bypasses Vercel's 4.5MB request body limit.
 
 app.post("/api/ingest", async (req, res) => {
+  const t0 = Date.now();
   try {
     const { notebook_id: notebookId, storage_path: storagePath, filename } = req.body;
 
@@ -255,7 +266,7 @@ app.post("/api/ingest", async (req, res) => {
       return res.status(400).json({ error: "storage_path and filename are required." });
     }
 
-    console.log(`[ingest] Downloading from storage: ${storagePath}`);
+    console.log(`[ingest] ① Request received: ${filename} (path: ${storagePath})`);
 
     // 1. Download file from Supabase Storage
     const supabaseClient = getSupabaseClient(req);
@@ -273,13 +284,15 @@ app.post("/api/ingest", async (req, res) => {
 
     const buffer = Buffer.from(await fileData.arrayBuffer());
     const ext = filename.toLowerCase().split(".").pop() || "";
-    console.log(`[ingest] Downloaded: ${filename} (${(buffer.length / 1024).toFixed(1)}KB)`);
+    console.log(`[ingest] ② File downloaded from storage: ${(buffer.length / 1024).toFixed(1)}KB (+${Date.now() - t0}ms)`);
 
     // 2. Extract text
     let rawText: string;
     try {
+      console.log(`[ingest] ③ Starting text extraction...`);
       rawText = await extractText(buffer, filename);
     } catch (parseErr: any) {
+      console.error(`[ingest] ③ Parse failed (+${Date.now() - t0}ms):`, parseErr.message);
       return res.status(422).json({ error: `Failed to parse file: ${parseErr.message}` });
     }
 
@@ -288,11 +301,11 @@ app.post("/api/ingest", async (req, res) => {
       return res.status(422).json({ error: "File contains too little readable text." });
     }
 
-    console.log(`[ingest] Extracted ${cleanText.length} chars`);
+    console.log(`[ingest] ④ Text extracted: ${cleanText.length} chars (+${Date.now() - t0}ms)`);
 
     // 3. Chunk
     const chunks = await chunkText(cleanText);
-    console.log(`[ingest] Split into ${chunks.length} chunks`);
+    console.log(`[ingest] ⑤ Chunked: ${chunks.length} chunks (+${Date.now() - t0}ms)`);
 
     // 4. Insert source row
     const { data: source, error: sourceErr } = await supabaseClient
@@ -308,9 +321,11 @@ app.post("/api/ingest", async (req, res) => {
       .single();
 
     if (sourceErr || !source) {
-      console.error(`[ingest] Source insert error:`, sourceErr);
+      console.error(`[ingest] ⑥ Source insert error:`, sourceErr);
       return res.status(500).json({ error: `Failed to save source: ${sourceErr?.message}` });
     }
+
+    console.log(`[ingest] ⑥ Source row inserted: ${source.id} (+${Date.now() - t0}ms)`);
 
     // 5. Insert chunk rows (fts column auto-populated by DB trigger)
     const chunkRows = chunks.map((content, i) => ({
@@ -325,18 +340,19 @@ app.post("/api/ingest", async (req, res) => {
       .insert(chunkRows);
 
     if (chunkErr) {
-      console.error(`[ingest] Chunk insert error:`, chunkErr);
+      console.error(`[ingest] ⑦ Chunk insert error:`, chunkErr);
       return res.status(500).json({ error: `Failed to save chunks: ${chunkErr.message}` });
     }
 
-    console.log(`[ingest] Stored source ${source.id} with ${chunks.length} chunks`);
+    console.log(`[ingest] ⑦ ${chunks.length} chunks inserted (+${Date.now() - t0}ms)`);
 
     // 6. Clean up the storage file (text is extracted, no longer needed)
     await supabaseClient.storage.from("study-sources").remove([storagePath]);
 
+    console.log(`[ingest] ⑧ Done! Total: ${Date.now() - t0}ms`);
     return res.json({ source_id: source.id, chunk_count: chunks.length });
   } catch (err: any) {
-    console.error("[ingest] Unexpected error:", err);
+    console.error(`[ingest] FATAL (+${Date.now() - t0}ms):`, err);
     return res.status(500).json({ error: err.message || "Unexpected server error." });
   }
 });
