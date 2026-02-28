@@ -8,10 +8,11 @@ import type {
   MindMapEdge,
   QuizQuestionData,
 } from '@/types/studyhub';
+import { supabase } from '@/lib/supabase';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
-// ── Ingest (upload file → chunk → embed → store) ────────────────────────────
+// ── Ingest (upload file → Supabase Storage → API extracts & chunks) ─────────
 
 export interface IngestResponse {
   source_id: string;
@@ -23,17 +24,37 @@ export async function ingestFile(
   notebookId: string,
   token: string,
 ): Promise<IngestResponse> {
-  const form = new FormData();
-  form.append('file', file);
-  form.append('notebook_id', notebookId);
+  // 1. Get current user ID for storage path
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
 
+  // 2. Upload file to Supabase Storage (bypasses Vercel's 4.5MB payload limit)
+  const storagePath = `${user.id}/${notebookId}/${Date.now()}_${file.name}`;
+  const { error: uploadErr } = await supabase.storage
+    .from('study-sources')
+    .upload(storagePath, file);
+
+  if (uploadErr) throw new Error(`Upload failed: ${uploadErr.message}`);
+
+  // 3. Call API with just the storage path (tiny JSON payload)
   const res = await fetch(`${API_BASE}/ingest`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-    body: form,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      notebook_id: notebookId,
+      storage_path: storagePath,
+      filename: file.name,
+    }),
   });
 
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) {
+    // Clean up the uploaded file on failure
+    await supabase.storage.from('study-sources').remove([storagePath]);
+    throw new Error(await res.text());
+  }
   return res.json();
 }
 

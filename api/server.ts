@@ -1,5 +1,4 @@
 import express from "express";
-import multer from "multer";
 import cors from "cors";
 import Groq from "groq-sdk";
 import { OfficeParser } from "officeparser";
@@ -31,30 +30,9 @@ const app = express();
 const PORT = 3001;
 
 const isVercel = !!process.env.VERCEL;
-// Vercel Hobby plan: 4.5MB body limit; local dev: 100MB
-const MAX_FILE_SIZE = isVercel ? 4.5 * 1024 * 1024 : 100 * 1024 * 1024;
 
 app.use(cors({ origin: true }));
 app.use(express.json({ limit: isVercel ? "4.5mb" : "100mb" }));
-
-// Multer — in-memory storage
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_FILE_SIZE },
-  fileFilter: (_req, file, cb) => {
-    const ext = file.originalname.toLowerCase().split(".").pop();
-    const allowedExts = ["pdf", "pptx", "ppt", "docx", "doc"];
-    if (allowedExts.includes(ext || "")) {
-      cb(null, true);
-    } else {
-      cb(
-        new Error(
-          `Unsupported file type ".${ext}". Accepted: PDF, PPTX, DOCX, PPT, DOC.`,
-        ),
-      );
-    }
-  },
-});
 
 // ── Groq Client ─────────────────────────────────────────────────────────────
 
@@ -268,120 +246,105 @@ STRICT FORMATTING RULES:
 });
 
 // ── Route: POST /api/ingest ─────────────────────────────────────────────────
+// Frontend uploads file to Supabase Storage first, then calls this with the
+// storage path. This bypasses Vercel's 4.5MB request body limit.
 
-app.post(
-  "/api/ingest",
-  (req, res, next) => {
-    upload.single("file")(req, res, (err) => {
-      if (err) {
-        if (
-          err instanceof multer.MulterError &&
-          err.code === "LIMIT_FILE_SIZE"
-        ) {
-          const limitMB = isVercel ? "4.5MB" : "100MB";
-          return res
-            .status(413)
-            .json({ error: `File is too large. Maximum size is ${limitMB}.` });
-        }
-        return res
-          .status(400)
-          .json({ error: err.message || "File upload failed." });
-      }
-      next();
-    });
-  },
-  async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ error: "No file uploaded." });
-      }
+app.post("/api/ingest", async (req, res) => {
+  try {
+    const { notebook_id: notebookId, storage_path: storagePath, filename } = req.body;
 
-      const notebookId = req.body.notebook_id;
-      if (!notebookId) {
-        return res.status(400).json({ error: "notebook_id is required." });
-      }
-
-      const { originalname, size } = req.file;
-      const ext = originalname.toLowerCase().split(".").pop() || "";
-      console.log(
-        `[ingest] Received: ${originalname} (${(size / 1024).toFixed(1)}KB)`,
-      );
-
-      // 1. Extract text
-      let rawText: string;
-      try {
-        rawText = await extractText(req.file.buffer, originalname);
-      } catch (parseErr: any) {
-        return res
-          .status(422)
-          .json({ error: `Failed to parse file: ${parseErr.message}` });
-      }
-
-      const cleanText = rawText.replace(/\s+/g, " ").trim();
-      if (!cleanText || cleanText.length < 30) {
-        return res
-          .status(422)
-          .json({ error: "File contains too little readable text." });
-      }
-
-      console.log(`[ingest] Extracted ${cleanText.length} chars`);
-
-      // 2. Chunk
-      const chunks = await chunkText(cleanText);
-      console.log(`[ingest] Split into ${chunks.length} chunks`);
-
-      // 3. Insert source row
-      const { data: source, error: sourceErr } = await getSupabaseClient(req)
-        .from("sources")
-        .insert({
-          notebook_id: notebookId,
-          filename: originalname,
-          file_type: ext,
-          raw_text: cleanText,
-          char_count: cleanText.length,
-        })
-        .select("id")
-        .single();
-
-      if (sourceErr || !source) {
-        console.error(`[ingest] Source insert error:`, sourceErr);
-        return res
-          .status(500)
-          .json({ error: `Failed to save source: ${sourceErr?.message}` });
-      }
-
-      // 4. Insert chunk rows (fts column auto-populated by DB trigger)
-      const chunkRows = chunks.map((content, i) => ({
-        source_id: source.id,
-        notebook_id: notebookId,
-        content,
-        chunk_index: i,
-      }));
-
-      const { error: chunkErr } = await getSupabaseClient(req)
-        .from("chunks")
-        .insert(chunkRows);
-
-      if (chunkErr) {
-        console.error(`[ingest] Chunk insert error:`, chunkErr);
-        return res
-          .status(500)
-          .json({ error: `Failed to save chunks: ${chunkErr.message}` });
-      }
-
-      console.log(
-        `[ingest] Stored source ${source.id} with ${chunks.length} chunks`,
-      );
-
-      return res.json({ source_id: source.id, chunk_count: chunks.length });
-    } catch (err: any) {
-      console.error("[ingest] Unexpected error:", err);
-      return res
-        .status(500)
-        .json({ error: err.message || "Unexpected server error." });
+    if (!notebookId) {
+      return res.status(400).json({ error: "notebook_id is required." });
     }
-  },
-);
+    if (!storagePath || !filename) {
+      return res.status(400).json({ error: "storage_path and filename are required." });
+    }
+
+    console.log(`[ingest] Downloading from storage: ${storagePath}`);
+
+    // 1. Download file from Supabase Storage
+    const supabaseClient = getSupabaseClient(req);
+    const { data: fileData, error: downloadErr } = await supabaseClient
+      .storage
+      .from("study-sources")
+      .download(storagePath);
+
+    if (downloadErr || !fileData) {
+      console.error(`[ingest] Storage download error:`, downloadErr);
+      return res.status(404).json({
+        error: `Failed to download file from storage: ${downloadErr?.message || "File not found"}`,
+      });
+    }
+
+    const buffer = Buffer.from(await fileData.arrayBuffer());
+    const ext = filename.toLowerCase().split(".").pop() || "";
+    console.log(`[ingest] Downloaded: ${filename} (${(buffer.length / 1024).toFixed(1)}KB)`);
+
+    // 2. Extract text
+    let rawText: string;
+    try {
+      rawText = await extractText(buffer, filename);
+    } catch (parseErr: any) {
+      return res.status(422).json({ error: `Failed to parse file: ${parseErr.message}` });
+    }
+
+    const cleanText = rawText.replace(/\s+/g, " ").trim();
+    if (!cleanText || cleanText.length < 30) {
+      return res.status(422).json({ error: "File contains too little readable text." });
+    }
+
+    console.log(`[ingest] Extracted ${cleanText.length} chars`);
+
+    // 3. Chunk
+    const chunks = await chunkText(cleanText);
+    console.log(`[ingest] Split into ${chunks.length} chunks`);
+
+    // 4. Insert source row
+    const { data: source, error: sourceErr } = await supabaseClient
+      .from("sources")
+      .insert({
+        notebook_id: notebookId,
+        filename,
+        file_type: ext,
+        raw_text: cleanText,
+        char_count: cleanText.length,
+      })
+      .select("id")
+      .single();
+
+    if (sourceErr || !source) {
+      console.error(`[ingest] Source insert error:`, sourceErr);
+      return res.status(500).json({ error: `Failed to save source: ${sourceErr?.message}` });
+    }
+
+    // 5. Insert chunk rows (fts column auto-populated by DB trigger)
+    const chunkRows = chunks.map((content, i) => ({
+      source_id: source.id,
+      notebook_id: notebookId,
+      content,
+      chunk_index: i,
+    }));
+
+    const { error: chunkErr } = await supabaseClient
+      .from("chunks")
+      .insert(chunkRows);
+
+    if (chunkErr) {
+      console.error(`[ingest] Chunk insert error:`, chunkErr);
+      return res.status(500).json({ error: `Failed to save chunks: ${chunkErr.message}` });
+    }
+
+    console.log(`[ingest] Stored source ${source.id} with ${chunks.length} chunks`);
+
+    // 6. Clean up the storage file (text is extracted, no longer needed)
+    await supabaseClient.storage.from("study-sources").remove([storagePath]);
+
+    return res.json({ source_id: source.id, chunk_count: chunks.length });
+  } catch (err: any) {
+    console.error("[ingest] Unexpected error:", err);
+    return res.status(500).json({ error: err.message || "Unexpected server error." });
+  }
+});
 
 // ── Route: POST /api/chat (RAG) ─────────────────────────────────────────────
 
