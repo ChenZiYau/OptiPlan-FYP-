@@ -328,19 +328,24 @@ function MindMapTabInner() {
         )}
       </div>
 
-      {/* Legend */}
-      <div className="flex flex-wrap gap-4 px-1">
-        {[
-          { label: 'Main Topic', color: 'bg-purple-500' },
-          { label: 'Section', color: 'bg-blue-500' },
-          { label: 'Topic', color: 'bg-emerald-500' },
-          { label: 'Detail', color: 'bg-amber-500' },
-        ].map(({ label, color }) => (
-          <div key={label} className="flex items-center gap-1.5">
-            <div className={`w-2.5 h-2.5 rounded-full ${color}`} />
-            <span className="text-[11px] text-gray-500">{label}</span>
-          </div>
-        ))}
+      {/* Legend + AI Disclaimer */}
+      <div className="flex items-center justify-between px-1">
+        <div className="flex flex-wrap gap-4">
+          {[
+            { label: 'Main Topic', color: 'bg-purple-500' },
+            { label: 'Section', color: 'bg-blue-500' },
+            { label: 'Topic', color: 'bg-emerald-500' },
+            { label: 'Detail', color: 'bg-amber-500' },
+          ].map(({ label, color }) => (
+            <div key={label} className="flex items-center gap-1.5">
+              <div className={`w-2.5 h-2.5 rounded-full ${color}`} />
+              <span className="text-[11px] text-gray-500">{label}</span>
+            </div>
+          ))}
+        </div>
+        <span className="text-[11px] text-gray-600 italic">
+          AI-generated content may contain inaccuracies. Always verify with your original sources.
+        </span>
       </div>
     </div>
   );

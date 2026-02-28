@@ -101,7 +101,10 @@ export function FlashcardsTab() {
             transition={{ duration: 0.5 }}
           />
         </div>
-        <div className="mt-4 flex justify-end">
+        <div className="mt-4 flex items-center justify-between">
+          <span className="text-[11px] text-gray-600 italic">
+            AI-generated content may contain inaccuracies. Always verify with your original sources.
+          </span>
           <button onClick={generateFlashcards} disabled={generating} className="text-xs text-gray-500 hover:text-white transition-colors underline decoration-white/20 underline-offset-2">
             Regenerate Flashcards
           </button>

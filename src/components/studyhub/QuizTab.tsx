@@ -128,6 +128,11 @@ export function QuizTab() {
         </div>
       )}
 
+      {/* AI Disclaimer */}
+      <p className="text-[11px] text-gray-600 italic text-center">
+        AI-generated questions may contain inaccuracies. Always verify answers with your original sources.
+      </p>
+
       {/* Progress & Score */}
       <div className="flex items-center justify-between">
         <span className="text-sm text-gray-500">

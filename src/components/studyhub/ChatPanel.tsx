@@ -23,9 +23,20 @@ export const ChatPanel = forwardRef<ChatPanelHandle>(function ChatPanel(_props, 
     },
   }), [sending, sendMessage]);
 
-  // Auto-scroll to bottom on new messages
+  // Auto-scroll to bottom on new messages — use scrollTop to avoid the
+  // jump-to-top-then-smooth-scroll-down artifact that scrollIntoView causes.
+  const prevMsgCountRef = useRef(messages.length);
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = messagesEndRef.current?.parentElement;
+    if (!container) return;
+
+    if (messages.length !== prevMsgCountRef.current) {
+      // New message added — smooth scroll to bottom
+      prevMsgCountRef.current = messages.length;
+      requestAnimationFrame(() => {
+        container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+      });
+    }
   }, [messages]);
 
   function handleSubmit(e?: React.FormEvent) {
