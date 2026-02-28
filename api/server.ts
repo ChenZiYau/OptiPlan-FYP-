@@ -39,7 +39,23 @@ app.use(express.json({ limit: isVercel ? "4.5mb" : "100mb" }));
 
 // ── Groq Client ─────────────────────────────────────────────────────────────
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+// Defer Groq init — don't crash the module if key is missing (other routes still work)
+let groq: Groq;
+try {
+  groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "missing" });
+} catch {
+  groq = null as any;
+}
+
+function getGroq(): Groq {
+  if (!process.env.GROQ_API_KEY) {
+    throw new Error("GROQ_API_KEY is not configured. Set it in Vercel Environment Variables.");
+  }
+  if (!groq || groq.apiKey === "missing") {
+    groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  }
+  return groq;
+}
 
 // Groq request timeout: 50s on Vercel (leaves 10s buffer within 60s maxDuration), 120s local
 const GROQ_TIMEOUT = isVercel ? 50_000 : 120_000;
@@ -179,7 +195,7 @@ STRICT FORMATTING RULES:
 
     let notes: string;
     try {
-      const chatCompletion = await groq.chat.completions.create(
+      const chatCompletion = await getGroq().chat.completions.create(
         {
           model: "llama-3.1-8b-instant",
           messages: [
@@ -493,7 +509,7 @@ app.post("/api/chat", async (req, res) => {
     // 6. Call Groq for answer generation
     let aiReply: string;
     try {
-      const chatCompletion = await groq.chat.completions.create(
+      const chatCompletion = await getGroq().chat.completions.create(
         {
           model: "llama-3.1-8b-instant",
           messages: [
@@ -689,7 +705,7 @@ app.post("/api/generate-mindmap", async (req, res) => {
       : "llama-3.3-70b-versatile";
     let graphJson: { nodes: any[]; edges: any[] };
     try {
-      const chatCompletion = await groq.chat.completions.create(
+      const chatCompletion = await getGroq().chat.completions.create(
         {
           model: mindmapModel,
           messages: [
@@ -825,7 +841,7 @@ app.post("/api/generate-flashcards", async (req, res) => {
 
     let parsedJson: { flashcards: any[] };
     try {
-      const chatCompletion = await groq.chat.completions.create(
+      const chatCompletion = await getGroq().chat.completions.create(
         {
           model: "llama-3.1-8b-instant",
           messages: [
@@ -956,7 +972,7 @@ app.post("/api/generate-quiz", async (req, res) => {
 
     let parsedJson: { questions: any[] };
     try {
-      const chatCompletion = await groq.chat.completions.create(
+      const chatCompletion = await getGroq().chat.completions.create(
         {
           model: "llama-3.1-8b-instant",
           messages: [
