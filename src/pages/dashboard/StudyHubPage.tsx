@@ -66,7 +66,7 @@ function StudyHubInner() {
         </div>
 
         {/* Tab navigation */}
-        <div className="px-6 pt-4 shrink-0">
+        <div className="px-6 pt-4 pb-2 shrink-0">
           <div className="flex overflow-x-auto whitespace-nowrap rounded-xl bg-white/5 p-1.5 w-fit">
             {TABS.map((tab) => (
               <HoverTip key={tab.key} label={tab.tip}>
