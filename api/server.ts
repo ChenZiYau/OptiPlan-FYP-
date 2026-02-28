@@ -43,27 +43,19 @@ const GROQ_TIMEOUT = isVercel ? 50_000 : 120_000;
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Extract text from a file buffer using officeparser (supports PDF, PPTX, DOCX, PPT, DOC, RTF) */
+/** Extract text from a file buffer using officeparser (supports PDF, PPTX, DOCX, RTF, ODT, ODP) */
 async function extractText(buffer: Buffer, filename: string): Promise<string> {
   const ext = filename.toLowerCase().split(".").pop();
-  const supported = ["pdf", "pptx", "docx", "ppt", "doc", "rtf", "odt", "odp"];
+  const supported = ["pdf", "pptx", "docx", "rtf", "odt", "odp", "ods", "xlsx"];
 
   if (!supported.includes(ext || "")) {
     throw new Error(`Unsupported file extension: .${ext}`);
   }
 
   try {
-    // officeparser decompresses ZIP-based formats (pptx, docx) to a temp dir.
-    // Vercel's filesystem is read-only except /tmp — point temp files there.
-    const opts = isVercel ? { tempFilesLocation: "/tmp" } : undefined;
-    const result = await OfficeParser.parseOffice(buffer, opts);
-
-    // officeparser v6 returns string directly; guard against older versions
-    // that may return an object with .toText()
-    if (typeof result === "string") return result;
-    if (result && typeof (result as any).toText === "function")
-      return (result as any).toText();
-    return String(result ?? "");
+    // officeparser v7 returns OfficeParserAST with .toText() method
+    const ast = await OfficeParser.parseOffice(buffer);
+    return ast.toText();
   } catch (parseError: any) {
     throw new Error(
       `Failed to parse ${ext?.toUpperCase()} file: ${parseError.message}`,

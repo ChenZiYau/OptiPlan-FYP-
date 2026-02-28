@@ -63,7 +63,7 @@ export function FileUploader({ onUpload, uploading }: FileUploaderProps) {
         <input
           ref={fileRef}
           type="file"
-          accept=".pdf,.pptx,.ppt,.doc,.docx"
+          accept=".pdf,.pptx,.docx,.rtf,.odt,.odp"
           className="hidden"
           onChange={handleFileChange}
         />
@@ -71,7 +71,7 @@ export function FileUploader({ onUpload, uploading }: FileUploaderProps) {
           <Upload className="w-6 h-6 text-purple-400" />
         </div>
         <p className="text-sm font-semibold text-white mb-1">Drop files here to ingest</p>
-        <p className="text-xs text-gray-500">PDF, PPTX, DOC — will be chunked & embedded</p>
+        <p className="text-xs text-gray-500">PDF, PPTX, DOCX, RTF, ODT — will be chunked & embedded</p>
       </div>
 
       {lastResult && (
