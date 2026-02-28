@@ -9,6 +9,7 @@ export function useChat(notebookId: string | null) {
   const [messages, setMessages] = useState<ChatMessageData[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Load existing messages from Supabase
   const fetchMessages = useCallback(async () => {
@@ -17,14 +18,22 @@ export function useChat(notebookId: string | null) {
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase
-      .from('notebook_chat_messages')
-      .select('*')
-      .eq('notebook_id', notebookId)
-      .order('created_at', { ascending: true });
+    setError(null);
+    try {
+      const { data, error: fetchErr } = await supabase
+        .from('notebook_chat_messages')
+        .select('*')
+        .eq('notebook_id', notebookId)
+        .order('created_at', { ascending: true });
 
-    if (!error && data) setMessages(data);
-    setLoading(false);
+      if (fetchErr) throw fetchErr;
+      setMessages(data || []);
+    } catch (err: any) {
+      console.error('Failed to fetch chat messages:', err);
+      setError(err.message || 'Failed to load messages');
+    } finally {
+      setLoading(false);
+    }
   }, [notebookId]);
 
   useEffect(() => {
@@ -81,12 +90,18 @@ export function useChat(notebookId: string | null) {
 
   const clearMessages = useCallback(async () => {
     if (!notebookId) return;
-    await supabase
-      .from('notebook_chat_messages')
-      .delete()
-      .eq('notebook_id', notebookId);
-    setMessages([]);
+    try {
+      const { error: deleteErr } = await supabase
+        .from('notebook_chat_messages')
+        .delete()
+        .eq('notebook_id', notebookId);
+      if (deleteErr) throw deleteErr;
+      setMessages([]);
+    } catch (err: any) {
+      console.error('Failed to clear messages:', err);
+      setError(err.message || 'Failed to clear messages');
+    }
   }, [notebookId]);
 
-  return { messages, loading, sending, sendMessage, clearMessages };
+  return { messages, loading, sending, error, sendMessage, clearMessages };
 }

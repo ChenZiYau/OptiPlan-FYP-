@@ -60,6 +60,8 @@ export function Auth() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   // Clear errors when switching mode
   const handleSwitch = (newMode: 'login' | 'signup') => {
@@ -133,6 +135,32 @@ export function Auth() {
       setErrors({ form: message });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!loginForm.email.trim()) {
+      setErrors({ email: 'Please enter your email first' });
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginForm.email)) {
+      setErrors({ email: 'Please enter a valid email' });
+      return;
+    }
+    setResetLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(loginForm.email, {
+        redirectTo: `${window.location.origin}/login`,
+      });
+      if (error) {
+        setErrors({ form: error.message });
+      } else {
+        setResetSent(true);
+      }
+    } catch {
+      setErrors({ form: 'Failed to send reset email. Please try again.' });
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -324,6 +352,12 @@ export function Auth() {
                       exit={{ opacity: 0, x: 20 }}
                       transition={{ duration: 0.25 }}
                     >
+                      {resetSent && (
+                        <div className="mb-4 p-3 rounded-xl bg-emerald-400/10 border border-emerald-400/20 text-emerald-400 text-sm">
+                          Password reset link sent! Check your email inbox.
+                        </div>
+                      )}
+
                       {errors.form && (
                         <div className="mb-4 p-3 rounded-xl bg-red-400/10 border border-red-400/20 text-red-400 text-sm">
                           {errors.form}
@@ -374,7 +408,7 @@ export function Auth() {
                             />
                             <Label htmlFor="remember" className="text-sm text-opti-text-secondary font-normal cursor-pointer">Remember me</Label>
                           </div>
-                          <button type="button" className="text-sm text-opti-accent hover:underline font-medium">Forgot Password?</button>
+                          <button type="button" onClick={handleForgotPassword} disabled={resetLoading} className="text-sm text-opti-accent hover:underline font-medium disabled:opacity-50">{resetLoading ? 'Sending...' : 'Forgot Password?'}</button>
                         </div>
 
                         <button

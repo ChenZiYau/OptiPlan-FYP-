@@ -14,6 +14,7 @@ export function useMindMap(notebookId: string | null) {
   const [data, setData] = useState<MindMapState | null>(null);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Load existing mind map from Supabase
   const fetchMindMap = useCallback(async () => {
@@ -22,20 +23,29 @@ export function useMindMap(notebookId: string | null) {
       return;
     }
     setLoading(true);
-    const { data: rows, error } = await supabase
-      .from('mind_maps')
-      .select('graph_json')
-      .eq('notebook_id', notebookId)
-      .order('created_at', { ascending: false })
-      .limit(1);
+    setError(null);
+    try {
+      const { data: rows, error: fetchErr } = await supabase
+        .from('mind_maps')
+        .select('graph_json')
+        .eq('notebook_id', notebookId)
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-    if (!error && rows && rows.length > 0) {
-      const g = rows[0].graph_json;
-      setData({ nodes: g.nodes, edges: g.edges });
-    } else {
+      if (fetchErr) throw fetchErr;
+      if (rows && rows.length > 0) {
+        const g = rows[0].graph_json;
+        setData({ nodes: g.nodes, edges: g.edges });
+      } else {
+        setData(null);
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch mind map:', err);
+      setError(err.message || 'Failed to load mind map');
       setData(null);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [notebookId]);
 
   useEffect(() => {
@@ -53,5 +63,5 @@ export function useMindMap(notebookId: string | null) {
     }
   }, [notebookId, session]);
 
-  return { data, loading, generating, generate, refetch: fetchMindMap };
+  return { data, loading, generating, error, generate, refetch: fetchMindMap };
 }

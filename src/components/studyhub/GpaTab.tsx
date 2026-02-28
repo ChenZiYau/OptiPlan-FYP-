@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TrendingUp, Target, Plus, Trash2, AlertTriangle } from 'lucide-react';
 import { HoverTip } from '@/components/HoverTip';
@@ -66,9 +66,28 @@ function pctToGpa(pct: number): number {
 
 // ── Component ────────────────────────────────────────────────────────────────
 
+const GPA_STORAGE_KEY = 'optiplan-gpa-data';
+
+function loadGpaData(): { subjects: GpaSubject[]; targetGpa: string } {
+  try {
+    const raw = localStorage.getItem(GPA_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return { subjects: parsed.subjects ?? [], targetGpa: parsed.targetGpa ?? '3.50' };
+    }
+  } catch { /* ignore corrupt data */ }
+  return { subjects: [], targetGpa: '3.50' };
+}
+
 export function GpaTab() {
-  const [subjects, setSubjects] = useState<GpaSubject[]>([]);
-  const [targetGpa, setTargetGpa] = useState('3.50');
+  const saved = loadGpaData();
+  const [subjects, setSubjects] = useState<GpaSubject[]>(saved.subjects);
+  const [targetGpa, setTargetGpa] = useState(saved.targetGpa);
+
+  // Persist to localStorage whenever subjects or targetGpa change
+  useEffect(() => {
+    localStorage.setItem(GPA_STORAGE_KEY, JSON.stringify({ subjects, targetGpa }));
+  }, [subjects, targetGpa]);
   const [addingAssessmentFor, setAddingAssessmentFor] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
   const [newWeight, setNewWeight] = useState('');

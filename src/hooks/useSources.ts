@@ -9,6 +9,7 @@ export function useSources(notebookId: string | null) {
   const [sources, setSources] = useState<Source[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchSources = useCallback(async () => {
     if (!notebookId) {
@@ -16,14 +17,22 @@ export function useSources(notebookId: string | null) {
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase
-      .from('sources')
-      .select('*')
-      .eq('notebook_id', notebookId)
-      .order('created_at', { ascending: false });
+    setError(null);
+    try {
+      const { data, error: fetchErr } = await supabase
+        .from('sources')
+        .select('*')
+        .eq('notebook_id', notebookId)
+        .order('created_at', { ascending: false });
 
-    if (!error && data) setSources(data);
-    setLoading(false);
+      if (fetchErr) throw fetchErr;
+      setSources(data || []);
+    } catch (err: any) {
+      console.error('Failed to fetch sources:', err);
+      setError(err.message || 'Failed to load sources');
+    } finally {
+      setLoading(false);
+    }
   }, [notebookId]);
 
   useEffect(() => {
@@ -43,10 +52,18 @@ export function useSources(notebookId: string | null) {
   }, [notebookId, session, fetchSources]);
 
   const deleteSource = useCallback(async (id: string) => {
-    await supabase.from('chunks').delete().eq('source_id', id);
-    await supabase.from('sources').delete().eq('id', id);
-    await fetchSources();
+    try {
+      const { error: chunkErr } = await supabase.from('chunks').delete().eq('source_id', id);
+      if (chunkErr) throw chunkErr;
+      const { error: sourceErr } = await supabase.from('sources').delete().eq('id', id);
+      if (sourceErr) throw sourceErr;
+      await fetchSources();
+    } catch (err: any) {
+      console.error('Failed to delete source:', err);
+      setError(err.message || 'Failed to delete source');
+      await fetchSources(); // re-sync UI with actual DB state
+    }
   }, [fetchSources]);
 
-  return { sources, loading, uploading, fetchSources, uploadSource, deleteSource };
+  return { sources, loading, uploading, error, fetchSources, uploadSource, deleteSource };
 }

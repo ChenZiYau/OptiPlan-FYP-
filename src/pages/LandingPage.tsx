@@ -49,7 +49,7 @@ export function LandingPage() {
           {isVisible('about_creator') && <AboutCreator />}
           {isVisible('about_optiplan') && <AboutOptiPlan />}
           {isVisible('faqs') && <FAQ />}
-          <FeedbackForm />
+          {isVisible('feedback') && <FeedbackForm />}
           {isVisible('testimonials') && <Testimonials />}
           {isVisible('cta') && <CTA />}
         </div>

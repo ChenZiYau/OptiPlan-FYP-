@@ -26,6 +26,8 @@ export function Login() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -50,6 +52,32 @@ export function Login() {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleForgotPassword = async () => {
+    if (!form.email.trim()) {
+      setErrors({ email: 'Please enter your email first' });
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      setErrors({ email: 'Please enter a valid email' });
+      return;
+    }
+    setResetLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(form.email, {
+        redirectTo: `${window.location.origin}/login`,
+      });
+      if (error) {
+        setErrors({ form: error.message });
+      } else {
+        setResetSent(true);
+      }
+    } catch {
+      setErrors({ form: 'Failed to send reset email. Please try again.' });
+    } finally {
+      setResetLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -154,6 +182,12 @@ export function Login() {
                 </p>
               </div>
 
+              {resetSent && (
+                <div className="mb-4 p-3 rounded-xl bg-emerald-400/10 border border-emerald-400/20 text-emerald-400 text-sm">
+                  Password reset link sent! Check your email inbox.
+                </div>
+              )}
+
               {errors.form && (
                 <div className="mb-4 p-3 rounded-xl bg-red-400/10 border border-red-400/20 text-red-400 text-sm">
                   {errors.form}
@@ -219,9 +253,11 @@ export function Login() {
                   </div>
                   <button
                     type="button"
-                    className="text-sm text-opti-accent hover:underline font-medium"
+                    onClick={handleForgotPassword}
+                    disabled={resetLoading}
+                    className="text-sm text-opti-accent hover:underline font-medium disabled:opacity-50"
                   >
-                    Forgot Password?
+                    {resetLoading ? 'Sending...' : 'Forgot Password?'}
                   </button>
                 </div>
 

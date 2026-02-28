@@ -8,13 +8,13 @@ export function Tutorial() {
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <AnimatedSection delay={0.3}>
           <MacWindow title="">
-            <div className="flex items-center justify-center aspect-video bg-white/[0.02]">
-              <button
-                className="w-20 h-20 rounded-full bg-opti-accent/20 border border-opti-accent/30 flex items-center justify-center transition-transform hover:scale-110"
-                aria-label="Play tutorial video"
-              >
-                <Play className="w-8 h-8 text-opti-accent ml-1" />
-              </button>
+            <div className="flex flex-col items-center justify-center aspect-video bg-white/[0.02] gap-4">
+              <div className="w-20 h-20 rounded-full bg-opti-accent/10 border border-opti-accent/20 flex items-center justify-center">
+                <Play className="w-8 h-8 text-opti-accent/40 ml-1" />
+              </div>
+              <span className="text-sm text-opti-text-secondary/60 font-medium">
+                Tutorial video coming soon
+              </span>
             </div>
           </MacWindow>
         </AnimatedSection>
