@@ -29,7 +29,8 @@
       "Bash(grep:*)",
       "Bash(cd \"C:\\\\Users\\\\yauyau\\\\Desktop\\\\Kimi_Agent_OptiPlan SaaS Landing Page\\\\app\" && npm ls reactflow 2>&1)",
       "Bash(cd:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npx vercel:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
