@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vite:*)",
+      "WebFetch(domain:zgxmzpzuedqclfvphuqy.supabase.co)",
+      "WebFetch(domain:api.supabase.com)",
+      "Bash(curl:*)"
+    ]
+  }
+}
