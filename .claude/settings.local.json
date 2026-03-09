@@ -8,7 +8,19 @@
       "WebFetch(domain:zgxmzpzuedqclfvphuqy.supabase.co)",
       "WebFetch(domain:api.supabase.com)",
       "Bash(curl:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(node -e:*)",
+      "Bash(npm run build:*)",
+      "Bash(head:*)",
+      "Bash(git mv:*)",
+      "Bash(python:*)",
+      "Bash(tail:*)",
+      "Bash(npm view:*)",
+      "Bash(grep:*)",
+      "Bash(cd:*)",
+      "Bash(npx vercel:*)",
+      "Bash(ls:*)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true
 }
