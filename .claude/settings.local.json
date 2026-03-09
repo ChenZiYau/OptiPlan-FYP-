@@ -7,7 +7,8 @@
       "Bash(npx vite:*)",
       "WebFetch(domain:zgxmzpzuedqclfvphuqy.supabase.co)",
       "WebFetch(domain:api.supabase.com)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(rm:*)"
     ]
   }
 }
