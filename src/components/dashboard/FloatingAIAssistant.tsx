@@ -2,13 +2,15 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Sparkles, X, Send, Check, DollarSign, CalendarDays, BookOpen, CheckSquare, Loader2,
+  Sparkles, X, Send, Check, DollarSign, CalendarDays, BookOpen, CheckSquare, Loader2, Users, Link2, Upload,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { uuid } from '@/lib/utils';
 import { useFinance } from '@/contexts/FinanceContext';
 import { useDashboard } from '@/contexts/DashboardContext';
+import { useAuth } from '@/hooks/useAuth';
 import { EXPENSE_CATEGORIES, CATEGORY_COLORS, type ExpenseCategory } from '@/hooks/useFinanceData';
+import { getUserGroups, createGroupScheduleTask, addGroupLink, uploadGroupFile } from '@/lib/collabService';
 import type { ScheduleEntry, StudyPayload, Importance } from '@/types/dashboard';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -34,7 +36,7 @@ interface MenuOption {
 
 interface InputField {
   placeholder: string;
-  type: 'text' | 'number' | 'date' | 'time';
+  type: 'text' | 'number' | 'date' | 'time' | 'file';
   field: string;
 }
 
@@ -42,7 +44,9 @@ type DraftPayload =
   | { type: 'expense'; title?: string; amount?: number; category?: ExpenseCategory; date?: string; description?: string }
   | { type: 'schedule'; subjectName?: string; startTime?: string; durationHours?: number; days?: number[]; color?: string }
   | { type: 'study'; title?: string; subject?: string; date?: string; importance?: Importance }
-  | { type: 'task'; title?: string; date?: string; importance?: Importance; description?: string };
+  | { type: 'task'; title?: string; date?: string; importance?: Importance; description?: string }
+  | { type: 'collab-schedule'; groupId?: string; groupName?: string; name?: string; priority?: string; startDate?: string; endDate?: string; estimatedTime?: string }
+  | { type: 'collab-resource'; groupId?: string; groupName?: string; resourceType?: 'link' | 'file'; title?: string; url?: string; file?: File };
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -62,6 +66,13 @@ const DURATION_OPTIONS: MenuOption[] = [
   { label: '1.5h', value: '1.5' },
   { label: '2h', value: '2' },
   { label: '3h', value: '3' },
+];
+
+const PRIORITY_OPTIONS: MenuOption[] = [
+  { label: 'None', value: 'None' },
+  { label: 'Low', value: 'Low' },
+  { label: 'Medium', value: 'Medium' },
+  { label: 'High', value: 'High' },
 ];
 
 function todayISO(): string {
@@ -328,13 +339,22 @@ function processNLP(text: string, schedules: ScheduleEntry[]): NLPResult {
     };
   }
 
+  // Collab intent detection
+  const lowerText = text.toLowerCase();
+  if (/\b(group\s*task|collab\s*schedule|team\s*task|group\s*schedule)\b/i.test(lowerText)) {
+    return { type: 'chat', message: "I can add a task to your group schedule! Use the **Group Schedule** button below to get started." };
+  }
+  if (/\b(share\s*link|upload\s*file|group\s*resource|share\s*resource|add\s*link\s*to\s*group|upload\s*to\s*group)\b/i.test(lowerText)) {
+    return { type: 'chat', message: "I can add links or files to your group! Use the **Group Resource** button below to get started." };
+  }
+
   // General chat
   const lower = text.toLowerCase();
   if (/^(hi|hello|hey|sup|yo)\b/.test(lower)) {
     return { type: 'chat', message: "Hey there! I'm your **OptiPlan AI**. Use the buttons below or just type naturally — I can handle expenses, schedules, study tasks, and more!" };
   }
   if (lower.includes('help') || lower.includes('what can you do')) {
-    return { type: 'chat', message: "I can help with:\n- **Expenses** — *\"$15 on lunch\"*\n- **Schedule classes** — *\"Calculus on Monday at 12:30\"*\n- **Study tasks** — *\"Math assignment due tomorrow\"*\n- **Navigate** — *\"Show my schedule\"*\n\nOr use the buttons below!" };
+    return { type: 'chat', message: "I can help with:\n- **Expenses** — *\"$15 on lunch\"*\n- **Schedule classes** — *\"Calculus on Monday at 12:30\"*\n- **Study tasks** — *\"Math assignment due tomorrow\"*\n- **Group schedule tasks** — Use the buttons\n- **Group resources** — Share links / upload files\n- **Navigate** — *\"Show my schedule\"*\n\nOr use the buttons below!" };
   }
   if (lower.includes('thank')) return { type: 'chat', message: "You're welcome! Let me know if you need anything else." };
 
@@ -358,6 +378,8 @@ const MAIN_MENU: MenuOption[] = [
   { label: 'Schedule Class', icon: <CalendarDays className="w-3.5 h-3.5" />, value: 'schedule', description: 'Add to timetable' },
   { label: 'Create Task', icon: <CheckSquare className="w-3.5 h-3.5" />, value: 'task', description: 'Add a to-do' },
   { label: 'Study Task', icon: <BookOpen className="w-3.5 h-3.5" />, value: 'study', description: 'Homework / revision' },
+  { label: 'Group Schedule', icon: <Users className="w-3.5 h-3.5" />, value: 'collab-schedule', description: 'Group schedule task' },
+  { label: 'Group Resource', icon: <Link2 className="w-3.5 h-3.5" />, value: 'collab-resource', description: 'Link or file to group' },
 ];
 
 export function FloatingAIAssistant() {
@@ -371,8 +393,10 @@ export function FloatingAIAssistant() {
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { addTransaction, refresh } = useFinance();
   const { addItem, addSchedule, schedules } = useDashboard();
+  const { user } = useAuth();
   const initializedRef = useRef(false);
 
   // Show welcome + main menu on first open
@@ -417,6 +441,8 @@ export function FloatingAIAssistant() {
       case 'schedule': return startScheduleFlow();
       case 'task': return startTaskFlow();
       case 'study': return startStudyFlow();
+      case 'collab-schedule': return startCollabScheduleFlow();
+      case 'collab-resource': return startCollabResourceFlow();
     }
   }
 
@@ -580,6 +606,113 @@ export function FloatingAIAssistant() {
     }
   }
 
+  // ── Collab Schedule Flow ──
+
+  async function startCollabScheduleFlow() {
+    pushUser('Group Schedule Task');
+    if (!user) { pushBot('You need to be logged in.'); return; }
+    setProcessing(true);
+    try {
+      const groups = await getUserGroups(user.id);
+      if (groups.length === 0) {
+        pushBot("No groups yet. Create or join one in **Collaboration**.");
+        setProcessing(false);
+        setTimeout(() => showMainMenu(), 500);
+        return;
+      }
+      setDraft({ type: 'collab-schedule' });
+      setPendingField('groupId');
+      setTimeout(() => pushBot('Which group?', 'sub-menu', {
+        options: groups.map((g) => ({ label: g.name, value: `${g.id}::${g.name}` })),
+      }), 300);
+    } catch { pushBot('Failed to load groups.'); }
+    setProcessing(false);
+  }
+
+  function handleCollabScheduleInput(field: string, value: string) {
+    const d = { ...(draft as Extract<DraftPayload, { type: 'collab-schedule' }>) };
+    if (field === 'groupId') {
+      const [groupId, groupName] = value.split('::');
+      d.groupId = groupId; d.groupName = groupName; setDraft(d); pushUser(groupName);
+      setTimeout(() => { pushBot("Task name?", 'input-prompt', { inputField: { placeholder: 'e.g. Sprint Planning...', type: 'text', field: 'name' } }); setPendingField('name'); }, 300);
+    } else if (field === 'name') {
+      d.name = value; setDraft(d); pushUser(value);
+      setTimeout(() => { pushBot('Priority?', 'sub-menu', { options: PRIORITY_OPTIONS }); setPendingField('priority'); }, 300);
+    } else if (field === 'priority') {
+      d.priority = value; setDraft(d); pushUser(value);
+      setTimeout(() => { pushBot('Start date?', 'input-prompt', { inputField: { placeholder: 'YYYY-MM-DD', type: 'date', field: 'startDate' } }); setPendingField('startDate'); }, 300);
+    } else if (field === 'startDate') {
+      d.startDate = value; setDraft(d); pushUser(value);
+      setTimeout(() => { pushBot('End date?', 'input-prompt', { inputField: { placeholder: 'YYYY-MM-DD', type: 'date', field: 'endDate' } }); setPendingField('endDate'); }, 300);
+    } else if (field === 'endDate') {
+      if (d.startDate && value < d.startDate) { pushBot('End date must be after start date.'); return; }
+      d.endDate = value; setDraft(d); pushUser(value);
+      setTimeout(() => { pushBot('Estimated time? (or **skip**)', 'input-prompt', { inputField: { placeholder: 'e.g. 2 hours, or skip', type: 'text', field: 'estimatedTime' } }); setPendingField('estimatedTime'); }, 300);
+    } else if (field === 'estimatedTime') {
+      d.estimatedTime = value.toLowerCase() === 'skip' ? undefined : value;
+      setDraft(d); pushUser(value.toLowerCase() === 'skip' ? 'Skipped' : value);
+      setTimeout(() => { pushBot("Here's the task:", 'confirmation-card', { draftPayload: d }); setPendingField('confirm'); }, 300);
+    }
+  }
+
+  // ── Collab Resource Flow ──
+
+  async function startCollabResourceFlow() {
+    pushUser('Group Resource');
+    if (!user) { pushBot('You need to be logged in.'); return; }
+    setProcessing(true);
+    try {
+      const groups = await getUserGroups(user.id);
+      if (groups.length === 0) {
+        pushBot("No groups yet. Create or join one in **Collaboration**.");
+        setProcessing(false);
+        setTimeout(() => showMainMenu(), 500);
+        return;
+      }
+      setDraft({ type: 'collab-resource' });
+      setPendingField('groupId');
+      setTimeout(() => pushBot('Which group?', 'sub-menu', {
+        options: groups.map((g) => ({ label: g.name, value: `${g.id}::${g.name}` })),
+      }), 300);
+    } catch { pushBot('Failed to load groups.'); }
+    setProcessing(false);
+  }
+
+  function handleCollabResourceInput(field: string, value: string) {
+    const d = { ...(draft as Extract<DraftPayload, { type: 'collab-resource' }>) };
+    if (field === 'groupId') {
+      const [groupId, groupName] = value.split('::');
+      d.groupId = groupId; d.groupName = groupName; setDraft(d); pushUser(groupName);
+      setTimeout(() => { pushBot('Link or File?', 'sub-menu', { options: [
+        { label: 'Link', value: 'link', icon: <Link2 className="w-3 h-3" />, description: 'Share a URL' },
+        { label: 'File', value: 'file', icon: <Upload className="w-3 h-3" />, description: 'PDF/Word/PPT' },
+      ]}); setPendingField('resourceType'); }, 300);
+    } else if (field === 'resourceType') {
+      d.resourceType = value as 'link' | 'file'; setDraft(d); pushUser(value === 'link' ? 'Link' : 'File');
+      if (value === 'link') {
+        setTimeout(() => { pushBot('Title?', 'input-prompt', { inputField: { placeholder: 'e.g. API Docs...', type: 'text', field: 'title' } }); setPendingField('title'); }, 300);
+      } else {
+        setTimeout(() => { pushBot('Choose a file (PDF, Word, PPT):', 'input-prompt', { inputField: { placeholder: 'Click to choose...', type: 'file', field: 'file' } }); setPendingField('file'); }, 300);
+      }
+    } else if (field === 'title') {
+      d.title = value; setDraft(d); pushUser(value);
+      setTimeout(() => { pushBot('Paste the URL:', 'input-prompt', { inputField: { placeholder: 'https://...', type: 'text', field: 'url' } }); setPendingField('url'); }, 300);
+    } else if (field === 'url') {
+      d.url = value; setDraft(d); pushUser(value);
+      setTimeout(() => { pushBot("Here's the link:", 'confirmation-card', { draftPayload: d }); setPendingField('confirm'); }, 300);
+    } else if (field === 'file') {
+      pushUser(value);
+      setTimeout(() => { pushBot("Here's the file:", 'confirmation-card', { draftPayload: d }); setPendingField('confirm'); }, 300);
+    }
+  }
+
+  function onFileSelected(file: File) {
+    if (!draft || draft.type !== 'collab-resource') return;
+    const d = { ...draft, file, title: file.name };
+    setDraft(d);
+    handleCollabResourceInput('file', file.name);
+  }
+
   // ── Dispatch ──
 
   function handleFieldInput(value: string) {
@@ -589,6 +722,8 @@ export function FloatingAIAssistant() {
       case 'schedule': return handleScheduleInput(pendingField, value);
       case 'task': return handleTaskInput(pendingField, value);
       case 'study': return handleStudyInput(pendingField, value);
+      case 'collab-schedule': return handleCollabScheduleInput(pendingField, value);
+      case 'collab-resource': return handleCollabResourceInput(pendingField, value);
     }
   }
 
@@ -624,6 +759,20 @@ export function FloatingAIAssistant() {
         await addItem(payload);
         toast.success(`Study task created: ${draft.title}`);
         pushBot(`Done! **${draft.title}** for **${draft.subject}** created.`);
+      } else if (draft.type === 'collab-schedule' && draft.groupId && draft.name && draft.startDate && draft.endDate && user) {
+        await createGroupScheduleTask(draft.groupId, user.id, { name: draft.name, priority: draft.priority || 'None', startDate: draft.startDate, endDate: draft.endDate, estimatedTime: draft.estimatedTime });
+        toast.success(`Schedule task created: ${draft.name}`);
+        pushBot(`Done! **${draft.name}** added to **${draft.groupName}**.`);
+      } else if (draft.type === 'collab-resource' && draft.groupId && user) {
+        if (draft.resourceType === 'link' && draft.url && draft.title) {
+          await addGroupLink(draft.groupId, user.id, draft.url, draft.title);
+          toast.success(`Link added: ${draft.title}`);
+          pushBot(`Done! Link **${draft.title}** added to **${draft.groupName}**.`);
+        } else if (draft.resourceType === 'file' && draft.file) {
+          await uploadGroupFile(draft.groupId, user.id, draft.file);
+          toast.success(`File uploaded: ${draft.file.name}`);
+          pushBot(`Done! **${draft.file.name}** uploaded to **${draft.groupName}**.`);
+        }
       }
     } catch {
       pushBot("Something went wrong. Please try again.");
@@ -837,32 +986,51 @@ export function FloatingAIAssistant() {
               )}
             </div>
 
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx,.ppt,.pptx"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) onFileSelected(f); e.target.value = ''; }}
+            />
+
             {/* Input */}
             <div className="px-3 py-2.5 border-t border-white/10 shrink-0">
-              <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex items-center gap-2">
-                <input
-                  ref={inputRef}
-                  type={pendingField === 'amount' ? 'number' : pendingField === 'date' ? 'date' : pendingField === 'startTime' ? 'time' : 'text'}
-                  step={pendingField === 'amount' ? '0.01' : undefined}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder={
-                    pendingField === 'confirm' ? 'Use buttons above...'
-                    : pendingField ? 'Type your answer...'
-                    : 'Type or use buttons above...'
-                  }
-                  disabled={processing || pendingField === 'confirm'}
-                  className="flex-1 px-3 py-2 text-sm bg-white/[0.04] border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500/30 transition disabled:opacity-40"
-                />
+              {pendingField === 'file' ? (
                 <button
-                  type="submit"
-                  disabled={!input.trim() || processing}
-                  className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
-                  aria-label="Send"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm bg-white/[0.04] border border-dashed border-white/20 rounded-xl text-gray-300 hover:bg-white/[0.06] hover:border-purple-500/30 transition-all"
                 >
-                  {processing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                  <Upload className="w-3.5 h-3.5 text-purple-400" />
+                  Choose File
                 </button>
-              </form>
+              ) : (
+                <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex items-center gap-2">
+                  <input
+                    ref={inputRef}
+                    type={pendingField === 'amount' ? 'number' : (pendingField === 'date' || pendingField === 'startDate' || pendingField === 'endDate') ? 'date' : pendingField === 'startTime' ? 'time' : 'text'}
+                    step={pendingField === 'amount' ? '0.01' : undefined}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder={
+                      pendingField === 'confirm' ? 'Use buttons above...'
+                      : pendingField ? 'Type your answer...'
+                      : 'Type or use buttons above...'
+                    }
+                    disabled={processing || pendingField === 'confirm'}
+                    className="flex-1 px-3 py-2 text-sm bg-white/[0.04] border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500/30 transition disabled:opacity-40"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!input.trim() || processing}
+                    className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+                    aria-label="Send"
+                  >
+                    {processing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                  </button>
+                </form>
+              )}
             </div>
           </motion.div>
         )}
@@ -985,8 +1153,10 @@ function ConfirmCard({ draft, onConfirm, onCancel }: { draft: DraftPayload; onCo
         {draft.type === 'schedule' && <CalendarDays className="w-3 h-3 text-blue-400" />}
         {draft.type === 'task' && <CheckSquare className="w-3 h-3 text-green-400" />}
         {draft.type === 'study' && <BookOpen className="w-3 h-3 text-purple-400" />}
+        {draft.type === 'collab-schedule' && <Users className="w-3 h-3 text-cyan-400" />}
+        {draft.type === 'collab-resource' && <Link2 className="w-3 h-3 text-pink-400" />}
         <span className="text-[9px] font-semibold uppercase tracking-wider text-gray-400">
-          {draft.type === 'expense' ? 'New Expense' : draft.type === 'schedule' ? 'New Schedule' : draft.type === 'task' ? 'New Task' : 'Study Task'}
+          {draft.type === 'expense' ? 'New Expense' : draft.type === 'schedule' ? 'New Schedule' : draft.type === 'task' ? 'New Task' : draft.type === 'study' ? 'Study Task' : draft.type === 'collab-schedule' ? 'Group Task' : 'Group Resource'}
         </span>
       </div>
 
@@ -1020,6 +1190,25 @@ function ConfirmCard({ draft, onConfirm, onCancel }: { draft: DraftPayload; onCo
             <Field label="Subject" value={draft.subject} />
             <Field label="Due" value={draft.date} />
             <Field label="Priority" value={draft.importance ? ['', 'Low', 'Medium', 'High'][draft.importance] : undefined} />
+          </>
+        )}
+        {draft.type === 'collab-schedule' && (
+          <>
+            <Field label="Group" value={draft.groupName} />
+            <Field label="Task" value={draft.name} />
+            <Field label="Priority" value={draft.priority} />
+            <Field label="Start" value={draft.startDate} />
+            <Field label="End" value={draft.endDate} />
+            {draft.estimatedTime && <Field label="Est." value={draft.estimatedTime} />}
+          </>
+        )}
+        {draft.type === 'collab-resource' && (
+          <>
+            <Field label="Group" value={draft.groupName} />
+            <Field label="Type" value={draft.resourceType === 'link' ? 'Link' : 'File'} />
+            {draft.title && <Field label="Title" value={draft.title} />}
+            {draft.url && <Field label="URL" value={draft.url} />}
+            {draft.file && <Field label="File" value={draft.file.name} />}
           </>
         )}
       </div>

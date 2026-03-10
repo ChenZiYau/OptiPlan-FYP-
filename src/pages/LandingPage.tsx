@@ -10,6 +10,7 @@ import { FAQ } from '@/sections/FAQ';
 import { FeedbackForm } from '@/sections/FeedbackForm';
 import { CTA } from '@/sections/CTA';
 import { Footer } from '@/sections/Footer';
+import { InteractiveDemo } from '@/sections/InteractiveDemo';
 import { useSiteContentData } from '@/hooks/useSiteContent';
 import { AnimatedShaderBackground } from '@/components/ui/animated-shader-background';
 import { MeshGradientBackground } from '@/components/ui/mesh-gradient-background';
@@ -46,6 +47,7 @@ export function LandingPage() {
         <div className="relative z-10">
           {isVisible('problems') && <Problem />}
           {isVisible('features') && <Features />}
+          <InteractiveDemo />
           {isVisible('about_creator') && <AboutCreator />}
           {isVisible('about_optiplan') && <AboutOptiPlan />}
           {isVisible('faqs') && <FAQ />}

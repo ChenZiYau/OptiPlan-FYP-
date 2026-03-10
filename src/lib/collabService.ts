@@ -218,10 +218,10 @@ export async function updateFriendNote(myUid: string, friendUid: string, note: s
 export async function createGroup(name: string, userId: string) {
   const inviteCode = generateGroupCode();
 
-  // Create group
+  // Create group with creator_id
   const { data: group, error: groupError } = await supabase
     .from('groups')
-    .insert([{ name, invite_code: inviteCode }])
+    .insert([{ name, invite_code: inviteCode, creator_id: userId }])
     .select()
     .single();
 
@@ -270,7 +270,8 @@ export async function getUserGroups(userId: string) {
       groups (
         id,
         name,
-        invite_code
+        invite_code,
+        creator_id
       )
     `)
     .eq('user_id', userId);
@@ -298,6 +299,59 @@ export async function getGroupMembers(groupId: string) {
     uid: d.users.uid,
     username: d.users.username,
   }));
+}
+
+export async function getGroupInfo(groupId: string) {
+  const { data: group, error: groupError } = await supabase
+    .from('groups')
+    .select('id, name, invite_code, creator_id, created_at')
+    .eq('id', groupId)
+    .single();
+
+  if (groupError) throw groupError;
+
+  const members = await getGroupMembers(groupId);
+
+  return { ...group, members };
+}
+
+export async function deleteGroup(groupId: string, userId: string) {
+  // Verify the user is the creator
+  const { data: group, error: groupError } = await supabase
+    .from('groups')
+    .select('creator_id')
+    .eq('id', groupId)
+    .single();
+
+  if (groupError) throw groupError;
+  if (group.creator_id !== userId) {
+    throw new Error('Only the group creator can delete this group.');
+  }
+
+  // Cascade delete related data
+  const tables = [
+    'group_messages',
+    'group_tasks',
+    'group_schedule_tasks',
+    'group_files',
+    'group_links',
+    'group_member_schedules',
+    'group_members',
+  ];
+
+  for (const table of tables) {
+    const { error } = await supabase.from(table).delete().eq('group_id', groupId);
+    if (error) console.error(`Failed to delete from ${table}:`, error);
+  }
+
+  // Delete the group itself
+  const { error: deleteError } = await supabase
+    .from('groups')
+    .delete()
+    .eq('id', groupId);
+
+  if (deleteError) throw deleteError;
+  return true;
 }
 
 
@@ -683,5 +737,96 @@ export async function upsertUserSchedule(
     console.error('upsertUserSchedule error:', error);
     throw error;
   }
+  return true;
+}
+
+// ── Schedule Tasks (Calendar) ────────────────────────────────
+
+export interface ScheduleTask {
+  id: string;
+  groupId: string;
+  createdBy: string;
+  name: string;
+  project: string;
+  priority: string;
+  startDate: string;
+  endDate: string;
+  estimatedTime: string | null;
+  createdAt: string;
+}
+
+export async function getGroupScheduleTasks(groupId: string): Promise<ScheduleTask[]> {
+  const { data, error } = await supabase
+    .from('group_schedule_tasks')
+    .select('*')
+    .eq('group_id', groupId)
+    .order('start_date', { ascending: true });
+
+  if (error) throw error;
+
+  return (data || []).map((d: any) => ({
+    id: d.id,
+    groupId: d.group_id,
+    createdBy: d.created_by,
+    name: d.name,
+    project: d.project || 'None',
+    priority: d.priority || 'None',
+    startDate: d.start_date,
+    endDate: d.end_date,
+    estimatedTime: d.estimated_time || null,
+    createdAt: d.created_at,
+  }));
+}
+
+export async function createGroupScheduleTask(
+  groupId: string,
+  createdBy: string,
+  task: {
+    name: string;
+    project?: string;
+    priority?: string;
+    startDate: string;
+    endDate: string;
+    estimatedTime?: string;
+  }
+): Promise<ScheduleTask> {
+  const { data, error } = await supabase
+    .from('group_schedule_tasks')
+    .insert([{
+      group_id: groupId,
+      created_by: createdBy,
+      name: task.name,
+      project: task.project || 'None',
+      priority: task.priority || 'None',
+      start_date: task.startDate,
+      end_date: task.endDate,
+      estimated_time: task.estimatedTime || null,
+    }])
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return {
+    id: data.id,
+    groupId: data.group_id,
+    createdBy: data.created_by,
+    name: data.name,
+    project: data.project || 'None',
+    priority: data.priority || 'None',
+    startDate: data.start_date,
+    endDate: data.end_date,
+    estimatedTime: data.estimated_time || null,
+    createdAt: data.created_at,
+  };
+}
+
+export async function deleteGroupScheduleTask(taskId: string) {
+  const { error } = await supabase
+    .from('group_schedule_tasks')
+    .delete()
+    .eq('id', taskId);
+
+  if (error) throw error;
   return true;
 }

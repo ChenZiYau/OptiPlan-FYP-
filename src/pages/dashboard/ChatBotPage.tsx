@@ -2,14 +2,16 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bot, Send, DollarSign, CalendarDays, BookOpen, CheckSquare,
-  Sparkles, Check, X, Loader2, Trash2,
+  Sparkles, Check, X, Loader2, Trash2, Users, Link2, Upload,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { uuid } from '@/lib/utils';
 import { useFinance } from '@/contexts/FinanceContext';
 import { useDashboard } from '@/contexts/DashboardContext';
+import { useAuth } from '@/hooks/useAuth';
 import { EXPENSE_CATEGORIES, CATEGORY_COLORS, type ExpenseCategory } from '@/hooks/useFinanceData';
 import { useChatHistory, type HistoryMessage } from '@/hooks/useChatHistory';
+import { getUserGroups, createGroupScheduleTask, addGroupLink, uploadGroupFile } from '@/lib/collabService';
 import type { ScheduleEntry, StudyPayload, Importance } from '@/types/dashboard';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -35,7 +37,7 @@ interface MenuOption {
 
 interface InputField {
   placeholder: string;
-  type: 'text' | 'number' | 'date' | 'time';
+  type: 'text' | 'number' | 'date' | 'time' | 'file';
   field: string;
 }
 
@@ -43,7 +45,9 @@ type DraftPayload =
   | { type: 'expense'; title?: string; amount?: number; category?: ExpenseCategory; date?: string; description?: string }
   | { type: 'schedule'; subjectName?: string; startTime?: string; durationHours?: number; days?: number[]; color?: string }
   | { type: 'study'; title?: string; subject?: string; date?: string; importance?: Importance }
-  | { type: 'task'; title?: string; date?: string; importance?: Importance; description?: string };
+  | { type: 'task'; title?: string; date?: string; importance?: Importance; description?: string }
+  | { type: 'collab-schedule'; groupId?: string; groupName?: string; name?: string; priority?: string; startDate?: string; endDate?: string; estimatedTime?: string }
+  | { type: 'collab-resource'; groupId?: string; groupName?: string; resourceType?: 'link' | 'file'; title?: string; url?: string; file?: File };
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -58,6 +62,13 @@ const IMPORTANCE_OPTIONS: MenuOption[] = [
 ];
 
 const DAY_OPTIONS: MenuOption[] = DAY_NAMES.map((d, i) => ({ label: d, value: String(i) }));
+
+const PRIORITY_OPTIONS: MenuOption[] = [
+  { label: 'None', value: 'None' },
+  { label: 'Low', value: 'Low' },
+  { label: 'Medium', value: 'Medium' },
+  { label: 'High', value: 'High' },
+];
 
 const DURATION_OPTIONS: MenuOption[] = [
   { label: '30 min', value: '0.5' },
@@ -86,6 +97,7 @@ export function ChatBotPage() {
   const { addTransaction, refresh } = useFinance();
   const { addItem, addSchedule, schedules } = useDashboard();
   const { history, loading: historyLoading, loadHistory, saveMessage, clearHistory } = useChatHistory();
+  const { user } = useAuth();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState<DraftPayload | null>(null);
@@ -95,6 +107,7 @@ export function ChatBotPage() {
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-scroll
   useEffect(() => {
@@ -149,6 +162,8 @@ export function ChatBotPage() {
     { label: 'Schedule Class', icon: <CalendarDays className="w-4 h-4" />, value: 'schedule', description: 'Add to your timetable' },
     { label: 'Create Task', icon: <CheckSquare className="w-4 h-4" />, value: 'task', description: 'Add a to-do item' },
     { label: 'Study Task', icon: <BookOpen className="w-4 h-4" />, value: 'study', description: 'Homework or revision' },
+    { label: 'Group Schedule', icon: <Users className="w-4 h-4" />, value: 'collab-schedule', description: 'Add task to group schedule' },
+    { label: 'Group Resource', icon: <Link2 className="w-4 h-4" />, value: 'collab-resource', description: 'Add link or file to group' },
   ];
 
   // ── Flow Handlers ──
@@ -159,6 +174,8 @@ export function ChatBotPage() {
       case 'schedule': return startScheduleFlow();
       case 'task': return startTaskFlow();
       case 'study': return startStudyFlow();
+      case 'collab-schedule': return startCollabScheduleFlow();
+      case 'collab-resource': return startCollabResourceFlow();
     }
   }
 
@@ -378,6 +395,200 @@ export function ChatBotPage() {
     }
   }
 
+  // ── Collab Schedule Flow ──
+
+  async function startCollabScheduleFlow() {
+    pushUser('Group Schedule Task');
+    if (!user) { pushBot('You need to be logged in to use this feature.'); return; }
+    setProcessing(true);
+    try {
+      const groups = await getUserGroups(user.id);
+      if (groups.length === 0) {
+        pushBot("You don't have any groups yet. Create or join a group first in the **Collaboration** page.");
+        setProcessing(false);
+        setTimeout(() => pushBot('What else would you like to do?', 'main-menu', { options: MAIN_MENU }), 500);
+        return;
+      }
+      setDraft({ type: 'collab-schedule' });
+      setPendingField('groupId');
+      setTimeout(() => {
+        pushBot('Which group should I add the schedule task to?', 'sub-menu', {
+          options: groups.map((g) => ({ label: g.name, value: `${g.id}::${g.name}` })),
+        });
+      }, 300);
+    } catch {
+      pushBot('Failed to load your groups. Please try again.');
+    }
+    setProcessing(false);
+  }
+
+  function handleCollabScheduleInput(field: string, value: string) {
+    const d = { ...(draft as Extract<DraftPayload, { type: 'collab-schedule' }>) };
+
+    if (field === 'groupId') {
+      const [groupId, groupName] = value.split('::');
+      d.groupId = groupId;
+      d.groupName = groupName;
+      setDraft(d);
+      pushUser(groupName);
+      setTimeout(() => {
+        pushBot("What's the task name?", 'input-prompt', {
+          inputField: { placeholder: 'e.g. Sprint Planning, Design Review...', type: 'text', field: 'name' },
+        });
+        setPendingField('name');
+      }, 300);
+    } else if (field === 'name') {
+      d.name = value;
+      setDraft(d);
+      pushUser(value);
+      setTimeout(() => {
+        pushBot('Priority level?', 'sub-menu', { options: PRIORITY_OPTIONS });
+        setPendingField('priority');
+      }, 300);
+    } else if (field === 'priority') {
+      d.priority = value;
+      setDraft(d);
+      pushUser(value);
+      setTimeout(() => {
+        pushBot('When does it start?', 'input-prompt', {
+          inputField: { placeholder: 'YYYY-MM-DD', type: 'date', field: 'startDate' },
+        });
+        setPendingField('startDate');
+      }, 300);
+    } else if (field === 'startDate') {
+      d.startDate = value;
+      setDraft(d);
+      pushUser(value);
+      setTimeout(() => {
+        pushBot('When does it end?', 'input-prompt', {
+          inputField: { placeholder: 'YYYY-MM-DD', type: 'date', field: 'endDate' },
+        });
+        setPendingField('endDate');
+      }, 300);
+    } else if (field === 'endDate') {
+      if (d.startDate && value < d.startDate) {
+        pushBot('End date cannot be before start date. Please enter a valid end date.');
+        return;
+      }
+      d.endDate = value;
+      setDraft(d);
+      pushUser(value);
+      setTimeout(() => {
+        pushBot('Estimated time? (e.g. "2 hours") or type **skip** to skip.', 'input-prompt', {
+          inputField: { placeholder: 'e.g. 2 hours, or skip', type: 'text', field: 'estimatedTime' },
+        });
+        setPendingField('estimatedTime');
+      }, 300);
+    } else if (field === 'estimatedTime') {
+      d.estimatedTime = value.toLowerCase() === 'skip' ? undefined : value;
+      setDraft(d);
+      pushUser(value.toLowerCase() === 'skip' ? 'Skipped' : value);
+      setTimeout(() => {
+        pushBot("Here's the group schedule task:", 'confirmation-card', { draftPayload: d });
+        setPendingField('confirm');
+      }, 300);
+    }
+  }
+
+  // ── Collab Resource Flow ──
+
+  async function startCollabResourceFlow() {
+    pushUser('Group Resource');
+    if (!user) { pushBot('You need to be logged in to use this feature.'); return; }
+    setProcessing(true);
+    try {
+      const groups = await getUserGroups(user.id);
+      if (groups.length === 0) {
+        pushBot("You don't have any groups yet. Create or join a group first in the **Collaboration** page.");
+        setProcessing(false);
+        setTimeout(() => pushBot('What else would you like to do?', 'main-menu', { options: MAIN_MENU }), 500);
+        return;
+      }
+      setDraft({ type: 'collab-resource' });
+      setPendingField('groupId');
+      setTimeout(() => {
+        pushBot('Which group should I add the resource to?', 'sub-menu', {
+          options: groups.map((g) => ({ label: g.name, value: `${g.id}::${g.name}` })),
+        });
+      }, 300);
+    } catch {
+      pushBot('Failed to load your groups. Please try again.');
+    }
+    setProcessing(false);
+  }
+
+  function handleCollabResourceInput(field: string, value: string) {
+    const d = { ...(draft as Extract<DraftPayload, { type: 'collab-resource' }>) };
+
+    if (field === 'groupId') {
+      const [groupId, groupName] = value.split('::');
+      d.groupId = groupId;
+      d.groupName = groupName;
+      setDraft(d);
+      pushUser(groupName);
+      setTimeout(() => {
+        pushBot('What type of resource?', 'sub-menu', {
+          options: [
+            { label: 'Link', value: 'link', icon: <Link2 className="w-3 h-3" />, description: 'Share a URL' },
+            { label: 'File', value: 'file', icon: <Upload className="w-3 h-3" />, description: 'Upload PDF/Word/PPT' },
+          ],
+        });
+        setPendingField('resourceType');
+      }, 300);
+    } else if (field === 'resourceType') {
+      d.resourceType = value as 'link' | 'file';
+      setDraft(d);
+      pushUser(value === 'link' ? 'Link' : 'File');
+      if (value === 'link') {
+        setTimeout(() => {
+          pushBot('Give it a title:', 'input-prompt', {
+            inputField: { placeholder: 'e.g. Project Figma, API Docs...', type: 'text', field: 'title' },
+          });
+          setPendingField('title');
+        }, 300);
+      } else {
+        setTimeout(() => {
+          pushBot('Choose a file to upload (PDF, Word, or PowerPoint):', 'input-prompt', {
+            inputField: { placeholder: 'Click to choose file...', type: 'file', field: 'file' },
+          });
+          setPendingField('file');
+        }, 300);
+      }
+    } else if (field === 'title') {
+      d.title = value;
+      setDraft(d);
+      pushUser(value);
+      setTimeout(() => {
+        pushBot('Paste the URL:', 'input-prompt', {
+          inputField: { placeholder: 'https://...', type: 'text', field: 'url' },
+        });
+        setPendingField('url');
+      }, 300);
+    } else if (field === 'url') {
+      d.url = value;
+      setDraft(d);
+      pushUser(value);
+      setTimeout(() => {
+        pushBot("Here's the link I'll add:", 'confirmation-card', { draftPayload: d });
+        setPendingField('confirm');
+      }, 300);
+    } else if (field === 'file') {
+      // File is handled via onFileSelected, value is filename
+      pushUser(value);
+      setTimeout(() => {
+        pushBot("Here's the file I'll upload:", 'confirmation-card', { draftPayload: d });
+        setPendingField('confirm');
+      }, 300);
+    }
+  }
+
+  function onFileSelected(file: File) {
+    if (!draft || draft.type !== 'collab-resource') return;
+    const d = { ...draft, file, title: file.name };
+    setDraft(d);
+    handleCollabResourceInput('file', file.name);
+  }
+
   // ── Dispatch input to current flow ──
 
   function handleFieldInput(value: string) {
@@ -387,6 +598,8 @@ export function ChatBotPage() {
       case 'schedule': return handleScheduleInput(pendingField, value);
       case 'task': return handleTaskInput(pendingField, value);
       case 'study': return handleStudyInput(pendingField, value);
+      case 'collab-schedule': return handleCollabScheduleInput(pendingField, value);
+      case 'collab-resource': return handleCollabResourceInput(pendingField, value);
     }
   }
 
@@ -455,6 +668,26 @@ export function ChatBotPage() {
         await addItem(payload);
         toast.success(`Study task created: ${draft.title}`);
         pushBot(`Done! Study task **${draft.title}** for **${draft.subject}** created.`);
+      } else if (draft.type === 'collab-schedule' && draft.groupId && draft.name && draft.startDate && draft.endDate && user) {
+        await createGroupScheduleTask(draft.groupId, user.id, {
+          name: draft.name,
+          priority: draft.priority || 'None',
+          startDate: draft.startDate,
+          endDate: draft.endDate,
+          estimatedTime: draft.estimatedTime,
+        });
+        toast.success(`Schedule task created: ${draft.name}`);
+        pushBot(`Done! **${draft.name}** added to **${draft.groupName}**'s schedule.`);
+      } else if (draft.type === 'collab-resource' && draft.groupId && user) {
+        if (draft.resourceType === 'link' && draft.url && draft.title) {
+          await addGroupLink(draft.groupId, user.id, draft.url, draft.title);
+          toast.success(`Link added: ${draft.title}`);
+          pushBot(`Done! Link **${draft.title}** added to **${draft.groupName}**.`);
+        } else if (draft.resourceType === 'file' && draft.file) {
+          await uploadGroupFile(draft.groupId, user.id, draft.file);
+          toast.success(`File uploaded: ${draft.file.name}`);
+          pushBot(`Done! File **${draft.file.name}** uploaded to **${draft.groupName}**.`);
+        }
       }
     } catch {
       pushBot("Something went wrong. Please try again.");
@@ -591,34 +824,59 @@ export function ChatBotPage() {
         )}
       </div>
 
+      {/* Hidden file input for collab-resource file upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.doc,.docx,.ppt,.pptx"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onFileSelected(file);
+          e.target.value = '';
+        }}
+      />
+
       {/* Input bar */}
       <div className="pt-3 border-t border-white/10 shrink-0">
-        <form
-          onSubmit={(e) => { e.preventDefault(); handleTextSubmit(); }}
-          className="flex items-center gap-2"
-        >
-          <input
-            ref={inputRef}
-            type={pendingField === 'amount' ? 'number' : pendingField === 'date' ? 'date' : pendingField === 'startTime' ? 'time' : 'text'}
-            step={pendingField === 'amount' ? '0.01' : undefined}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder={
-              pendingField === 'confirm' ? 'Use the buttons above...'
-              : pendingField ? 'Type your answer...'
-              : 'Select an option above...'
-            }
-            disabled={processing || pendingField === 'confirm' || (!pendingField && !draft)}
-            className="flex-1 px-4 py-3 text-sm bg-white/[0.04] border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500/30 transition disabled:opacity-40"
-          />
-          <button
-            type="submit"
-            disabled={!inputValue.trim() || processing}
-            className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+        {pendingField === 'file' ? (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm bg-white/[0.04] border border-dashed border-white/20 rounded-xl text-gray-300 hover:bg-white/[0.06] hover:border-purple-500/30 transition-all"
+            >
+              <Upload className="w-4 h-4 text-purple-400" />
+              Choose File (PDF, Word, PPT)
+            </button>
+          </div>
+        ) : (
+          <form
+            onSubmit={(e) => { e.preventDefault(); handleTextSubmit(); }}
+            className="flex items-center gap-2"
           >
-            <Send className="w-4 h-4" />
-          </button>
-        </form>
+            <input
+              ref={inputRef}
+              type={pendingField === 'amount' ? 'number' : (pendingField === 'date' || pendingField === 'startDate' || pendingField === 'endDate') ? 'date' : pendingField === 'startTime' ? 'time' : 'text'}
+              step={pendingField === 'amount' ? '0.01' : undefined}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder={
+                pendingField === 'confirm' ? 'Use the buttons above...'
+                : pendingField ? 'Type your answer...'
+                : 'Select an option above...'
+              }
+              disabled={processing || pendingField === 'confirm' || (!pendingField && !draft)}
+              className="flex-1 px-4 py-3 text-sm bg-white/[0.04] border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500/30 transition disabled:opacity-40"
+            />
+            <button
+              type="submit"
+              disabled={!inputValue.trim() || processing}
+              className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );
@@ -694,7 +952,7 @@ function BotMessage({
 
         {/* Main menu buttons */}
         {msg.componentType === 'main-menu' && msg.options && (
-          <div className="grid grid-cols-2 gap-2 max-w-sm">
+          <div className="grid grid-cols-2 gap-2 max-w-md">
             {msg.options.map((opt) => (
               <button
                 key={opt.value}
@@ -779,8 +1037,10 @@ function ConfirmationCard({ draft, onConfirm, onCancel }: { draft: DraftPayload;
         {draft.type === 'schedule' && <CalendarDays className="w-3.5 h-3.5 text-blue-400" />}
         {draft.type === 'task' && <CheckSquare className="w-3.5 h-3.5 text-green-400" />}
         {draft.type === 'study' && <BookOpen className="w-3.5 h-3.5 text-purple-400" />}
+        {draft.type === 'collab-schedule' && <Users className="w-3.5 h-3.5 text-cyan-400" />}
+        {draft.type === 'collab-resource' && <Link2 className="w-3.5 h-3.5 text-pink-400" />}
         <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-          {draft.type === 'expense' ? 'New Expense' : draft.type === 'schedule' ? 'New Schedule' : draft.type === 'task' ? 'New Task' : 'Study Task'}
+          {draft.type === 'expense' ? 'New Expense' : draft.type === 'schedule' ? 'New Schedule' : draft.type === 'task' ? 'New Task' : draft.type === 'study' ? 'Study Task' : draft.type === 'collab-schedule' ? 'Group Schedule Task' : 'Group Resource'}
         </span>
       </div>
 
@@ -815,6 +1075,25 @@ function ConfirmationCard({ draft, onConfirm, onCancel }: { draft: DraftPayload;
             <Field label="Subject" value={draft.subject} />
             <Field label="Due Date" value={draft.date} />
             <Field label="Importance" value={draft.importance ? ['', 'Low', 'Medium', 'High'][draft.importance] : undefined} />
+          </>
+        )}
+        {draft.type === 'collab-schedule' && (
+          <>
+            <Field label="Group" value={draft.groupName} />
+            <Field label="Task" value={draft.name} />
+            <Field label="Priority" value={draft.priority} />
+            <Field label="Start" value={draft.startDate} />
+            <Field label="End" value={draft.endDate} />
+            {draft.estimatedTime && <Field label="Est. Time" value={draft.estimatedTime} />}
+          </>
+        )}
+        {draft.type === 'collab-resource' && (
+          <>
+            <Field label="Group" value={draft.groupName} />
+            <Field label="Type" value={draft.resourceType === 'link' ? 'Link' : 'File'} />
+            {draft.title && <Field label="Title" value={draft.title} />}
+            {draft.url && <Field label="URL" value={draft.url} />}
+            {draft.file && <Field label="File" value={draft.file.name} />}
           </>
         )}
       </div>

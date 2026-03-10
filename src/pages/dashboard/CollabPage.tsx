@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -7,6 +8,7 @@ import {
   MessageSquare, ExternalLink, Copy, Check, X,
   Github, Figma, Globe, File, Trash2, MoreVertical,
   UserPlus, UserMinus, Pencil, StickyNote, Bell, Archive, ArchiveRestore, ArrowLeft,
+  Shield, Info, AlertTriangle,
 } from 'lucide-react';
 import { HoverTip } from '@/components/HoverTip';
 import { useAuth } from '@/hooks/useAuth';
@@ -36,8 +38,11 @@ import {
   updateGroupTask,
   deleteGroupTask,
   getGroupSchedules,
-  upsertUserSchedule,
-  type GroupMemberSchedule
+  deleteGroup,
+  getGroupScheduleTasks,
+  createGroupScheduleTask,
+  type GroupMemberSchedule,
+  type ScheduleTask,
 } from '@/lib/collabService';
 import { supabase } from '@/lib/supabase';
 import {
@@ -54,6 +59,7 @@ interface GroupProject {
   id: string;
   name: string;
   joinCode: string;
+  creatorId: string;
 }
 
 interface GroupMember {
@@ -119,23 +125,6 @@ function formatTime(d: Date) {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function formatHour(h: number) {
-  return h <= 12 ? `${h}AM` : `${h - 12}PM`;
-}
-
-function getWeekLabel(offset: number): string {
-  const now = new Date();
-  const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, ...
-  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  const monday = new Date(now);
-  monday.setDate(now.getDate() + diffToMonday + offset * 7);
-  const friday = new Date(monday);
-  friday.setDate(monday.getDate() + 4);
-  const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  return `${fmt(monday)} – ${fmt(friday)}`;
-}
-
-
 const fadeUp = {
   hidden: { opacity: 0, y: 12 },
   show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
@@ -186,7 +175,8 @@ export function CollabPage() {
         const mapped = g.map((x: any) => ({
           id: x.id,
           name: x.name,
-          joinCode: x.invite_code
+          joinCode: x.invite_code,
+          creatorId: x.creator_id,
         }));
         setProjects(mapped);
         if (mapped.length > 0 && !selectedProject) {
@@ -206,7 +196,7 @@ export function CollabPage() {
           initials: generateInitials(x.username),
           color: 'bg-purple-500',
           isOnline: true, // simplified mock
-          role: 'member'
+          role: x.uid === selectedProject.creatorId ? 'admin' : 'member',
         })));
       }).catch(console.error);
     }
@@ -217,7 +207,7 @@ export function CollabPage() {
     setIsSubmitting(true);
     try {
       const g = await createGroup(modalInput.trim(), user.id);
-      const newProj = { id: g.id, name: g.name, joinCode: g.invite_code };
+      const newProj = { id: g.id, name: g.name, joinCode: g.invite_code, creatorId: g.creator_id };
       setProjects(prev => [...prev, newProj]);
       setSelectedProject(newProj);
       toast.success('Group created successfully! Invite code: ' + g.invite_code);
@@ -238,7 +228,7 @@ export function CollabPage() {
     setIsSubmitting(true);
     try {
       const g = await joinGroupByCode(modalInput.trim(), user.id);
-      const newProj = { id: g.id, name: g.name, joinCode: g.invite_code };
+      const newProj = { id: g.id, name: g.name, joinCode: g.invite_code, creatorId: g.creator_id };
       setProjects(prev => {
         if (!prev.find(p => p.id === newProj.id)) return [...prev, newProj];
         return prev;
@@ -254,11 +244,13 @@ export function CollabPage() {
     }
   }
 
+  const [collabView, setCollabView] = useState<'chat' | 'schedule'>('chat');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [tasks, setTasks] = useState<SharedTask[]>([]);
-  const [schedules, setSchedules] = useState<GroupMemberSchedule[]>([]);
-  const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
-  const [scheduleScale, setScheduleScale] = useState<'week' | 'month'>('week');
+  const [scheduleTasks, setScheduleTasks] = useState<ScheduleTask[]>([]);
+  const [, setSchedules] = useState<GroupMemberSchedule[]>([]);
+  const [currentWeekOffset] = useState(0);
+  const [scheduleScale] = useState<'week' | 'month'>('week');
   const scrollLockRef = useRef<number | null>(null);
   const [chatInput, setChatInput] = useState('');
   const [showNewTask, setShowNewTask] = useState(false);
@@ -309,6 +301,9 @@ export function CollabPage() {
           setSchedules(data);
         }
       }).catch(console.error);
+
+      // Load schedule calendar tasks
+      getGroupScheduleTasks(selectedProject.id).then(setScheduleTasks).catch(console.error);
 
       // Real-time Kanban syncing
       const tasksChannel = supabase.channel(`group_tasks_${selectedProject.id}`)
@@ -387,15 +382,28 @@ export function CollabPage() {
         )
         .subscribe();
 
+      // Real-time Schedule Tasks (Calendar) Syncing
+      const scheduleTasksChannel = supabase.channel(`group_schedule_tasks_${selectedProject.id}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'group_schedule_tasks', filter: `group_id=eq.${selectedProject.id}` },
+          () => {
+            getGroupScheduleTasks(selectedProject.id).then(setScheduleTasks).catch(console.error);
+          }
+        )
+        .subscribe();
+
       return () => {
         supabase.removeChannel(tasksChannel);
         supabase.removeChannel(messagesChannel);
         supabase.removeChannel(schedulesChannel);
+        supabase.removeChannel(scheduleTasksChannel);
       };
     } else {
       setMessages([]);
       setTasks([]);
       setSchedules([]);
+      setScheduleTasks([]);
     }
   }, [selectedProject, currentWeekOffset, scheduleScale]);
 
@@ -528,24 +536,6 @@ export function CollabPage() {
     }
   }
 
-  async function toggleScheduleSlot(day: string, hour: number) {
-    if (!user || !selectedProject) return;
-    const mySlot = schedules.find(s => s.userId === user.id && s.day === day && s.hour === hour);
-    const newStatus = mySlot?.status === 'free' ? 'busy' : 'free';
-
-    setSchedules(prev => {
-      const filtered = prev.filter(s => !(s.userId === user.id && s.day === day && s.hour === hour));
-      return [...filtered, { groupId: selectedProject.id, userId: user.id, weekOffset: currentWeekOffset, day, hour, status: newStatus }];
-    });
-
-    try {
-      await upsertUserSchedule(selectedProject.id, user.id, currentWeekOffset, day, hour, newStatus);
-    } catch (e: any) {
-      console.error('Failed to update schedule slot:', e);
-      toast.error('Failed to update schedule');
-    }
-  }
-
   async function addTask() {
     const title = newTaskTitle.trim();
     if (!title || !selectedProject || !user) return;
@@ -604,6 +594,28 @@ export function CollabPage() {
   const archivedTasks = projectTasks.filter(t => t.status === 'archived');
 
   const [showArchived, setShowArchived] = useState(false);
+  const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const [confirmDeleteGroup, setConfirmDeleteGroup] = useState(false);
+  const [isDeletingGroup, setIsDeletingGroup] = useState(false);
+
+  async function handleDeleteGroup() {
+    if (!user || !selectedProject) return;
+    setIsDeletingGroup(true);
+    try {
+      await deleteGroup(selectedProject.id, user.id);
+      toast.success('Group deleted successfully.');
+      setConfirmDeleteGroup(false);
+      setShowGroupInfo(false);
+      setProjects(prev => prev.filter(p => p.id !== selectedProject.id));
+      const remaining = projects.filter(p => p.id !== selectedProject.id);
+      setSelectedProject(remaining.length > 0 ? remaining[0] : null);
+      localStorage.removeItem('collab-project');
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to delete group');
+    } finally {
+      setIsDeletingGroup(false);
+    }
+  }
 
   const hasProjects = projects.length > 0;
 
@@ -716,41 +728,77 @@ export function CollabPage() {
         </motion.div>
       ) : (
         <>
-          {/* ── Active Members ─────────────────────────────── */}
-          <div className="flex items-center gap-3">
-            <div className="flex -space-x-2">
-              {members.map(m => (
-                <div key={m.userId} className="relative" title={m.name}>
-                  <div className="border-2 border-[#0B0A1A] rounded-full">
-                    <MemberAvatar member={m} />
+          {/* ── Active Members + View Toggle ────────────────── */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex -space-x-2">
+                {members.map(m => (
+                  <div key={m.userId} className="relative" title={m.name}>
+                    <div className="border-2 border-[#0B0A1A] rounded-full">
+                      <MemberAvatar member={m} />
+                    </div>
+                    {m.isOnline && (
+                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-[#0B0A1A]" />
+                    )}
                   </div>
-                  {m.isOnline && (
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-[#0B0A1A]" />
-                  )}
-                </div>
-              ))}
+                ))}
+              </div>
+              <span className="text-xs text-gray-500">{members.length} members</span>
             </div>
-            <span className="text-xs text-gray-500">{members.length} members</span>
+
+            {/* Segmented Control Toggle */}
+            <div className="flex items-center bg-white/5 rounded-xl p-1 border border-white/10">
+              <button
+                onClick={() => setCollabView('chat')}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${collabView === 'chat'
+                  ? 'bg-purple-500/30 text-purple-300 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                Chat
+              </button>
+              <button
+                onClick={() => setCollabView('schedule')}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${collabView === 'schedule'
+                  ? 'bg-purple-500/30 text-purple-300 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                Schedule Matcher
+              </button>
+            </div>
           </div>
 
-          {/* ── Main Layout Wrapper ────────────────────────── */}
+          {collabView === 'chat' ? (
+          <>
+          {/* ── Chat View Layout ─────────────────────────── */}
           <div className="flex flex-col xl:flex-row gap-6">
 
             {/* ── Main Content Area ─────────────────────────── */}
             <div className="flex-1 space-y-6 min-w-0">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                {/* ── Left: Chat ───────────────────────────────── */}
+                {/* ── Chat Panel ───────────────────────────────── */}
                 <motion.div
                   variants={fadeUp}
                   initial="hidden"
                   animate="show"
-                  className="lg:col-span-1 flex flex-col h-[600px] rounded-xl bg-white/[0.03] border border-white/10 overflow-hidden"
+                  className="flex flex-col h-[600px] rounded-xl bg-white/[0.03] border border-white/10 overflow-hidden"
                 >
-                  <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
-                    <MessageSquare className="w-4 h-4 text-purple-400" />
-                    <span className="text-sm font-semibold text-white">Project Chat</span>
-                  </div>
+                  <button
+                    onClick={() => setShowGroupInfo(true)}
+                    className="flex items-center gap-3 w-full px-4 py-3 border-b border-white/10 hover:bg-white/[0.04] transition-colors cursor-pointer group/header"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                      {selectedProject ? generateInitials(selectedProject.name) : '?'}
+                    </div>
+                    <div className="flex-1 text-left min-w-0">
+                      <span className="text-sm font-semibold text-white block truncate">{selectedProject?.name || 'Project Chat'}</span>
+                      <span className="text-[10px] text-gray-500">{members.length} members · tap for info</span>
+                    </div>
+                    <Info className="w-4 h-4 text-gray-500 group-hover/header:text-purple-400 transition-colors shrink-0" />
+                  </button>
 
                   <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin">
                     {(() => {
@@ -861,215 +909,6 @@ export function CollabPage() {
                     </div>
                   </div>
                 </motion.div>
-
-                {/* ── Right Column ─────────────────────────────── */}
-                <div className="lg:col-span-2 space-y-6">
-
-                  {/* ── Schedule Matcher ──────────────────────────── */}
-                  <motion.div
-                    variants={fadeUp}
-                    initial="hidden"
-                    animate="show"
-                    className="rounded-xl bg-white/[0.03] border border-white/10 p-4"
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-purple-400" />
-                        <span className="text-sm font-semibold text-white">Schedule Matcher</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        {/* Scale toggle */}
-                        <div className="flex items-center bg-white/5 rounded-lg p-0.5 border border-white/10">
-                          <button
-                            onClick={() => {
-                              scrollLockRef.current = window.scrollY;
-                              setScheduleScale('week');
-                            }}
-                            className={`px-2.5 py-1 rounded-md text-[10px] font-medium transition-all ${scheduleScale === 'week'
-                              ? 'bg-purple-500/30 text-purple-300 shadow-sm'
-                              : 'text-gray-500 hover:text-gray-300'
-                              }`}
-                          >
-                            Week
-                          </button>
-                          <button
-                            onClick={() => {
-                              scrollLockRef.current = window.scrollY;
-                              setScheduleScale('month');
-                            }}
-                            className={`px-2.5 py-1 rounded-md text-[10px] font-medium transition-all ${scheduleScale === 'month'
-                              ? 'bg-purple-500/30 text-purple-300 shadow-sm'
-                              : 'text-gray-500 hover:text-gray-300'
-                              }`}
-                          >
-                            Month
-                          </button>
-                        </div>
-                        {/* Today button */}
-                        {currentWeekOffset !== 0 && (
-                          <button
-                            onClick={() => setCurrentWeekOffset(0)}
-                            className="px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-300 text-[10px] font-semibold hover:bg-purple-500/30 transition-colors border border-purple-500/30"
-                          >
-                            Today
-                          </button>
-                        )}
-                        {/* Week navigation */}
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => setCurrentWeekOffset(w => Math.max(0, w - 1))}
-                            disabled={currentWeekOffset === 0}
-                            className="p-1 rounded-md text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                          >
-                            <ChevronLeft className="w-4 h-4" />
-                          </button>
-                          <span className="text-xs text-gray-300 min-w-[120px] text-center font-medium">
-                            {currentWeekOffset === 0 ? 'This Week' : `Week +${currentWeekOffset}`}
-                          </span>
-                          <button
-                            onClick={() => setCurrentWeekOffset(w => Math.min(26, w + 1))}
-                            disabled={currentWeekOffset >= 26}
-                            className="p-1 rounded-md text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                          >
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
-                        </div>
-                        <span className="text-[10px] text-purple-400 font-medium">{getWeekLabel(currentWeekOffset)}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-3 text-[10px] text-gray-500">
-                        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-green-500/60" /> All free</span>
-                        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-amber-500/50" /> Some busy</span>
-                        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-white/5 border border-white/10" /> Not set</span>
-                      </div>
-                      <span className="text-[10px] text-gray-600 italic">Click a cell to toggle your availability</span>
-                    </div>
-
-                    <div className="h-[400px] overflow-x-auto overflow-y-auto scrollbar-thin">
-                      <div className="min-w-[500px]">
-                        {/* Header row */}
-                        <div className="grid gap-1" style={{ gridTemplateColumns: `80px repeat(${[9, 10, 11, 12, 13, 14, 15, 16].length}, 1fr)` }}>
-                          <div />
-                          {[9, 10, 11, 12, 13, 14, 15, 16].map(h => (
-                            <div key={h} className="text-center text-[10px] text-gray-500 pb-1">{formatHour(h)}</div>
-                          ))}
-                        </div>
-                        {/* Day rows - render 1 week (week view) or 4 weeks (month view) */}
-                        {Array.from({ length: scheduleScale === 'month' ? 4 : 1 }, (_, weekIdx) => {
-                          const weekOff = currentWeekOffset + weekIdx;
-                          if (weekOff > 26) return null;
-                          return (
-                            <div key={weekOff}>
-                              {scheduleScale === 'month' && (
-                                <div className="text-[10px] text-purple-400/70 font-medium mt-2 mb-1 pl-1">
-                                  {getWeekLabel(weekOff)}
-                                </div>
-                              )}
-                              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map(day => (
-                                <div key={`${weekOff}-${day}`} className="grid gap-1 mb-1" style={{ gridTemplateColumns: `80px repeat(${[9, 10, 11, 12, 13, 14, 15, 16].length}, 1fr)` }}>
-                                  <div className="text-xs text-gray-400 flex items-center">{day}</div>
-                                  {[9, 10, 11, 12, 13, 14, 15, 16].map(hour => {
-                                    const slotData = schedules.filter(s => s.day === day && s.hour === hour && s.weekOffset === weekOff);
-
-                                    const mySlot = slotData.find(s => s.userId === user?.id);
-                                    const myStatus = mySlot?.status || null; // null = not set yet
-
-                                    // Calculate group availability
-                                    const freeMembers = slotData.filter(s => s.status === 'free');
-                                    const busyMembers = slotData.filter(s => s.status === 'busy');
-
-                                    let availability: 'free' | 'partial' | 'notset' = 'notset';
-
-                                    if (freeMembers.length > 0 && busyMembers.length === 0) {
-                                      availability = 'free';
-                                    } else if (freeMembers.length > 0 && busyMembers.length > 0) {
-                                      availability = 'partial';
-                                    } else if (busyMembers.length > 0) {
-                                      availability = 'partial';
-                                    }
-
-                                    const bg = availability === 'free'
-                                      ? 'bg-green-500/40 hover:bg-green-500/60 border-green-500/30'
-                                      : availability === 'partial'
-                                        ? 'bg-amber-500/30 hover:bg-amber-500/50 border-amber-500/30'
-                                        : 'bg-white/[0.03] hover:bg-white/[0.08] border-white/5';
-
-                                    const cellHeight = scheduleScale === 'month' ? 'h-5' : 'h-8';
-
-                                    // Build tooltip showing member statuses
-                                    const freeMemberNames = freeMembers.map(s => {
-                                      const m = members.find(mb => mb.userId === s.userId);
-                                      return m?.name || 'Unknown';
-                                    });
-                                    const busyMemberNames = busyMembers.map(s => {
-                                      const m = members.find(mb => mb.userId === s.userId);
-                                      return m?.name || 'Unknown';
-                                    });
-
-                                    let tooltipLines = `${day} ${hour}:00`;
-                                    if (freeMemberNames.length > 0) tooltipLines += `\n✓ Free: ${freeMemberNames.join(', ')}`;
-                                    if (busyMemberNames.length > 0) tooltipLines += `\n✕ Busy: ${busyMemberNames.join(', ')}`;
-                                    if (myStatus === null) tooltipLines += `\n\nClick to mark yourself as FREE`;
-                                    else tooltipLines += `\n\nClick to toggle (currently ${myStatus.toUpperCase()})`;
-
-                                    return (
-                                      <div
-                                        key={`${weekOff}-${day}-${hour}`}
-                                        onClick={() => {
-                                          scrollLockRef.current = window.scrollY;
-                                          setCurrentWeekOffset(weekOff);
-                                          toggleScheduleSlot(day, hour);
-                                        }}
-                                        className={`${cellHeight} rounded-md ${bg} border transition-all cursor-pointer flex items-center justify-center group relative`}
-                                        title={tooltipLines}
-                                      >
-                                        {/* Show icon for YOUR status */}
-                                        {scheduleScale === 'week' && myStatus === 'free' && (
-                                          <Check className="w-3 h-3 text-green-400/80" />
-                                        )}
-                                        {scheduleScale === 'week' && myStatus === 'busy' && (
-                                          <X className="w-3 h-3 text-red-400/60" />
-                                        )}
-                                        {scheduleScale === 'week' && myStatus === null && (
-                                          <span className="w-1 h-1 rounded-full bg-white/20 group-hover:bg-white/40 transition-colors" />
-                                        )}
-                                        {/* Month view: smaller dot indicators */}
-                                        {scheduleScale === 'month' && myStatus === 'free' && (
-                                          <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                                        )}
-                                        {scheduleScale === 'month' && myStatus === 'busy' && (
-                                          <span className="w-1.5 h-1.5 rounded-full bg-red-400/60" />
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              ))}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="mt-3 flex items-center justify-between">
-                      <div className="flex items-center gap-4 text-[10px] text-gray-500">
-                        <span className="flex items-center gap-1"><Check className="w-3 h-3 text-green-400" /> You're free</span>
-                        <span className="flex items-center gap-1"><X className="w-3 h-3 text-red-400/60" /> You're busy</span>
-                        <span className="flex items-center gap-1"><span className="w-1 h-1 rounded-full bg-white/30" /> Not set</span>
-                      </div>
-                      <HoverTip label="Suggest a meeting during a free slot">
-                        <button
-                          onClick={() => toast('Meeting proposal coming soon!', { description: 'Scheduling integration is under development.' })}
-                          className="text-xs text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1"
-                        >
-                          <Clock className="w-3.5 h-3.5" /> Propose Meeting
-                        </button>
-                      </HoverTip>
-                    </div>
-                  </motion.div>
-                </div>
-              </div>
 
               {/* ── Resource Vault ────────────────────────────── */}
               <ResourceVault selectedProject={selectedProject} members={members} />
@@ -1277,6 +1116,16 @@ export function CollabPage() {
             </div>
 
           </div>
+          </>
+          ) : (
+            /* ── Schedule Matcher View ──────────────────────── */
+            <ScheduleMatcherCalendar
+              selectedProject={selectedProject}
+              scheduleTasks={scheduleTasks}
+              setScheduleTasks={setScheduleTasks}
+              user={user}
+            />
+          )}
         </>
       )}
 
@@ -1425,6 +1274,156 @@ export function CollabPage() {
               <div className="flex gap-3">
                 <button onClick={() => setConfirmArchiveTask(null)} className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-gray-300 font-semibold hover:bg-white/5 transition-colors">Cancel</button>
                 <button onClick={handleArchiveTask} className="flex-1 px-4 py-2.5 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors">Archive</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Group Info Panel (WhatsApp-style slide-over) ─────────────── */}
+      <AnimatePresence>
+        {showGroupInfo && selectedProject && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowGroupInfo(false)}
+              className="fixed inset-0 bg-black/60 z-50"
+            />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+              className="fixed right-0 top-0 h-full w-full max-w-sm bg-[#0B0A1A] border-l border-white/10 z-50 flex flex-col shadow-2xl"
+            >
+              {/* Panel Header */}
+              <div className="flex items-center gap-3 px-5 py-4 border-b border-white/[0.06]">
+                <button
+                  onClick={() => setShowGroupInfo(false)}
+                  className="p-1.5 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                <span className="text-sm font-semibold text-white">Group Info</span>
+              </div>
+
+              {/* Group Avatar & Name */}
+              <div className="flex flex-col items-center px-5 py-8 border-b border-white/[0.06]">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-2xl mb-4 shadow-lg shadow-purple-500/20">
+                  {generateInitials(selectedProject.name)}
+                </div>
+                <h2 className="text-lg font-bold text-white mb-1">{selectedProject.name}</h2>
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <span>Group · {members.length} members</span>
+                </div>
+                <div className="flex items-center gap-2 mt-3 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
+                  <span className="text-[10px] text-gray-400 font-mono">Invite: {selectedProject.joinCode}</span>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(selectedProject.joinCode); toast.success('Invite code copied!'); }}
+                    className="p-1 rounded hover:bg-white/10 text-gray-500 hover:text-white transition-colors"
+                  >
+                    <Copy className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Members List */}
+              <div className="flex-1 overflow-y-auto px-5 py-4 scrollbar-thin">
+                <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-3">{members.length} Members</p>
+                <div className="space-y-1">
+                  {/* Sort so creator appears first */}
+                  {[...members]
+                    .sort((a, b) => {
+                      if (a.userId === selectedProject.creatorId) return -1;
+                      if (b.userId === selectedProject.creatorId) return 1;
+                      return a.name.localeCompare(b.name);
+                    })
+                    .map(member => {
+                      const isCreator = member.userId === selectedProject.creatorId;
+                      const isMe = member.userId === user?.id;
+                      return (
+                        <div key={member.userId} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-white/[0.04] transition-colors">
+                          <div className="relative">
+                            <MemberAvatar member={member} />
+                            {member.isOnline && (
+                              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-[#0B0A1A]" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-white truncate">{member.name}{isMe ? ' (You)' : ''}</span>
+                              {isCreator && (
+                                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-purple-500/20 text-purple-400 text-[9px] font-bold uppercase shrink-0">
+                                  <Shield className="w-2.5 h-2.5" />
+                                  Creator
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+
+              {/* Danger Zone - Only visible to creator */}
+              {user?.id === selectedProject.creatorId && (
+                <div className="px-5 py-4 border-t border-white/[0.06]">
+                  <p className="text-[10px] text-red-400/60 uppercase tracking-wider font-semibold mb-3">Danger Zone</p>
+                  <button
+                    onClick={() => setConfirmDeleteGroup(true)}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 font-semibold text-sm hover:bg-red-500/20 hover:border-red-500/30 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete Group
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ── Confirm Delete Group Modal ─────────────────────────────── */}
+      <AnimatePresence>
+        {confirmDeleteGroup && selectedProject && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => !isDeletingGroup && setConfirmDeleteGroup(false)}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-sm rounded-2xl bg-[#0B0A1A] border border-red-500/20 p-6 shadow-2xl"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2.5 rounded-full bg-red-500/20">
+                  <AlertTriangle className="w-5 h-5 text-red-400" />
+                </div>
+                <h3 className="text-lg font-bold text-white">Delete Group</h3>
+              </div>
+              <p className="text-sm text-gray-400 mb-2">
+                Are you sure you want to permanently delete <span className="text-white font-semibold">"{selectedProject.name}"</span>?
+              </p>
+              <p className="text-xs text-red-400/80 mb-5 bg-red-500/10 rounded-lg px-3 py-2 border border-red-500/10">
+                This will permanently delete all messages, tasks, files, links, and schedules for every member in this group. This action cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmDeleteGroup(false)}
+                  disabled={isDeletingGroup}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-gray-300 font-semibold hover:bg-white/5 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteGroup}
+                  disabled={isDeletingGroup}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isDeletingGroup ? 'Deleting...' : 'Delete Forever'}
+                </button>
               </div>
             </motion.div>
           </div>
@@ -1796,6 +1795,407 @@ function FriendSidebar() {
 
 
     </>
+  );
+}
+
+// ── Schedule Matcher Calendar Component ──────────────────────────────────
+
+const TASK_BAR_COLORS = [
+  { bg: 'bg-purple-500/90', border: 'border-purple-400/60', shadow: 'shadow-purple-500/30' },
+  { bg: 'bg-emerald-500/90', border: 'border-emerald-400/60', shadow: 'shadow-emerald-500/30' },
+  { bg: 'bg-blue-500/90', border: 'border-blue-400/60', shadow: 'shadow-blue-500/30' },
+  { bg: 'bg-rose-500/90', border: 'border-rose-400/60', shadow: 'shadow-rose-500/30' },
+  { bg: 'bg-amber-500/90', border: 'border-amber-400/60', shadow: 'shadow-amber-500/30' },
+  { bg: 'bg-cyan-500/90', border: 'border-cyan-400/60', shadow: 'shadow-cyan-500/30' },
+];
+
+function ScheduleMatcherCalendar({
+  selectedProject,
+  scheduleTasks,
+  setScheduleTasks,
+  user,
+}: {
+  selectedProject: GroupProject | null;
+  scheduleTasks: ScheduleTask[];
+  setScheduleTasks: React.Dispatch<React.SetStateAction<ScheduleTask[]>>;
+  user: any;
+}) {
+  const [calMonth, setCalMonth] = useState(() => new Date().getMonth());
+  const [calYear, setCalYear] = useState(() => new Date().getFullYear());
+  const [showNewTaskModal, setShowNewTaskModal] = useState(false);
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  function prevMonth() {
+    if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); }
+    else setCalMonth(m => m - 1);
+  }
+  function nextMonth() {
+    if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1); }
+    else setCalMonth(m => m + 1);
+  }
+
+  // Build calendar grid
+  const firstDay = new Date(calYear, calMonth, 1);
+  const lastDay = new Date(calYear, calMonth + 1, 0);
+  const startDow = firstDay.getDay(); // 0=Sun
+  const daysInMonth = lastDay.getDate();
+
+  // Fill grid: leading blanks + days
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < startDow; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  // Trailing blanks to fill last row
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const weeks: (number | null)[][] = [];
+  for (let i = 0; i < cells.length; i += 7) {
+    weeks.push(cells.slice(i, i + 7));
+  }
+
+  // Helper to get YYYY-MM-DD for a day number
+  function toDateStr(day: number) {
+    return `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
+
+  // For each week, find tasks that overlap
+  function getWeekTasks(week: (number | null)[]) {
+    const validDays = week.filter((d): d is number => d !== null);
+    if (validDays.length === 0) return [];
+    const weekStart = toDateStr(validDays[0]);
+    const weekEnd = toDateStr(validDays[validDays.length - 1]);
+
+    return scheduleTasks.filter(t => t.startDate <= weekEnd && t.endDate >= weekStart);
+  }
+
+  // Map a date to its column index within the week
+  function getColForDate(dateStr: string, week: (number | null)[]) {
+    const day = parseInt(dateStr.split('-')[2], 10);
+    const month = parseInt(dateStr.split('-')[1], 10) - 1;
+    const year = parseInt(dateStr.split('-')[0], 10);
+
+    if (year === calYear && month === calMonth) {
+      const idx = week.indexOf(day);
+      if (idx >= 0) return idx;
+    }
+    // Before this week
+    if (dateStr < toDateStr(week.find(d => d !== null)!)) return 0;
+    // After this week
+    return 6;
+  }
+
+  return (
+    <>
+    <motion.div
+      variants={fadeUp}
+      initial="hidden"
+      animate="show"
+      className="rounded-xl bg-[#121212] border border-white/10 overflow-hidden"
+    >
+      {/* Calendar Header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+        <div className="flex items-center gap-3">
+          <Calendar className="w-5 h-5 text-purple-400" />
+          <h2 className="text-lg font-bold text-white">{monthNames[calMonth]} {calYear}</h2>
+        </div>
+        <div className="flex items-center gap-2">
+          <HoverTip label="Add a task to the schedule">
+            <button
+              onClick={() => setShowNewTaskModal(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold hover:opacity-90 transition-opacity mr-3"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add Task
+            </button>
+          </HoverTip>
+          <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => { setCalMonth(today.getMonth()); setCalYear(today.getFullYear()); }}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-purple-300 hover:bg-purple-500/20 transition-colors border border-purple-500/30"
+          >
+            Today
+          </button>
+          <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Day-of-week Header */}
+      <div className="grid grid-cols-7 border-b border-gray-800">
+        {dayNames.map(d => (
+          <div key={d} className="py-2.5 text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+            {d}
+          </div>
+        ))}
+      </div>
+
+      {/* Calendar Grid */}
+      <div>
+        {weeks.map((week, wi) => {
+          const weekTasks = getWeekTasks(week);
+
+          return (
+            <div key={wi} className="border-b border-gray-800 last:border-b-0">
+              {/* Day Numbers Row */}
+              <div className="grid grid-cols-7">
+                {week.map((day, di) => {
+                  const dateStr = day ? toDateStr(day) : '';
+                  const isToday = dateStr === todayStr;
+
+                  return (
+                    <div
+                      key={di}
+                      className={`min-h-[40px] px-2 py-1.5 border-r border-gray-800 last:border-r-0 ${day === null ? 'bg-[#0a0a0a]' : ''}`}
+                    >
+                      {day !== null && (
+                        <div className="flex justify-start">
+                          {isToday ? (
+                            <div className="w-7 h-7 rounded-full bg-white text-black flex items-center justify-center text-xs font-bold">
+                              {day}
+                            </div>
+                          ) : (
+                            <span className="w-7 h-7 flex items-center justify-center text-xs text-gray-400">
+                              {day}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Task Bars */}
+              {weekTasks.length > 0 && (
+                <div className="px-0.5 pb-2 space-y-1">
+                  {weekTasks.map((task) => {
+                    const colorIdx = scheduleTasks.indexOf(task) % TASK_BAR_COLORS.length;
+                    const color = TASK_BAR_COLORS[colorIdx];
+
+                    // Calculate start/end columns
+                    const startCol = getColForDate(task.startDate, week);
+                    const endCol = getColForDate(task.endDate, week);
+                    const span = endCol - startCol + 1;
+
+                    // Calculate percentage-based positioning
+                    const leftPct = (startCol / 7) * 100;
+                    const widthPct = (span / 7) * 100;
+
+                    const priorityBadge = task.priority === 'High' ? '🔴' : task.priority === 'Medium' ? '🟡' : task.priority === 'Low' ? '🟢' : '';
+
+                    return (
+                      <div
+                        key={task.id}
+                        className="relative h-8"
+                      >
+                        <div
+                          className={`absolute top-0 h-full ${color.bg} border ${color.border} rounded-lg flex items-center gap-1.5 px-2.5 overflow-hidden cursor-default shadow-md ${color.shadow} hover:brightness-110 transition-all`}
+                          style={{
+                            left: `${leftPct}%`,
+                            width: `${widthPct}%`,
+                          }}
+                          title={`${task.name}\n${task.startDate} → ${task.endDate}${task.priority !== 'None' ? `\nPriority: ${task.priority}` : ''}${task.estimatedTime ? `\nEst: ${task.estimatedTime}` : ''}`}
+                        >
+                          {priorityBadge && <span className="text-[10px] shrink-0">{priorityBadge}</span>}
+                          <span className="text-[13px] font-medium text-white truncate drop-shadow-sm">{task.name}</span>
+                          {task.estimatedTime && (
+                            <span className="text-[10px] text-white/70 shrink-0 ml-auto">{task.estimatedTime}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+    </motion.div>
+
+      {/* New Task Modal — rendered outside motion.div to fix centering */}
+      <AnimatePresence>
+        {showNewTaskModal && (
+          <NewScheduleTaskModal
+            onClose={() => setShowNewTaskModal(false)}
+            selectedProject={selectedProject}
+            user={user}
+            onCreated={(task) => {
+              setScheduleTasks(prev => [...prev, task]);
+              setShowNewTaskModal(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
+// ── New Schedule Task Modal ──────────────────────────────────────────────
+
+function NewScheduleTaskModal({
+  onClose,
+  selectedProject,
+  user,
+  onCreated,
+}: {
+  onClose: () => void;
+  selectedProject: GroupProject | null;
+  user: any;
+  onCreated: (task: ScheduleTask) => void;
+}) {
+  const [name, setName] = useState('');
+  const [priority, setPriority] = useState('None');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [estimatedTime, setEstimatedTime] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+
+  async function handleCreate() {
+    if (!name.trim() || !startDate || !endDate || !user || !selectedProject) return;
+    if (endDate < startDate) {
+      toast.error('End date cannot be before start date');
+      return;
+    }
+    setIsCreating(true);
+    try {
+      const task = await createGroupScheduleTask(selectedProject.id, user.id, {
+        name: name.trim(),
+        priority,
+        startDate,
+        endDate,
+        estimatedTime: estimatedTime.trim() || undefined,
+      });
+      onCreated(task);
+      toast.success('Task created!');
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to create task');
+    } finally {
+      setIsCreating(false);
+    }
+  }
+
+  const inputCls = 'w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-purple-500/50 transition-colors';
+  const labelCls = 'text-[11px] text-gray-400 font-semibold uppercase tracking-wider mb-1.5 block';
+
+  return createPortal(
+    <>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 bg-black/60 z-50"
+      />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+        className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg"
+      >
+        <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden">
+          {/* Modal Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
+            <h3 className="text-base font-bold text-white">New Task</h3>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg hover:bg-white/5 text-gray-500 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Modal Body */}
+          <div className="px-6 py-5 space-y-4">
+            {/* NAME */}
+            <div>
+              <label className={labelCls}>Name</label>
+              <input
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="Task name..."
+                className={inputCls}
+                autoFocus
+              />
+            </div>
+
+            {/* PRIORITY */}
+            <div>
+              <label className={labelCls}>Priority</label>
+              <select
+                value={priority}
+                onChange={e => setPriority(e.target.value)}
+                className={inputCls + ' appearance-none cursor-pointer'}
+              >
+                <option value="None">None</option>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+              </select>
+            </div>
+
+            {/* START DATE & END DATE */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>Start Date</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={e => setStartDate(e.target.value)}
+                  className={inputCls + ' cursor-pointer'}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>End Date</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={e => setEndDate(e.target.value)}
+                  className={inputCls + ' cursor-pointer'}
+                />
+              </div>
+            </div>
+
+            {/* ESTIMATED TIME */}
+            <div>
+              <label className={labelCls}>Estimated Time</label>
+              <input
+                value={estimatedTime}
+                onChange={e => setEstimatedTime(e.target.value)}
+                placeholder="e.g. 2 hours"
+                className={inputCls}
+              />
+            </div>
+          </div>
+
+          {/* Modal Footer */}
+          <div className="flex justify-end gap-2 px-6 py-4 border-t border-white/[0.06]">
+            <button
+              onClick={onClose}
+              className="px-5 py-2.5 text-sm rounded-lg border border-white/10 text-gray-400 hover:bg-white/5 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleCreate}
+              disabled={isCreating || !name.trim() || !startDate || !endDate}
+              className="px-5 py-2.5 text-sm font-semibold rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {isCreating ? 'Creating...' : 'Create Task'}
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </>,
+    document.body
   );
 }
 
