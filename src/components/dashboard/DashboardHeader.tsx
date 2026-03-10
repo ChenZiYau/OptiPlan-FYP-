@@ -1,7 +1,8 @@
-import { Menu } from 'lucide-react';
+import { Menu, Flame, Zap } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useGamification } from '@/contexts/GamificationContext';
 import { xpProgressInLevel } from '@/types/gamification';
+import { Link } from 'react-router-dom';
 
 interface DashboardHeaderProps {
   title: string;
@@ -17,10 +18,9 @@ function getGreeting() {
 
 export function DashboardHeader({ title, onMenuToggle }: DashboardHeaderProps) {
   const { profile } = useAuth();
-  const { totalXP, level } = useGamification();
+  const { totalXP, level, streak } = useGamification();
   const firstName = profile?.display_name?.split(' ')[0] ?? 'there';
 
-  // Use the same curved XP formula as AchievementsPage & XPWidget
   const progress = xpProgressInLevel(totalXP);
   const progressPct = Math.min((progress.current / progress.required) * 100, 100);
 
@@ -42,21 +42,36 @@ export function DashboardHeader({ title, onMenuToggle }: DashboardHeaderProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <Link
+        to="/dashboard/achievements"
+        className="flex items-center gap-2 sm:gap-3 group"
+        title="View Achievements"
+      >
+        {/* Streak badge */}
+        {streak > 0 && (
+          <div className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-full bg-orange-500/10 border border-orange-500/20">
+            <Flame className="w-3 h-3 text-orange-400" />
+            <span className="text-[10px] font-semibold text-orange-400">{streak}d</span>
+          </div>
+        )}
+
         {/* XP badge */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-900/30 border border-purple-500/30">
-          <span className="text-xs font-semibold text-purple-300">Lv {level}</span>
-          <div className="w-16 sm:w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-900/30 border border-purple-500/30 group-hover:border-purple-500/50 transition-colors">
+          <div className="flex items-center gap-1.5">
+            <Zap className="w-3 h-3 text-purple-400" />
+            <span className="text-xs font-semibold text-purple-300">Lv {level}</span>
+          </div>
+          <div className="w-16 sm:w-24 h-1.5 bg-white/10 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500"
+              className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-700 ease-out"
               style={{ width: `${progressPct}%` }}
             />
           </div>
-          <span className="text-[10px] text-gray-400 hidden sm:inline">
+          <span className="text-[10px] text-gray-400 hidden sm:inline tabular-nums">
             {progress.current}/{progress.required}
           </span>
         </div>
-      </div>
+      </Link>
     </header>
   );
 }

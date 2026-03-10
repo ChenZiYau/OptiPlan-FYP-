@@ -12,6 +12,14 @@ export type TaskStatusChangeCallback = (
   itemType: ItemType,
 ) => void;
 
+export type ItemCreateCallback = (
+  taskId: string,
+  itemType: ItemType,
+  descWordCount: number,
+) => void;
+
+export type ItemDeleteCallback = (taskId: string) => void;
+
 interface DashboardContextValue {
   // Modal
   isModalOpen: boolean;
@@ -32,8 +40,10 @@ interface DashboardContextValue {
   // Loading
   loading: boolean;
 
-  // Task status change callback (used by gamification)
+  // Gamification callbacks
   onTaskStatusChange: MutableRefObject<TaskStatusChangeCallback | null>;
+  onItemCreate: MutableRefObject<ItemCreateCallback | null>;
+  onItemDelete: MutableRefObject<ItemDeleteCallback | null>;
 }
 
 const DashboardContext = createContext<DashboardContextValue | null>(null);
@@ -47,6 +57,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const itemsRef = useRef(items);
   itemsRef.current = items;
   const onTaskStatusChange = useRef<TaskStatusChangeCallback | null>(null);
+  const onItemCreate = useRef<ItemCreateCallback | null>(null);
+  const onItemDelete = useRef<ItemDeleteCallback | null>(null);
 
   // Fetch data from Supabase when user is available
   useEffect(() => {
@@ -80,6 +92,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     async (item: DashboardItem) => {
       // Optimistic update
       setItems((prev) => [...prev, item]);
+
+      // Trigger gamification for item creation
+      const descWordCount = (item.description || '').split(/\s+/).filter(Boolean).length;
+      onItemCreate.current?.(item.id, item.type, descWordCount);
 
       if (!user) return;
 
@@ -156,6 +172,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       const snapshot = itemsRef.current;
       setItems((prev) => prev.filter((item) => item.id !== id));
 
+      // Trigger gamification for item deletion
+      onItemDelete.current?.(id);
+
       if (!user) return;
 
       const { error } = await supabase.from('dashboard_items').delete().eq('id', id);
@@ -208,12 +227,12 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     () => ({
       isModalOpen, openModal, closeModal, items, addItem,
       updateItem, removeItem, schedules, addSchedule,
-      removeSchedule, loading, onTaskStatusChange,
+      removeSchedule, loading, onTaskStatusChange, onItemCreate, onItemDelete,
     }),
     [
       isModalOpen, items, schedules, loading,
       openModal, closeModal, addItem, updateItem, removeItem,
-      addSchedule, removeSchedule, onTaskStatusChange,
+      addSchedule, removeSchedule, onTaskStatusChange, onItemCreate, onItemDelete,
     ],
   );
 

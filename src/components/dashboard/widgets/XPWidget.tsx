@@ -2,7 +2,8 @@ import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Flame, Trophy, Zap } from 'lucide-react';
 import { useGamification } from '@/contexts/GamificationContext';
-import { xpProgressInLevel, ACHIEVEMENTS } from '@/types/gamification';
+import { xpProgressInLevel } from '@/types/gamification';
+import { ACHIEVEMENTS } from '@/constants/achievements';
 
 export function XPWidget() {
   const { totalXP, level, streak, unlockedAchievements, loading } = useGamification();
