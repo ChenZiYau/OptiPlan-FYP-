@@ -105,7 +105,7 @@
   }
 
   .glow-accent {
-    box-shadow: 0 0 60px rgba(167, 139, 250, 0.18);
+    box-shadow: 0 0 60px var(--color-primary-018, rgba(167, 139, 250, 0.18));
   }
 
   .section-pinned {
@@ -115,7 +115,7 @@
   .bg-radial-glow {
     background: radial-gradient(
       circle at 50% 0%,
-      rgba(167, 139, 250, 0.14),
+      var(--color-primary-014, rgba(167, 139, 250, 0.14)),
       rgba(0, 0, 0, 0) 60%
     );
   }
@@ -419,6 +419,46 @@
   color: #1A1A2E;
 }
 
+/* ── Animated backgrounds (light mode) ───────────────────────────────── */
+.landing-shell.color-mode-light .shader-bg-wrapper {
+  filter: invert(1) hue-rotate(180deg);
+  opacity: 0.45;
+}
+.landing-shell.color-mode-light .shader-bg-overlay {
+  background: rgba(255, 255, 255, 0.35) !important;
+}
+.landing-shell.color-mode-light .grain-overlay {
+  opacity: 0.015 !important;
+}
+
+/* ── Radial glow (light mode — fade to white, not black) ────────────── */
+.landing-shell.color-mode-light .bg-radial-glow {
+  background: radial-gradient(
+    circle at 50% 0%,
+    var(--color-primary-014, rgba(167, 139, 250, 0.14)),
+    rgba(255, 255, 255, 0) 60%
+  ) !important;
+}
+
+/* ── Testimonial fade masks (light mode) ─────────────────────────────── */
+.landing-shell.color-mode-light .from-opti-bg {
+  --tw-gradient-from: #F8F9FA !important;
+  --tw-gradient-to: rgb(248 249 250 / 0) !important;
+}
+
+/* ── Opacity text variants (light mode) ──────────────────────────────── */
+.landing-shell.color-mode-light .text-opti-text-secondary\/60  { color: rgba(75, 85, 99, 0.6) !important; }
+.landing-shell.color-mode-light .text-opti-text-secondary\/50  { color: rgba(75, 85, 99, 0.5) !important; }
+.landing-shell.color-mode-light .text-white\/70                { color: rgba(26, 26, 46, 0.7) !important; }
+
+/* ── Ensure btn-primary text stays dark on gradient bg in light mode ── */
+.landing-shell.color-mode-light .btn-primary { color: #07040A !important; }
+
+/* ── Scrollbar (light mode, landing page) ────────────────────────────── */
+.landing-shell.color-mode-light ::-webkit-scrollbar-track  { background: #e8e8ee; }
+.landing-shell.color-mode-light ::-webkit-scrollbar-thumb  { background: #c0c0cc; }
+.landing-shell.color-mode-light ::-webkit-scrollbar-thumb:hover { background: #a0a0b0; }
+
 /* ═══════════════════════════════════════════════════════════════════════════
    LANDING PAGE GREY MODE
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -494,6 +534,39 @@
 .landing-shell.color-mode-grey textarea::placeholder {
   color: #8A8A9A !important;
 }
+
+/* ── Animated backgrounds (grey mode) ────────────────────────────────── */
+.landing-shell.color-mode-grey .shader-bg-wrapper {
+  opacity: 0.65;
+}
+.landing-shell.color-mode-grey .shader-bg-overlay {
+  background: rgba(45, 45, 58, 0.45) !important;
+}
+
+/* ── Radial glow (grey mode — fade to grey bg) ──────────────────────── */
+.landing-shell.color-mode-grey .bg-radial-glow {
+  background: radial-gradient(
+    circle at 50% 0%,
+    var(--color-primary-014, rgba(167, 139, 250, 0.14)),
+    rgba(45, 45, 58, 0) 60%
+  ) !important;
+}
+
+/* ── Testimonial fade masks (grey mode) ──────────────────────────────── */
+.landing-shell.color-mode-grey .from-opti-bg {
+  --tw-gradient-from: #2D2D3A !important;
+  --tw-gradient-to: rgb(45 45 58 / 0) !important;
+}
+
+/* ── Opacity text variants (grey mode) ───────────────────────────────── */
+.landing-shell.color-mode-grey .text-opti-text-secondary\/60  { color: rgba(160, 160, 176, 0.6) !important; }
+.landing-shell.color-mode-grey .text-opti-text-secondary\/50  { color: rgba(160, 160, 176, 0.5) !important; }
+.landing-shell.color-mode-grey .text-white\/70                { color: rgba(229, 229, 229, 0.7) !important; }
+
+/* ── Scrollbar (grey mode, landing page) ─────────────────────────────── */
+.landing-shell.color-mode-grey ::-webkit-scrollbar-track  { background: #25252f; }
+.landing-shell.color-mode-grey ::-webkit-scrollbar-thumb  { background: #48485a; }
+.landing-shell.color-mode-grey ::-webkit-scrollbar-thumb:hover { background: #5a5a6e; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SCROLLBAR
@@ -582,6 +655,16 @@ html.high-contrast .dashboard-shell.color-mode-light .text-gray-600 {
 }
 
 html.high-contrast .dashboard-shell.color-mode-light * {
+  border-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+html.high-contrast .landing-shell.color-mode-light .text-gray-400,
+html.high-contrast .landing-shell.color-mode-light .text-gray-500,
+html.high-contrast .landing-shell.color-mode-light .text-gray-600 {
+  color: #111111 !important;
+}
+
+html.high-contrast .landing-shell.color-mode-light * {
   border-color: rgba(0, 0, 0, 0.3) !important;
 }
 

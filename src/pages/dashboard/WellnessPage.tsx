@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
-  PenLine, X, Heart, Smile, TrendingUp,
+  PenLine, X, Heart, Smile, TrendingUp, Save, BookOpen, Calendar,
 } from 'lucide-react';
 import { HoverTip } from '@/components/HoverTip';
 import { HabitManagerModal } from '@/components/dashboard/wellness/HabitManagerModal';
@@ -26,6 +26,66 @@ interface JournalEntry {
   habitsCompleted: string[];
 }
 
+const PAST_JOURNALS_KEY = 'wellness-past-journals';
+
+/** Get today's date key in GMT+8 */
+function getTodayKeyGMT8(): string {
+  const now = new Date();
+  const gmt8 = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+  return gmt8.toISOString().slice(0, 10);
+}
+
+/** Load past journal entries from localStorage */
+function loadPastJournals(): JournalEntry[] {
+  try {
+    const raw = localStorage.getItem(PAST_JOURNALS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return [];
+}
+
+/** Save past journal entries to localStorage */
+function savePastJournals(entries: JournalEntry[]) {
+  localStorage.setItem(PAST_JOURNALS_KEY, JSON.stringify(entries));
+}
+
+/** Archive today's journal if the day has rolled over (midnight GMT+8) */
+function archiveIfNewDay(todayKey: string): JournalEntry[] {
+  const past = loadPastJournals();
+  const lastSavedDay = localStorage.getItem('wellness-last-journal-day');
+
+  if (lastSavedDay && lastSavedDay !== todayKey) {
+    // The last saved day is different from today — archive it
+    const oldText = localStorage.getItem(`wellness-journal-${lastSavedDay}`) ?? '';
+    const oldMood = localStorage.getItem(`wellness-mood-${lastSavedDay}`);
+
+    if (oldText.trim()) {
+      const alreadyArchived = past.some(e => e.date === lastSavedDay);
+      if (!alreadyArchived) {
+        const completedRaw = localStorage.getItem(`optiplan-completed-habits-${lastSavedDay}`);
+        let habitsCompleted: string[] = [];
+        try {
+          if (completedRaw) habitsCompleted = JSON.parse(completedRaw);
+        } catch { /* ignore */ }
+
+        past.unshift({
+          id: lastSavedDay,
+          date: lastSavedDay,
+          text: oldText,
+          mood: oldMood !== null ? parseInt(oldMood, 10) : null,
+          habitsCompleted,
+        });
+        savePastJournals(past);
+      }
+    }
+    // Clean up the old day's journal from localStorage
+    localStorage.removeItem(`wellness-journal-${lastSavedDay}`);
+  }
+
+  localStorage.setItem('wellness-last-journal-day', todayKey);
+  return past;
+}
+
 // Past 7 days mock mood log for the chart
 const MOOD_HISTORY = [null, null, null, null, null, null, null];
 const PAST_LABELS = (() => {
@@ -38,13 +98,11 @@ const PAST_LABELS = (() => {
   return days;
 })();
 
-const MOCK_ENTRIES: JournalEntry[] = [];
-
 // ── Component ───────────────────────────────────────────────────────────────
 
 export function WellnessPage() {
   const { habits, addHabit, removeHabit, completedHabits, toggleHabit } = useHabits();
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayKey = getTodayKeyGMT8();
   const [selectedMood, setSelectedMood] = useState<number | null>(() => {
     const stored = localStorage.getItem(`wellness-mood-${todayKey}`);
     return stored ? parseInt(stored, 10) : null;
@@ -52,9 +110,22 @@ export function WellnessPage() {
   const [journalOpen, setJournalOpen] = useState(false);
   const [managerOpen, setManagerOpen] = useState(false);
   const [journalText, setJournalText] = useState(() => localStorage.getItem(`wellness-journal-${todayKey}`) ?? '');
-  const [entries] = useState<JournalEntry[]>(MOCK_ENTRIES);
+  const [entries] = useState<JournalEntry[]>(() => archiveIfNewDay(todayKey));
+  const [previewEntry, setPreviewEntry] = useState<JournalEntry | null>(null);
+  const [saving, setSaving] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const journalTextRef = useRef(journalText);
+
+  // Check for day rollover every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentDay = getTodayKeyGMT8();
+      if (currentDay !== todayKey) {
+        window.location.reload();
+      }
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [todayKey]);
 
   useEffect(() => {
     if (selectedMood !== null) {
@@ -68,7 +139,6 @@ export function WellnessPage() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       localStorage.setItem(`wellness-journal-${todayKey}`, value);
-      console.log('[auto-save] journal entry saved');
     }, 1500);
   }, [todayKey]);
 
@@ -79,6 +149,14 @@ export function WellnessPage() {
       localStorage.setItem(`wellness-journal-${todayKey}`, journalTextRef.current);
     };
   }, [todayKey]);
+
+  const handleSave = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    localStorage.setItem(`wellness-journal-${todayKey}`, journalText);
+    setSaving(true);
+    toast.success('Journal saved!');
+    setTimeout(() => setSaving(false), 1200);
+  }, [todayKey, journalText]);
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   const habitsComplete = completedHabits.size;
@@ -157,7 +235,7 @@ export function WellnessPage() {
             <span className="text-xs text-gray-400">Journal Entries</span>
           </div>
           <div className="text-3xl font-bold text-white">{entries.length + (journalText.trim() ? 1 : 0)}</div>
-          <p className="text-xs text-gray-500 mt-1">this week</p>
+          <p className="text-xs text-gray-500 mt-1">total</p>
         </motion.div>
       </div>
 
@@ -285,7 +363,7 @@ export function WellnessPage() {
           </motion.div>
         </div>
 
-        {/* ── Right Column: Journal & Past Entries ────────────────────── */}
+        {/* ── Right Column: Journal & Past Journals ────────────────────── */}
         <div className="lg:col-span-2 space-y-6">
 
           {/* Quick Journal Card */}
@@ -297,13 +375,27 @@ export function WellnessPage() {
           >
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-white">Today's Journal</h3>
-              <div className="flex items-center gap-1.5">
-                {journalText.trim() && (
+              <div className="flex items-center gap-3">
+                {journalText.trim() && !saving && (
                   <span className="flex items-center gap-1 text-[10px] text-green-400">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
                     Auto-saved
                   </span>
                 )}
+                {saving && (
+                  <span className="flex items-center gap-1 text-[10px] text-purple-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                    Saved!
+                  </span>
+                )}
+                <button
+                  onClick={handleSave}
+                  disabled={!journalText.trim()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  Save
+                </button>
               </div>
             </div>
             <div className="prose prose-invert max-w-none">
@@ -316,28 +408,32 @@ export function WellnessPage() {
             </div>
           </motion.div>
 
-          {/* Past Entries */}
+          {/* Past Journals */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
             className="rounded-xl bg-[#18162e] border border-white/10 p-5"
           >
-            <h3 className="text-sm font-semibold text-white mb-4">Past Entries</h3>
+            <h3 className="text-sm font-semibold text-white mb-4">Past Journals</h3>
             {entries.length === 0 ? (
               <div className="text-center py-8">
-                <PenLine className="w-6 h-6 text-gray-600 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">No journal entries yet.</p>
-                <p className="text-xs text-gray-600 mt-1">Start writing to track your thoughts!</p>
+                <BookOpen className="w-6 h-6 text-gray-600 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">No past journals yet.</p>
+                <p className="text-xs text-gray-600 mt-1">Your journals will appear here after midnight (GMT+8).</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {entries.map(entry => {
                   const entryDate = new Date(entry.date + 'T00:00:00');
                   const moodData = entry.mood !== null ? MOODS[entry.mood] : null;
                   return (
-                    <div key={entry.id} className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-                      <div className="flex items-center justify-between mb-2">
+                    <button
+                      key={entry.id}
+                      onClick={() => setPreviewEntry(entry)}
+                      className="w-full text-left p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-white/15 hover:bg-white/[0.04] transition-all group cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-2">
                           {moodData && <span className="text-lg">{moodData.emoji}</span>}
                           <span className="text-xs font-medium text-gray-300">
@@ -348,8 +444,11 @@ export function WellnessPage() {
                           {entry.habitsCompleted.length} habits done
                         </span>
                       </div>
-                      <p className="text-sm text-gray-400 leading-relaxed">{entry.text}</p>
-                    </div>
+                      <p className="text-sm text-gray-400 leading-relaxed line-clamp-2">{entry.text}</p>
+                      <span className="text-[10px] text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity mt-1 inline-block">
+                        Click to read more
+                      </span>
+                    </button>
                   );
                 })}
               </div>
@@ -381,12 +480,22 @@ export function WellnessPage() {
                   <h2 className="text-lg font-bold text-white">Daily Journal</h2>
                   <p className="text-xs text-gray-500">{today}</p>
                 </div>
-                <button
-                  onClick={() => setJournalOpen(false)}
-                  className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleSave}
+                    disabled={!journalText.trim()}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setJournalOpen(false)}
+                    className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               <div className="flex-1 p-6 overflow-y-auto">
@@ -408,6 +517,92 @@ export function WellnessPage() {
           </>
         )}
       </AnimatePresence>
+
+      {/* ── Past Journal Preview Modal ──────────────────────────────── */}
+      <AnimatePresence>
+        {previewEntry && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setPreviewEntry(null)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              className="fixed inset-4 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-lg sm:max-h-[80vh] bg-[#12101f] border border-white/10 rounded-2xl z-50 flex flex-col shadow-2xl overflow-hidden"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
+                <div className="flex items-center gap-3">
+                  {previewEntry.mood !== null && (
+                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${MOODS[previewEntry.mood].color} flex items-center justify-center text-xl`}>
+                      {MOODS[previewEntry.mood].emoji}
+                    </div>
+                  )}
+                  <div>
+                    <h2 className="text-sm font-bold text-white">
+                      {new Date(previewEntry.date + 'T00:00:00').toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </h2>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      {previewEntry.mood !== null && (
+                        <span className="text-[10px] text-gray-500">
+                          Feeling {MOODS[previewEntry.mood].label}
+                        </span>
+                      )}
+                      {previewEntry.habitsCompleted.length > 0 && (
+                        <span className="text-[10px] text-gray-500">
+                          {previewEntry.habitsCompleted.length} habits completed
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setPreviewEntry(null)}
+                  className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto px-6 py-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <Calendar className="w-3.5 h-3.5 text-purple-400" />
+                  <span className="text-[10px] font-medium text-purple-400 uppercase tracking-wider">Journal Entry</span>
+                </div>
+                <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
+                  {previewEntry.text}
+                </p>
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-3 border-t border-white/[0.06] flex items-center justify-between">
+                <span className="text-[10px] text-gray-600">
+                  {previewEntry.text.split(/\s+/).filter(Boolean).length} words
+                </span>
+                <button
+                  onClick={() => setPreviewEntry(null)}
+                  className="px-4 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-gray-300 hover:bg-white/10 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* ── Habit Manager Modal ────────────────────────────────────────── */}
       <HabitManagerModal
         isOpen={managerOpen}

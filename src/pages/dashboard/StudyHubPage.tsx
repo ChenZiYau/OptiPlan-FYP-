@@ -57,29 +57,29 @@ function StudyHubInner() {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between shrink-0">
+        <div className="px-6 py-4 border-b border-[#1F1F1F] flex items-center justify-between shrink-0">
           <div>
-            <h1 className="text-xl font-bold text-white">Study Hub</h1>
-            <p className="text-xs text-gray-500 mt-0.5">AI-powered notes, flashcards & quizzes</p>
+            <h1 className="text-lg font-semibold text-zinc-100">Study Hub</h1>
+            <p className="text-xs text-zinc-500 mt-0.5">AI-powered notes, flashcards & quizzes</p>
           </div>
           <PomodoroTimer />
         </div>
 
         {/* Tab navigation */}
         <div className="px-6 pt-4 pb-2 shrink-0">
-          <div className="flex overflow-x-auto whitespace-nowrap rounded-xl bg-white/5 p-1.5 w-fit">
+          <div className="flex overflow-x-auto whitespace-nowrap rounded-lg bg-[#111111] p-1 w-fit">
             {TABS.map((tab) => (
               <HoverTip key={tab.key} label={tab.tip}>
                 <button
                   onClick={() => setActiveTab(tab.key)}
-                  className={`relative flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-                    activeTab === tab.key ? 'text-white' : 'text-gray-500 hover:text-gray-300'
+                  className={`relative flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg transition-colors duration-150 ${
+                    activeTab === tab.key ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
                   }`}
                 >
                   {activeTab === tab.key && (
                     <motion.div
                       layoutId="studyTab"
-                      className="absolute inset-0 bg-purple-500/20 border border-purple-500/30 rounded-lg"
+                      className="absolute inset-0 bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg"
                       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                     />
                   )}

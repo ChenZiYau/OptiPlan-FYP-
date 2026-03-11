@@ -1801,12 +1801,12 @@ function FriendSidebar() {
 // ── Schedule Matcher Calendar Component ──────────────────────────────────
 
 const TASK_BAR_COLORS = [
-  { bg: 'bg-purple-500/90', border: 'border-purple-400/60', shadow: 'shadow-purple-500/30' },
-  { bg: 'bg-emerald-500/90', border: 'border-emerald-400/60', shadow: 'shadow-emerald-500/30' },
-  { bg: 'bg-blue-500/90', border: 'border-blue-400/60', shadow: 'shadow-blue-500/30' },
-  { bg: 'bg-rose-500/90', border: 'border-rose-400/60', shadow: 'shadow-rose-500/30' },
-  { bg: 'bg-amber-500/90', border: 'border-amber-400/60', shadow: 'shadow-amber-500/30' },
-  { bg: 'bg-cyan-500/90', border: 'border-cyan-400/60', shadow: 'shadow-cyan-500/30' },
+  { bg: 'bg-purple-500/80', border: 'border-purple-400/60' },
+  { bg: 'bg-emerald-500/80', border: 'border-emerald-400/60' },
+  { bg: 'bg-blue-500/80', border: 'border-blue-400/60' },
+  { bg: 'bg-rose-500/80', border: 'border-rose-400/60' },
+  { bg: 'bg-amber-500/80', border: 'border-amber-400/60' },
+  { bg: 'bg-cyan-500/80', border: 'border-cyan-400/60' },
 ];
 
 function ScheduleMatcherCalendar({
@@ -1894,19 +1894,19 @@ function ScheduleMatcherCalendar({
       variants={fadeUp}
       initial="hidden"
       animate="show"
-      className="rounded-xl bg-[#121212] border border-white/10 overflow-hidden"
+      className="rounded-xl bg-[#111111] border border-[#1F1F1F] overflow-hidden"
     >
       {/* Calendar Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-[#1F1F1F]">
         <div className="flex items-center gap-3">
-          <Calendar className="w-5 h-5 text-purple-400" />
-          <h2 className="text-lg font-bold text-white">{monthNames[calMonth]} {calYear}</h2>
+          <Calendar className="w-5 h-5 text-indigo-400" />
+          <h2 className="text-lg font-medium text-zinc-100">{monthNames[calMonth]} {calYear}</h2>
         </div>
         <div className="flex items-center gap-2">
           <HoverTip label="Add a task to the schedule">
             <button
               onClick={() => setShowNewTaskModal(true)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold hover:opacity-90 transition-opacity mr-3"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors duration-150 mr-3"
             >
               <Plus className="w-3.5 h-3.5" /> Add Task
             </button>
@@ -1916,7 +1916,7 @@ function ScheduleMatcherCalendar({
           </button>
           <button
             onClick={() => { setCalMonth(today.getMonth()); setCalYear(today.getFullYear()); }}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-purple-300 hover:bg-purple-500/20 transition-colors border border-purple-500/30"
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-400 hover:bg-indigo-500/10 transition-colors duration-150 border border-indigo-500/20"
           >
             Today
           </button>
@@ -1927,7 +1927,7 @@ function ScheduleMatcherCalendar({
       </div>
 
       {/* Day-of-week Header */}
-      <div className="grid grid-cols-7 border-b border-gray-800">
+      <div className="grid grid-cols-7 border-b border-[#1A1A1A]">
         {dayNames.map(d => (
           <div key={d} className="py-2.5 text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
             {d}
@@ -1941,7 +1941,7 @@ function ScheduleMatcherCalendar({
           const weekTasks = getWeekTasks(week);
 
           return (
-            <div key={wi} className="border-b border-gray-800 last:border-b-0">
+            <div key={wi} className="border-b border-[#1A1A1A] last:border-b-0">
               {/* Day Numbers Row */}
               <div className="grid grid-cols-7">
                 {week.map((day, di) => {
@@ -1951,7 +1951,7 @@ function ScheduleMatcherCalendar({
                   return (
                     <div
                       key={di}
-                      className={`min-h-[40px] px-2 py-1.5 border-r border-gray-800 last:border-r-0 ${day === null ? 'bg-[#0a0a0a]' : ''}`}
+                      className={`min-h-[40px] px-2 py-1.5 border-r border-[#1A1A1A] last:border-r-0 ${day === null ? 'bg-[#0a0a0a]' : ''}`}
                     >
                       {day !== null && (
                         <div className="flex justify-start">
@@ -1995,7 +1995,7 @@ function ScheduleMatcherCalendar({
                         className="relative h-8"
                       >
                         <div
-                          className={`absolute top-0 h-full ${color.bg} border ${color.border} rounded-lg flex items-center gap-1.5 px-2.5 overflow-hidden cursor-default shadow-md ${color.shadow} hover:brightness-110 transition-all`}
+                          className={`absolute top-0 h-full ${color.bg} border ${color.border} rounded-lg flex items-center gap-1.5 px-2.5 overflow-hidden cursor-default transition-colors duration-150`}
                           style={{
                             left: `${leftPct}%`,
                             width: `${widthPct}%`,
@@ -2082,7 +2082,7 @@ function NewScheduleTaskModal({
     }
   }
 
-  const inputCls = 'w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-purple-500/50 transition-colors';
+  const inputCls = 'w-full bg-[#141414] border border-[#1F1F1F] rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-indigo-500/40 transition-colors duration-150';
   const labelCls = 'text-[11px] text-gray-400 font-semibold uppercase tracking-wider mb-1.5 block';
 
   return createPortal(
@@ -2101,10 +2101,10 @@ function NewScheduleTaskModal({
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg"
       >
-        <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden">
+        <div className="bg-[#141414] border border-[#1F1F1F] rounded-2xl shadow-xl shadow-black/40 overflow-hidden">
           {/* Modal Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-            <h3 className="text-base font-bold text-white">New Task</h3>
+            <h3 className="text-base font-medium text-zinc-100">New Task</h3>
             <button
               onClick={onClose}
               className="p-1.5 rounded-lg hover:bg-white/5 text-gray-500 hover:text-white transition-colors"
@@ -2187,7 +2187,7 @@ function NewScheduleTaskModal({
             <button
               onClick={handleCreate}
               disabled={isCreating || !name.trim() || !startDate || !endDate}
-              className="px-5 py-2.5 text-sm font-semibold rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-5 py-2.5 text-sm font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isCreating ? 'Creating...' : 'Create Task'}
             </button>

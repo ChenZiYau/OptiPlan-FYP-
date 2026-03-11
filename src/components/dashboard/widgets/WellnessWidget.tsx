@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, PenLine, X } from 'lucide-react';
+import { Heart, PenLine, X, Save } from 'lucide-react';
+import { toast } from 'sonner';
 import { HoverTip } from '@/components/HoverTip';
 import { Link } from 'react-router-dom';
 import { useHabits } from '@/hooks/useHabits';
@@ -13,9 +14,15 @@ const MOODS = [
   { emoji: '\uD83E\uDD29', label: 'Great' },
 ];
 
+function getTodayKeyGMT8(): string {
+  const now = new Date();
+  const gmt8 = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+  return gmt8.toISOString().slice(0, 10);
+}
+
 export function WellnessWidget() {
   const { habits, completedHabits, toggleHabit } = useHabits();
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayKey = getTodayKeyGMT8();
   const [selectedMood, setSelectedMood] = useState<number | null>(() => {
     const stored = localStorage.getItem(`wellness-mood-${todayKey}`);
     return stored ? parseInt(stored, 10) : null;
@@ -148,12 +155,26 @@ export function WellnessWidget() {
                   <h2 className="text-lg font-bold text-white">Daily Journal</h2>
                   <p className="text-xs text-gray-500">{today}</p>
                 </div>
-                <button
-                  onClick={() => setJournalOpen(false)}
-                  className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      if (debounceRef.current) clearTimeout(debounceRef.current);
+                      localStorage.setItem(`wellness-journal-${todayKey}`, journalText);
+                      toast.success('Journal saved!');
+                    }}
+                    disabled={!journalText.trim()}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setJournalOpen(false)}
+                    className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
               <div className="flex-1 p-6 overflow-y-auto">
                 <textarea

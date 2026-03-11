@@ -188,17 +188,17 @@ export function AnimatedShaderBackground() {
   }, []);
 
   return (
-    <>
+    <div className="shader-bg-wrapper fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
       <canvas
         ref={canvasRef}
-        className="fixed inset-0 w-full h-full pointer-events-none"
-        style={{ background: 'black', zIndex: 0 }}
+        className="absolute inset-0 w-full h-full"
+        style={{ background: 'black' }}
       />
-      {/* Dark overlay for text readability */}
+      {/* Overlay for text readability — adjusted per color mode via CSS */}
       <div
-        className="fixed inset-0 pointer-events-none"
-        style={{ background: 'rgba(7, 4, 10, 0.55)', zIndex: 0 }}
+        className="absolute inset-0 shader-bg-overlay"
+        style={{ background: 'rgba(7, 4, 10, 0.55)' }}
       />
-    </>
+    </div>
   );
 }

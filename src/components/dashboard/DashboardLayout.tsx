@@ -81,16 +81,12 @@ export function DashboardLayout() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B0A1A] flex flex-col items-center justify-center gap-4">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-          <span className="text-white font-bold text-lg">O</span>
+      <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center gap-4">
+        <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center">
+          <span className="text-white font-medium text-lg">O</span>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-purple-500 animate-bounce [animation-delay:-0.3s]" />
-          <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce [animation-delay:-0.15s]" />
-          <div className="w-2 h-2 rounded-full bg-purple-300 animate-bounce" />
-        </div>
-        <p className="text-sm text-gray-500">Loading your dashboard...</p>
+        <div className="w-5 h-5 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+        <p className="text-sm text-zinc-500">Loading your dashboard...</p>
       </div>
     );
   }
@@ -112,7 +108,7 @@ export function DashboardLayout() {
             settings.colorMode === 'grey' ? ' color-mode-grey' : ''
           }`}
         >
-          <div className="min-h-screen bg-[#0B0A1A]">
+          <div className="min-h-screen bg-[#0A0A0A]">
             <DashboardSidebar
               isOpen={sidebarOpen}
               onClose={() => setSidebarOpen(false)}
@@ -135,7 +131,7 @@ export function DashboardLayout() {
               position="bottom-right"
               toastOptions={{
                 style: {
-                  background: '#1a1735',
+                  background: '#141414',
                   border: '1px solid rgba(255,255,255,0.1)',
                   color: '#fff',
                 },

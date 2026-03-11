@@ -64,19 +64,18 @@ export function LandingPage() {
         settings.colorMode === 'grey' ? ' color-mode-grey' : ''
       }`}
     >
-      {/* Animated shader background — hidden in light/grey mode */}
-      {settings.colorMode === 'dark' && <AnimatedShaderBackground />}
+      {/* Animated shader background — adapts to all color modes */}
+      <AnimatedShaderBackground />
 
-      {/* Grain overlay for texture — hidden in light mode */}
-      {settings.colorMode !== 'light' && (
-        <div
-          className="fixed inset-0 opacity-[0.03] pointer-events-none z-[1]"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-            mixBlendMode: 'overlay',
-          }}
-        />
-      )}
+      {/* Grain overlay for texture */}
+      <div
+        className="fixed inset-0 pointer-events-none z-[1] grain-overlay"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+          mixBlendMode: 'overlay',
+          opacity: 0.03,
+        }}
+      />
 
       {/* Navigation */}
       <Navbar />
@@ -89,7 +88,7 @@ export function LandingPage() {
 
       {/* Sections from Problem onwards with MeshGradient background */}
       <div className="relative">
-        {settings.colorMode === 'dark' && <MeshGradientBackground />}
+        <MeshGradientBackground colorMode={settings.colorMode} />
         <div className="relative z-10">
           {isVisible('problems') && <Problem />}
           {isVisible('features') && <Features />}

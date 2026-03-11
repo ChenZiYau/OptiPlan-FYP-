@@ -68,7 +68,7 @@ export function DashboardSidebar({ isOpen, onClose, collapsed, onToggleCollapse 
       )}
 
       <aside
-        className={`group/sidebar fixed top-0 left-0 z-50 h-screen bg-[#0B0A1A] dm-sidebar border-r border-white/10 flex flex-col transition-all duration-300 lg:translate-x-0 ${
+        className={`group/sidebar fixed top-0 left-0 z-50 h-screen bg-[#0A0A0A] dm-sidebar border-r border-[#1F1F1F] flex flex-col transition-all duration-300 lg:translate-x-0 ${
           collapsed ? 'w-16' : 'w-[250px]'
         } ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
@@ -76,7 +76,7 @@ export function DashboardSidebar({ isOpen, onClose, collapsed, onToggleCollapse 
         <button
           onClick={onToggleCollapse}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="hidden lg:flex absolute top-1/2 -translate-y-1/2 -right-3 z-[60] w-6 h-6 items-center justify-center rounded-full bg-[#1a1735] border border-white/10 text-gray-500 hover:text-white hover:bg-purple-600 hover:border-purple-500 opacity-0 group-hover/sidebar:opacity-100 transition-all duration-200 shadow-lg"
+          className="hidden lg:flex absolute top-1/2 -translate-y-1/2 -right-3 z-[60] w-6 h-6 items-center justify-center rounded-full bg-[#1A1A1A] border border-[#1F1F1F] text-zinc-500 hover:text-white hover:bg-zinc-700 opacity-0 group-hover/sidebar:opacity-100 transition-colors duration-150"
         >
           {collapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
         </button>
@@ -84,11 +84,11 @@ export function DashboardSidebar({ isOpen, onClose, collapsed, onToggleCollapse 
         {/* Brand */}
         <div className={`flex items-center h-16 shrink-0 ${collapsed ? 'justify-center px-2' : 'justify-between px-5'}`}>
           <Link to="/" className={`flex items-center gap-2.5 ${collapsed ? 'justify-center' : ''}`}>
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shrink-0">
-              <span className="text-white font-bold text-sm">O</span>
+            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0">
+              <span className="text-white font-medium text-sm">O</span>
             </div>
             {!collapsed && (
-              <span className="font-semibold text-lg text-white tracking-tight">
+              <span className="font-semibold text-lg text-zinc-100 tracking-tight">
                 OptiPlan
               </span>
             )}
@@ -97,7 +97,7 @@ export function DashboardSidebar({ isOpen, onClose, collapsed, onToggleCollapse 
             <button
               onClick={onClose}
               aria-label="Close menu"
-              className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+              className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-colors duration-150"
             >
               <X className="w-4 h-4" />
             </button>
@@ -109,7 +109,7 @@ export function DashboardSidebar({ isOpen, onClose, collapsed, onToggleCollapse 
           <HoverTip label="Create a new task" side={collapsed ? 'right' : 'top'}>
             <button
               onClick={openModal}
-              className={`w-full flex items-center rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition-colors ${
+              className={`w-full flex items-center rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors duration-150 ${
                 collapsed ? 'justify-center px-0 py-2.5' : 'gap-2 px-3 py-2.5'
               }`}
             >
@@ -122,7 +122,7 @@ export function DashboardSidebar({ isOpen, onClose, collapsed, onToggleCollapse 
         {/* Navigation */}
         <nav className={`flex-1 pt-4 overflow-y-auto ${collapsed ? 'px-2' : 'px-3'}`}>
           {!collapsed && (
-            <p className="px-3 mb-3 text-[10px] font-semibold tracking-[0.15em] text-gray-600 uppercase">
+            <p className="px-3 mb-3 text-[10px] font-semibold tracking-wide text-zinc-600 uppercase">
               Menu
             </p>
           )}
@@ -134,13 +134,13 @@ export function DashboardSidebar({ isOpen, onClose, collapsed, onToggleCollapse 
                   <Link
                     to={item.href}
                     onClick={onClose}
-                    className={`flex items-center justify-center w-full py-2.5 rounded-lg transition-all duration-200 ${
+                    className={`flex items-center justify-center w-full py-2.5 rounded-lg transition-colors duration-150 ${
                       active
-                        ? 'bg-purple-900/20 text-white'
-                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        ? 'bg-indigo-500/10 text-white'
+                        : 'text-zinc-500 hover:text-white hover:bg-[#1A1A1A]'
                     }`}
                   >
-                    <item.icon className={`w-[18px] h-[18px] ${active ? 'text-purple-400' : ''}`} />
+                    <item.icon className={`w-[18px] h-[18px] ${active ? 'text-indigo-400' : ''}`} />
                   </Link>
                 </HoverTip>
               ) : (
@@ -148,13 +148,13 @@ export function DashboardSidebar({ isOpen, onClose, collapsed, onToggleCollapse 
                   key={item.href}
                   to={item.href}
                   onClick={onClose}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150 ${
                     active
-                      ? 'bg-purple-900/20 text-white border-l-4 border-purple-500 pl-2'
-                      : 'text-gray-400 hover:text-white hover:bg-white/5 border-l-4 border-transparent pl-2'
+                      ? 'bg-indigo-500/10 text-white border-l-4 border-indigo-500 pl-2'
+                      : 'text-zinc-500 hover:text-white hover:bg-[#1A1A1A] border-l-4 border-transparent pl-2'
                   }`}
                 >
-                  <item.icon className={`w-[18px] h-[18px] ${active ? 'text-purple-400' : ''}`} />
+                  <item.icon className={`w-[18px] h-[18px] ${active ? 'text-indigo-400' : ''}`} />
                   {item.label}
                 </Link>
               );
@@ -170,13 +170,13 @@ export function DashboardSidebar({ isOpen, onClose, collapsed, onToggleCollapse 
                 <Link
                   to="/dashboard/settings"
                   onClick={onClose}
-                  className={`flex items-center justify-center w-full py-2.5 rounded-lg transition-all duration-200 ${
+                  className={`flex items-center justify-center w-full py-2.5 rounded-lg transition-colors duration-150 ${
                     isActive('/dashboard/settings')
-                      ? 'bg-purple-900/20 text-white'
-                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      ? 'bg-indigo-500/10 text-white'
+                      : 'text-zinc-500 hover:text-white hover:bg-[#1A1A1A]'
                   }`}
                 >
-                  <Settings className={`w-[18px] h-[18px] ${isActive('/dashboard/settings') ? 'text-purple-400' : ''}`} />
+                  <Settings className={`w-[18px] h-[18px] ${isActive('/dashboard/settings') ? 'text-indigo-400' : ''}`} />
                 </Link>
               </HoverTip>
               <HoverTip label={displayName} side="right">
@@ -187,7 +187,7 @@ export function DashboardSidebar({ isOpen, onClose, collapsed, onToggleCollapse 
                   {profile?.avatar_url ? (
                     <img src={profile.avatar_url} alt="Avatar" className="w-9 h-9 rounded-full object-cover" />
                   ) : (
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-xs">
+                    <div className="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium text-xs">
                       {initials}
                     </div>
                   )}
@@ -195,28 +195,28 @@ export function DashboardSidebar({ isOpen, onClose, collapsed, onToggleCollapse 
               </HoverTip>
             </div>
           ) : (
-            <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
+            <div className="rounded-xl bg-[#141414] border border-[#1F1F1F] p-3">
               <div className="flex items-center gap-3">
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt="Avatar" className="w-9 h-9 rounded-full object-cover shrink-0" />
                 ) : (
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-xs shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium text-xs shrink-0">
                     {initials}
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{displayName}</p>
-                  <p className="text-xs text-gray-500">Free Plan</p>
+                  <p className="text-sm font-medium text-zinc-100 truncate">{displayName}</p>
+                  <p className="text-xs text-zinc-500">Free Plan</p>
                 </div>
                 <div className="flex items-center gap-1">
                   <HoverTip label="Settings" side="top">
                     <Link
                       to="/dashboard/settings"
                       onClick={onClose}
-                      className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors duration-150 ${
                         isActive('/dashboard/settings')
-                          ? 'text-purple-400 bg-purple-500/10'
-                          : 'text-gray-500 hover:text-white hover:bg-white/10'
+                          ? 'text-indigo-400 bg-indigo-500/10'
+                          : 'text-zinc-500 hover:text-white hover:bg-white/10'
                       }`}
                     >
                       <Settings className="w-4 h-4" />
@@ -225,7 +225,7 @@ export function DashboardSidebar({ isOpen, onClose, collapsed, onToggleCollapse 
                   <HoverTip label="Log out" side="top">
                     <button
                       onClick={() => setShowLogoutConfirm(true)}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                      className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors duration-150"
                       aria-label="Log out"
                     >
                       <LogOut className="w-4 h-4" />
@@ -236,18 +236,18 @@ export function DashboardSidebar({ isOpen, onClose, collapsed, onToggleCollapse 
 
               {/* Logout confirmation */}
               {showLogoutConfirm && (
-                <div className="mt-3 pt-3 border-t border-white/10">
-                  <p className="text-xs text-gray-400 mb-2">Are you sure you want to log out?</p>
+                <div className="mt-3 pt-3 border-t border-[#1F1F1F]">
+                  <p className="text-xs text-zinc-500 mb-2">Are you sure you want to log out?</p>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setShowLogoutConfirm(false)}
-                      className="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 transition"
+                      className="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-white/5 text-zinc-500 hover:bg-white/10 transition-colors duration-150"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleSignOut}
-                      className="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition"
+                      className="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-colors duration-150"
                     >
                       Log out
                     </button>
