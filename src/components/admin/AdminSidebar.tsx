@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutGrid, Users, MessageSquare, FileEdit, LogOut, X } from 'lucide-react';
+import { LayoutGrid, Users, MessageSquare, FileEdit, LogOut, X, Settings } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import type { AdminNavItem } from '@/types/admin';
 
@@ -8,6 +8,7 @@ const navItems: AdminNavItem[] = [
   { label: 'User Database', href: '/admin/users', icon: Users },
   { label: 'Feedback', href: '/admin/feedback', icon: MessageSquare },
   { label: 'Website Content', href: '/admin/content', icon: FileEdit },
+  { label: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 
 interface AdminSidebarProps {

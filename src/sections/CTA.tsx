@@ -37,8 +37,7 @@ export function CTA() {
   return (
     <section
       id="cta"
-      className="relative py-32 overflow-hidden"
-      style={{ backgroundColor: '#120B1D' }}
+      className="relative py-32 overflow-hidden bg-[#120B1D]"
     >
       {/* Background glow */}
       <div className="absolute inset-0 bg-radial-glow opacity-60 pointer-events-none" />

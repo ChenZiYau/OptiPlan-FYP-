@@ -23,6 +23,8 @@ import { WrappedPage } from '@/pages/dashboard/WrappedPage';
 import { WellnessPage } from '@/pages/dashboard/WellnessPage';
 import { AchievementsPage } from '@/pages/dashboard/AchievementsPage';
 import { SettingsPage } from '@/pages/dashboard/SettingsPage';
+import { StandaloneSettingsPage } from '@/pages/SettingsPage';
+import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage';
 
 function App() {
   return (
@@ -33,6 +35,7 @@ function App() {
           <Route path="/" element={<SiteContentProvider><LandingPage /></SiteContentProvider>} />
           <Route path="/signup" element={<Auth />} />
           <Route path="/login" element={<Auth />} />
+          <Route path="/settings" element={<StandaloneSettingsPage />} />
 
           {/* User dashboard — protected by DashboardLayout (any authenticated user) */}
           <Route path="/dashboard" element={<DashboardLayout />}>
@@ -55,6 +58,7 @@ function App() {
             <Route path="users" element={<UserDatabase />} />
             <Route path="feedback" element={<FeedbackPage />} />
             <Route path="content" element={<ContentEditor />} />
+            <Route path="settings" element={<AdminSettingsPage />} />
             <Route path="users/delete/:userId" element={<UserDeleteConfirm />} />
             <Route path="activity/:activityId" element={<ActivityDetail />} />
           </Route>

@@ -4,8 +4,7 @@ import { AnimatedSection } from '@/components/AnimatedSection';
 import { GlowButton } from '@/components/GlowButton';
 import { useSiteContentData } from '@/hooks/useSiteContent';
 import { siteDefaults } from '@/constants/siteDefaults';
-import { supabase } from '@/lib/supabase';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 interface CTAContent {
   headline: string;
@@ -19,13 +18,12 @@ const defaults = siteDefaults.cta as unknown as CTAContent;
 export function CTA() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
-  const [isChecking, setIsChecking] = useState(false);
   const navigate = useNavigate();
   const { getContent } = useSiteContentData();
   const content = getContent<CTAContent>('cta') ?? defaults;
   const tc = ((content as any).textColors ?? {}) as Record<string, string>;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -33,30 +31,13 @@ export function CTA() {
       return;
     }
 
-    setIsChecking(true);
-    try {
-      const { data: exists } = await supabase
-        .rpc('check_email_exists', { lookup_email: email.trim().toLowerCase() });
-
-      const encodedEmail = encodeURIComponent(email);
-      if (exists) {
-        navigate('/login?email=' + encodedEmail);
-      } else {
-        navigate('/signup?email=' + encodedEmail);
-      }
-    } catch {
-      // If the check fails, default to signup
-      navigate('/signup?email=' + encodeURIComponent(email));
-    } finally {
-      setIsChecking(false);
-    }
+    navigate('/signup?email=' + encodeURIComponent(email));
   };
 
   return (
     <section
       id="cta"
-      className="relative py-32 overflow-hidden"
-      style={{ backgroundColor: '#120B1D' }}
+      className="relative py-32 overflow-hidden bg-[#120B1D]"
     >
       {/* Background glow */}
       <div className="absolute inset-0 bg-radial-glow opacity-60 pointer-events-none" />
@@ -110,13 +91,10 @@ export function CTA() {
             </div>
             <GlowButton
               type="submit"
-              className={`flex items-center justify-center gap-2 whitespace-nowrap ${isChecking ? 'opacity-50 pointer-events-none' : ''}`}
+              className="flex items-center justify-center gap-2 whitespace-nowrap"
             >
-              {isChecking ? (
-                <><Loader2 className="w-4 h-4 animate-spin" />Checking...</>
-              ) : (
-                <>{content.buttonText}<ArrowRight className="w-4 h-4" /></>
-              )}
+              {content.buttonText}
+              <ArrowRight className="w-4 h-4" />
             </GlowButton>
           </form>
         </AnimatedSection>

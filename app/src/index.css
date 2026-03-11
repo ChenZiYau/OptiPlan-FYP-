@@ -321,6 +321,181 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   LANDING PAGE LIGHT MODE
+   Overrides landing-page-specific Tailwind classes within .landing-shell
+   so the landing page gets proper light-mode colors.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Text colors ───────────────────────────────────────────────────────── */
+.landing-shell.color-mode-light .text-white              { color: #1A1A2E !important; }
+.landing-shell.color-mode-light .text-gray-200           { color: #374151 !important; }
+.landing-shell.color-mode-light .text-gray-300           { color: #4B5563 !important; }
+.landing-shell.color-mode-light .text-gray-400           { color: #6B7280 !important; }
+.landing-shell.color-mode-light .text-gray-500           { color: #6B7280 !important; }
+.landing-shell.color-mode-light .text-gray-600           { color: #9CA3AF !important; }
+.landing-shell.color-mode-light .text-opti-text-primary  { color: #1A1A2E !important; }
+.landing-shell.color-mode-light .text-opti-text-secondary { color: #4B5563 !important; }
+
+/* ── Backgrounds ───────────────────────────────────────────────────────── */
+.landing-shell.color-mode-light                          { background-color: #F8F9FA !important; }
+.landing-shell.color-mode-light .bg-opti-bg              { background-color: #F8F9FA !important; }
+.landing-shell.color-mode-light .bg-opti-bg-secondary    { background-color: #EFF0F5 !important; }
+.landing-shell.color-mode-light .bg-opti-surface         { background-color: #FFFFFF !important; }
+.landing-shell.color-mode-light .bg-\[\#07040A\]         { background-color: #F8F9FA !important; }
+.landing-shell.color-mode-light .bg-\[\#0B0A1A\]         { background-color: #F8F9FA !important; }
+.landing-shell.color-mode-light .bg-\[\#0B0A1A\]\/80     { background-color: rgba(248, 249, 250, 0.8) !important; }
+.landing-shell.color-mode-light .bg-\[\#0B0A1A\]\/95     { background-color: rgba(248, 249, 250, 0.95) !important; }
+.landing-shell.color-mode-light .bg-\[\#0e0b19\]\/95     { background-color: rgba(255, 255, 255, 0.95) !important; }
+.landing-shell.color-mode-light .bg-\[\#18162e\]         { background-color: #FFFFFF !important; }
+.landing-shell.color-mode-light .bg-\[\#1a1625\]         { background-color: #FFFFFF !important; }
+.landing-shell.color-mode-light .bg-white\/5             { background-color: rgba(0, 0, 0, 0.03) !important; }
+.landing-shell.color-mode-light .bg-white\/10            { background-color: rgba(0, 0, 0, 0.05) !important; }
+.landing-shell.color-mode-light .bg-white\/\[0\.02\]     { background-color: rgba(0, 0, 0, 0.02) !important; }
+.landing-shell.color-mode-light .bg-white\/\[0\.03\]     { background-color: rgba(0, 0, 0, 0.02) !important; }
+.landing-shell.color-mode-light .bg-white\/\[0\.04\]     { background-color: rgba(0, 0, 0, 0.03) !important; }
+.landing-shell.color-mode-light .bg-white\/\[0\.05\]     { background-color: rgba(0, 0, 0, 0.03) !important; }
+.landing-shell.color-mode-light .bg-white\/\[0\.06\]     { background-color: rgba(0, 0, 0, 0.04) !important; }
+
+/* ── Glass card ────────────────────────────────────────────────────────── */
+.landing-shell.color-mode-light .glass-card {
+  background-color: rgba(255, 255, 255, 0.7) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+.landing-shell.color-mode-light .glass-nav {
+  background-color: rgba(248, 249, 250, 0.8) !important;
+  border-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+/* ── Borders ───────────────────────────────────────────────────────────── */
+.landing-shell.color-mode-light .border-white\/5         { border-color: rgba(0, 0, 0, 0.06) !important; }
+.landing-shell.color-mode-light .border-white\/10        { border-color: rgba(0, 0, 0, 0.1) !important; }
+.landing-shell.color-mode-light .border-white\/\[0\.06\] { border-color: rgba(0, 0, 0, 0.06) !important; }
+.landing-shell.color-mode-light .border-white\/\[0\.08\] { border-color: rgba(0, 0, 0, 0.08) !important; }
+.landing-shell.color-mode-light .border-white\/20        { border-color: rgba(0, 0, 0, 0.12) !important; }
+
+/* ── Hover states ──────────────────────────────────────────────────────── */
+.landing-shell.color-mode-light .hover\:text-white:hover       { color: #1A1A2E !important; }
+.landing-shell.color-mode-light .hover\:bg-white\/5:hover      { background-color: rgba(0, 0, 0, 0.04) !important; }
+.landing-shell.color-mode-light .hover\:bg-white\/10:hover     { background-color: rgba(0, 0, 0, 0.06) !important; }
+.landing-shell.color-mode-light .hover\:bg-white\/\[0\.04\]:hover { background-color: rgba(0, 0, 0, 0.04) !important; }
+.landing-shell.color-mode-light .hover\:bg-white\/\[0\.05\]:hover { background-color: rgba(0, 0, 0, 0.04) !important; }
+.landing-shell.color-mode-light .hover\:bg-white\/\[0\.06\]:hover { background-color: rgba(0, 0, 0, 0.05) !important; }
+
+/* ── Additional backgrounds (Navbar, CTA, Hero) ─────────────────────── */
+.landing-shell.color-mode-light .bg-\[\#120B1D\]         { background-color: #EFF0F5 !important; }
+.landing-shell.color-mode-light .bg-\[\#131127\]         { background-color: #FFFFFF !important; }
+.landing-shell.color-mode-light .bg-\[\#1e1b3a\]         { background-color: #F0F0F5 !important; }
+.landing-shell.color-mode-light .bg-radial-glow          { opacity: 0.15 !important; }
+.landing-shell.color-mode-light .bg-black\/60            { background-color: rgba(0, 0, 0, 0.3) !important; }
+
+/* ── Text on gradient buttons (keep dark on light bg) ────────────────── */
+.landing-shell.color-mode-light .text-\[\#0B0A1A\]      { color: #0B0A1A !important; }
+
+/* ── Shadows ──────────────────────────────────────────────────────────── */
+.landing-shell.color-mode-light .shadow-\[0_0_20px_rgba\(139\,92\,246\,0\.25\)\] {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.15) !important;
+}
+.landing-shell.color-mode-light .shadow-\[0_20px_60px_-12px_rgba\(0\,0\,0\,0\.5\)\] {
+  box-shadow: 0 20px 60px -12px rgba(0, 0, 0, 0.15) !important;
+}
+.landing-shell.color-mode-light .shadow-\[0_1px_24px_rgba\(0\,0\,0\,0\.25\)\] {
+  box-shadow: 0 1px 24px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* ── Input fields ────────────────────────────────────────────────────── */
+.landing-shell.color-mode-light input,
+.landing-shell.color-mode-light textarea {
+  color: #1A1A2E !important;
+}
+.landing-shell.color-mode-light input::placeholder,
+.landing-shell.color-mode-light textarea::placeholder {
+  color: #9CA3AF !important;
+}
+
+/* ── Selection ───────────────────────────────────────────────────────── */
+.landing-shell.color-mode-light ::selection {
+  background: rgba(107, 79, 200, 0.2);
+  color: #1A1A2E;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LANDING PAGE GREY MODE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Text colors ───────────────────────────────────────────────────────── */
+.landing-shell.color-mode-grey .text-white               { color: #E5E5E5 !important; }
+.landing-shell.color-mode-grey .text-gray-200            { color: #D1D5DB !important; }
+.landing-shell.color-mode-grey .text-gray-300            { color: #C0C0C8 !important; }
+.landing-shell.color-mode-grey .text-gray-400            { color: #A0A0B0 !important; }
+.landing-shell.color-mode-grey .text-gray-500            { color: #8A8A9A !important; }
+.landing-shell.color-mode-grey .text-gray-600            { color: #6A6A7A !important; }
+.landing-shell.color-mode-grey .text-opti-text-primary   { color: #E5E5E5 !important; }
+.landing-shell.color-mode-grey .text-opti-text-secondary { color: #A0A0B0 !important; }
+
+/* ── Backgrounds ───────────────────────────────────────────────────────── */
+.landing-shell.color-mode-grey                           { background-color: #2D2D3A !important; }
+.landing-shell.color-mode-grey .bg-opti-bg               { background-color: #2D2D3A !important; }
+.landing-shell.color-mode-grey .bg-opti-bg-secondary     { background-color: #353545 !important; }
+.landing-shell.color-mode-grey .bg-opti-surface          { background-color: #3A3A4A !important; }
+.landing-shell.color-mode-grey .bg-\[\#07040A\]          { background-color: #2D2D3A !important; }
+.landing-shell.color-mode-grey .bg-\[\#0B0A1A\]          { background-color: #2D2D3A !important; }
+.landing-shell.color-mode-grey .bg-\[\#0B0A1A\]\/80      { background-color: rgba(45, 45, 58, 0.8) !important; }
+.landing-shell.color-mode-grey .bg-\[\#0B0A1A\]\/95      { background-color: rgba(45, 45, 58, 0.95) !important; }
+.landing-shell.color-mode-grey .bg-\[\#0e0b19\]\/95      { background-color: rgba(58, 58, 74, 0.95) !important; }
+.landing-shell.color-mode-grey .bg-\[\#18162e\]          { background-color: #3A3A4A !important; }
+.landing-shell.color-mode-grey .bg-\[\#1a1625\]          { background-color: #3A3A4A !important; }
+.landing-shell.color-mode-grey .bg-white\/5              { background-color: rgba(255, 255, 255, 0.05) !important; }
+.landing-shell.color-mode-grey .bg-white\/10             { background-color: rgba(255, 255, 255, 0.08) !important; }
+.landing-shell.color-mode-grey .bg-white\/\[0\.02\]      { background-color: rgba(255, 255, 255, 0.03) !important; }
+.landing-shell.color-mode-grey .bg-white\/\[0\.03\]      { background-color: rgba(255, 255, 255, 0.04) !important; }
+.landing-shell.color-mode-grey .bg-white\/\[0\.04\]      { background-color: rgba(255, 255, 255, 0.05) !important; }
+.landing-shell.color-mode-grey .bg-white\/\[0\.05\]      { background-color: rgba(255, 255, 255, 0.06) !important; }
+.landing-shell.color-mode-grey .bg-white\/\[0\.06\]      { background-color: rgba(255, 255, 255, 0.07) !important; }
+
+/* ── Glass card ────────────────────────────────────────────────────────── */
+.landing-shell.color-mode-grey .glass-card {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.landing-shell.color-mode-grey .glass-nav {
+  background-color: rgba(45, 45, 58, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ── Borders ───────────────────────────────────────────────────────────── */
+.landing-shell.color-mode-grey .border-white\/5          { border-color: rgba(255, 255, 255, 0.08) !important; }
+.landing-shell.color-mode-grey .border-white\/10         { border-color: rgba(255, 255, 255, 0.12) !important; }
+.landing-shell.color-mode-grey .border-white\/\[0\.06\]  { border-color: rgba(255, 255, 255, 0.08) !important; }
+.landing-shell.color-mode-grey .border-white\/\[0\.08\]  { border-color: rgba(255, 255, 255, 0.1) !important; }
+.landing-shell.color-mode-grey .border-white\/20         { border-color: rgba(255, 255, 255, 0.22) !important; }
+
+/* ── Hover states ──────────────────────────────────────────────────────── */
+.landing-shell.color-mode-grey .hover\:text-white:hover       { color: #F0F0F0 !important; }
+.landing-shell.color-mode-grey .hover\:bg-white\/5:hover      { background-color: rgba(255, 255, 255, 0.07) !important; }
+.landing-shell.color-mode-grey .hover\:bg-white\/10:hover     { background-color: rgba(255, 255, 255, 0.1) !important; }
+.landing-shell.color-mode-grey .hover\:bg-white\/\[0\.04\]:hover { background-color: rgba(255, 255, 255, 0.06) !important; }
+.landing-shell.color-mode-grey .hover\:bg-white\/\[0\.05\]:hover { background-color: rgba(255, 255, 255, 0.07) !important; }
+.landing-shell.color-mode-grey .hover\:bg-white\/\[0\.06\]:hover { background-color: rgba(255, 255, 255, 0.08) !important; }
+
+/* ── Additional backgrounds (Navbar, CTA, Hero) ─────────────────────── */
+.landing-shell.color-mode-grey .bg-\[\#120B1D\]          { background-color: #353545 !important; }
+.landing-shell.color-mode-grey .bg-\[\#131127\]          { background-color: #3A3A4A !important; }
+.landing-shell.color-mode-grey .bg-\[\#1e1b3a\]          { background-color: #424252 !important; }
+.landing-shell.color-mode-grey .bg-radial-glow           { opacity: 0.25 !important; }
+
+/* ── Input fields ────────────────────────────────────────────────────── */
+.landing-shell.color-mode-grey input,
+.landing-shell.color-mode-grey textarea {
+  color: #E5E5E5 !important;
+}
+.landing-shell.color-mode-grey input::placeholder,
+.landing-shell.color-mode-grey textarea::placeholder {
+  color: #8A8A9A !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    SCROLLBAR
    ═══════════════════════════════════════════════════════════════════════════ */
 

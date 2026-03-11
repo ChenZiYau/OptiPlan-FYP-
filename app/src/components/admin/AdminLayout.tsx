@@ -9,6 +9,7 @@ const pageTitles: Record<string, string> = {
   '/admin/users': 'User Database',
   '/admin/feedback': 'Feedback Management',
   '/admin/content': 'Website Content',
+  '/admin/settings': 'Site Settings',
 };
 
 function getTitle(pathname: string): string {

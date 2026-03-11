@@ -58,6 +58,13 @@ const DEFAULT_SETTINGS: Settings = {
   dyslexiaFont: false,
 };
 
+/** Returns true if user has existing localStorage settings */
+function hasStoredSettings(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_KEY) !== null;
+  } catch { return false; }
+}
+
 function loadSettings(): Settings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -83,6 +90,41 @@ export function useSettings(): SettingsContextValue {
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(loadSettings);
+
+  // ── Load admin-configured defaults for first-time visitors ──────────
+  useEffect(() => {
+    if (hasStoredSettings()) return; // user already has preferences
+
+    (async () => {
+      try {
+        const { createClient } = await import('@supabase/supabase-js');
+        const url = import.meta.env.VITE_SUPABASE_URL ?? 'https://zgxmzpzuedqclfvphuqy.supabase.co';
+        const key = import.meta.env.VITE_SUPABASE_ANON_KEY ??
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpneG16cHp1ZWRxY2xmdnBodXF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2ODQ1NjAsImV4cCI6MjA4NzI2MDU2MH0.KN75oa81l0uSZEXcBT3INLqaSEi0nZmG2kzgevIdPLs';
+        const sb = createClient(url, key);
+        const { data } = await sb
+          .from('site_content')
+          .select('content')
+          .eq('section_key', 'site_settings')
+          .single();
+
+        if (data?.content) {
+          const c = data.content as Record<string, unknown>;
+          const adminDefaults: Partial<Settings> = {};
+          if (c.defaultTheme) adminDefaults.theme = c.defaultTheme as ThemeKey;
+          if (c.defaultColorMode) adminDefaults.colorMode = c.defaultColorMode as ColorMode;
+          if (c.defaultTextScale) adminDefaults.textScale = c.defaultTextScale as TextScale;
+          if (typeof c.defaultHighContrast === 'boolean') adminDefaults.highContrast = c.defaultHighContrast;
+          if (typeof c.defaultReduceMotion === 'boolean') adminDefaults.reduceMotion = c.defaultReduceMotion;
+          if (typeof c.defaultDyslexiaFont === 'boolean') adminDefaults.dyslexiaFont = c.defaultDyslexiaFont;
+
+          if (Object.keys(adminDefaults).length > 0) {
+            setSettings(prev => ({ ...prev, ...adminDefaults }));
+          }
+        }
+      } catch { /* silently use hardcoded defaults */ }
+    })();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const updateSettings = (partial: Partial<Settings>) => {
     setSettings(prev => {
