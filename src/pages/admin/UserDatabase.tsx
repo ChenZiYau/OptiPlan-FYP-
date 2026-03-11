@@ -4,6 +4,7 @@ import { Users, UserCircle, Shield, Search, Pencil, Trash2 } from 'lucide-react'
 import { StatCard } from '@/components/admin/StatCard';
 import { CustomDropdown } from '@/components/ui/custom-dropdown';
 import { useAdminUsers, useAdminStats, useUserPresence } from '@/hooks/useAdminData';
+import { useAdminRefresh } from '@/contexts/AdminRefreshContext';
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-US', {
@@ -43,11 +44,13 @@ const roleOptions = [
 
 export function UserDatabase() {
   const { users, loading, refetch } = useAdminUsers();
-  const { stats, loading: statsLoading } = useAdminStats();
-  const { presenceMap } = useUserPresence();
+  const { stats, loading: statsLoading, refetch: refetchStats } = useAdminStats();
+  const { presenceMap, refetch: refetchPresence } = useUserPresence();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+
+  useAdminRefresh(refetch, refetchStats, refetchPresence);
 
   const filtered = users.filter((u) => {
     const matchesSearch =

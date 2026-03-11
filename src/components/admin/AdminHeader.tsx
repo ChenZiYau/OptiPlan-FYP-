@@ -1,4 +1,5 @@
-import { Search, Bell, Menu } from 'lucide-react';
+import { Search, Bell, Menu, RefreshCw } from 'lucide-react';
+import { useAdminRefreshButton } from '@/contexts/AdminRefreshContext';
 
 interface AdminHeaderProps {
   title: string;
@@ -6,6 +7,8 @@ interface AdminHeaderProps {
 }
 
 export function AdminHeader({ title, onMenuToggle }: AdminHeaderProps) {
+  const { refresh, refreshing } = useAdminRefreshButton();
+
   return (
     <header className="sticky top-0 z-30 h-16 bg-[#0B0A1A]/80 backdrop-blur-xl border-b border-white/[0.06] flex items-center justify-between px-6">
       <div className="flex items-center gap-4">
@@ -27,6 +30,14 @@ export function AdminHeader({ title, onMenuToggle }: AdminHeaderProps) {
             className="bg-transparent text-sm text-gray-300 placeholder:text-gray-600 outline-none w-full"
           />
         </div>
+        <button
+          onClick={refresh}
+          disabled={refreshing}
+          title="Refresh page data"
+          className="relative w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
+        >
+          <RefreshCw className={`w-[18px] h-[18px] ${refreshing ? 'animate-spin' : ''}`} />
+        </button>
         <button className="relative w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors">
           <Bell className="w-[18px] h-[18px]" />
         </button>

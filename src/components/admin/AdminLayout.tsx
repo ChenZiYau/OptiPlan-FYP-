@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { AdminRefreshProvider } from '@/contexts/AdminRefreshContext';
 import { AdminSidebar } from './AdminSidebar';
 import { AdminHeader } from './AdminHeader';
 
@@ -38,15 +39,17 @@ export function AdminLayout() {
   const title = getTitle(location.pathname);
 
   return (
-    <div className="min-h-screen bg-[#0B0A1A]">
-      <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <AdminRefreshProvider>
+      <div className="min-h-screen bg-[#0B0A1A]">
+        <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="lg:ml-[250px] min-h-screen flex flex-col">
-        <AdminHeader title={title} onMenuToggle={() => setSidebarOpen(true)} />
-        <main className="flex-1 p-6">
-          <Outlet />
-        </main>
+        <div className="lg:ml-[250px] min-h-screen flex flex-col">
+          <AdminHeader title={title} onMenuToggle={() => setSidebarOpen(true)} />
+          <main className="flex-1 p-6">
+            <Outlet />
+          </main>
+        </div>
       </div>
-    </div>
+    </AdminRefreshProvider>
   );
 }

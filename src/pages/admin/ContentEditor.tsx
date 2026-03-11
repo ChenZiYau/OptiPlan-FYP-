@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronDown, Search, Eye, EyeOff, Loader2, Save, RotateCcw, X, Pipette } from 'lucide-react';
 import { useSiteContent, updateSiteContent } from '@/hooks/useAdminData';
+import { useAdminRefresh } from '@/contexts/AdminRefreshContext';
 import { useAuth } from '@/hooks/useAuth';
 import { siteDefaults, sectionColorFields } from '@/constants/siteDefaults';
 import type { SiteContent } from '@/types/admin';
@@ -772,6 +773,8 @@ function SectionEditor({
 export function ContentEditor() {
   const { content, loading, refetch } = useSiteContent();
   const { profile } = useAuth();
+
+  useAdminRefresh(refetch);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [saving, setSaving] = useState<string | null>(null);

@@ -3,6 +3,7 @@ import { MessageSquare, Bug, Lightbulb, Inbox, ChevronDown, Search } from 'lucid
 import { StatCard } from '@/components/admin/StatCard';
 import { CustomDropdown } from '@/components/ui/custom-dropdown';
 import { useAdminFeedback, useAdminStats, logAdminActivity } from '@/hooks/useAdminData';
+import { useAdminRefresh } from '@/contexts/AdminRefreshContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 
@@ -50,8 +51,10 @@ const statusOptions = [
 
 export function FeedbackPage() {
   const { feedback, loading, refetch } = useAdminFeedback();
-  const { stats, loading: statsLoading } = useAdminStats();
+  const { stats, loading: statsLoading, refetch: refetchStats } = useAdminStats();
   const { profile } = useAuth();
+
+  useAdminRefresh(refetch, refetchStats);
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');

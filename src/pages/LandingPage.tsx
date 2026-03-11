@@ -14,6 +14,7 @@ import { InteractiveDemo } from '@/sections/InteractiveDemo';
 import { useSiteContentData } from '@/hooks/useSiteContent';
 import { AnimatedShaderBackground } from '@/components/ui/animated-shader-background';
 import { MeshGradientBackground } from '@/components/ui/mesh-gradient-background';
+import { LandingChatbox } from '@/components/LandingChatbox';
 
 export function LandingPage() {
   const { isVisible } = useSiteContentData();
@@ -59,6 +60,9 @@ export function LandingPage() {
 
       {/* Footer */}
       <Footer />
+
+      {/* AI Chatbox */}
+      <LandingChatbox />
     </div>
   );
 }

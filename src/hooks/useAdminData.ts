@@ -83,32 +83,31 @@ export function useAdminStats() {
   });
   const [loading, setLoading] = useState(true);
 
+  const fetchStats = useCallback(async () => {
+    const [profilesRes, feedbackRes] = await Promise.all([
+      supabase.from('profiles').select('role'),
+      supabase.from('feedback').select('category'),
+    ]);
+
+    const profiles = profilesRes.data ?? [];
+    const fb = feedbackRes.data ?? [];
+
+    setStats({
+      totalUsers: profiles.length,
+      regularUsers: profiles.filter((p) => p.role === 'user').length,
+      adminUsers: profiles.filter((p) => p.role === 'admin').length,
+      totalFeedback: fb.length,
+      bugReports: fb.filter((f) => f.category === 'bug').length,
+      featureRequests: fb.filter((f) => f.category === 'feature').length,
+    });
+    setLoading(false);
+  }, []);
+
   useEffect(() => {
-    if (!uid) return;
+    if (uid) fetchStats();
+  }, [uid, fetchStats]);
 
-    async function fetch() {
-      const [profilesRes, feedbackRes] = await Promise.all([
-        supabase.from('profiles').select('role'),
-        supabase.from('feedback').select('category'),
-      ]);
-
-      const profiles = profilesRes.data ?? [];
-      const fb = feedbackRes.data ?? [];
-
-      setStats({
-        totalUsers: profiles.length,
-        regularUsers: profiles.filter((p) => p.role === 'user').length,
-        adminUsers: profiles.filter((p) => p.role === 'admin').length,
-        totalFeedback: fb.length,
-        bugReports: fb.filter((f) => f.category === 'bug').length,
-        featureRequests: fb.filter((f) => f.category === 'feature').length,
-      });
-      setLoading(false);
-    }
-    fetch();
-  }, [uid]);
-
-  return { stats, loading };
+  return { stats, loading, refetch: fetchStats };
 }
 
 export function useRecentActivity() {
@@ -183,22 +182,21 @@ export function useUserPresence() {
   const [presence, setPresence] = useState<UserPresence[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!uid) return;
+  const fetchPresence = useCallback(async () => {
+    const { data } = await supabase
+      .from('user_presence')
+      .select('*');
+    setPresence(data ?? []);
+    setLoading(false);
+  }, []);
 
-    async function fetch() {
-      const { data } = await supabase
-        .from('user_presence')
-        .select('*');
-      setPresence(data ?? []);
-      setLoading(false);
-    }
-    fetch();
-  }, [uid]);
+  useEffect(() => {
+    if (uid) fetchPresence();
+  }, [uid, fetchPresence]);
 
   const presenceMap = new Map(presence.map(p => [p.user_id, p]));
 
-  return { presence, presenceMap, loading };
+  return { presence, presenceMap, loading, refetch: fetchPresence };
 }
 
 export function useSiteContent() {

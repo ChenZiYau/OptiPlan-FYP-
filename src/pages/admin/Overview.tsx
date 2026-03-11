@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { StatCard } from '@/components/admin/StatCard';
 import { CustomDropdown } from '@/components/ui/custom-dropdown';
 import { useAdminStats, useAdminActivityLog, useUserPresence } from '@/hooks/useAdminData';
+import { useAdminRefresh } from '@/contexts/AdminRefreshContext';
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
@@ -130,19 +131,21 @@ function renderActivityDetails(item: any) {
 }
 
 export function Overview() {
-  const { stats, loading: statsLoading } = useAdminStats();
-  const { presence } = useUserPresence();
+  const { stats, loading: statsLoading, refetch: refetchStats } = useAdminStats();
+  const { presence, refetch: refetchPresence } = useUserPresence();
 
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [actionType, setActionType] = useState('all');
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
-  const { activities, loading: actLoading } = useAdminActivityLog({
+  const { activities, loading: actLoading, refetch: refetchActivities } = useAdminActivityLog({
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
     actionType,
   });
+
+  useAdminRefresh(refetchStats, refetchPresence, refetchActivities);
 
   const onlineCount = presence.filter(p => p.is_online).length;
 
