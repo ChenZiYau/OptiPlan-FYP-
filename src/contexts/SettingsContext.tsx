@@ -7,9 +7,9 @@ export type TextScale = 'sm' | 'md' | 'lg' | 'xl';
 export type ColorMode = 'dark' | 'light' | 'grey';
 export type CurrencyCode = 'USD' | 'MYR';
 
-export const CURRENCY_CONFIG: Record<CurrencyCode, { symbol: string; locale: string; rate: number }> = {
-  USD: { symbol: '$', locale: 'en-US', rate: 1 },
-  MYR: { symbol: 'RM', locale: 'ms-MY', rate: 4.47 },
+export const CURRENCY_CONFIG: Record<CurrencyCode, { symbol: string; locale: string }> = {
+  USD: { symbol: '$', locale: 'en-US' },
+  MYR: { symbol: 'RM', locale: 'ms-MY' },
 };
 
 export interface Settings {
