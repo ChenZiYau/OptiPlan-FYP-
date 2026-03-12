@@ -7,6 +7,7 @@ import {
   EXPENSE_CATEGORIES,
   DEFAULT_CATEGORY_BUDGET,
 } from '@/hooks/useFinanceData';
+import { useCurrency } from '@/hooks/useCurrency';
 
 /** Hard limit for total monthly budget */
 const MAX_TOTAL_BUDGET = 100_000_000;
@@ -31,6 +32,7 @@ interface SetBudgetModalProps {
 
 export function SetBudgetModal({ open, onOpenChange }: SetBudgetModalProps) {
   const { settings, budgets, saveSettings, upsertBudgetLimit } = useFinance();
+  const { symbol } = useCurrency();
 
   // Total monthly budget
   const [totalBudget, setTotalBudget] = useState('');
@@ -99,7 +101,7 @@ export function SetBudgetModal({ open, onOpenChange }: SetBudgetModalProps) {
   function handleTotalBudgetChange(val: string) {
     const num = parseFloat(val);
     if (!isNaN(num) && num > MAX_TOTAL_BUDGET) {
-      setTotalBudgetError(`Maximum budget is $${MAX_TOTAL_BUDGET.toLocaleString()}`);
+      setTotalBudgetError(`Maximum budget is ${symbol}${MAX_TOTAL_BUDGET.toLocaleString()}`);
       return;
     }
     setTotalBudgetError('');
@@ -111,7 +113,7 @@ export function SetBudgetModal({ open, onOpenChange }: SetBudgetModalProps) {
     if (!isNaN(num) && num > MAX_CATEGORY_BUDGET) {
       setCategoryErrors((prev) => ({
         ...prev,
-        [cat]: `Maximum is $${MAX_CATEGORY_BUDGET.toLocaleString()}`,
+        [cat]: `Maximum is ${symbol}${MAX_CATEGORY_BUDGET.toLocaleString()}`,
       }));
       return;
     }
@@ -155,7 +157,7 @@ export function SetBudgetModal({ open, onOpenChange }: SetBudgetModalProps) {
             {/* Total Monthly Budget */}
             <div className="mb-4">
               <label className="text-sm text-gray-400 mb-2 block">
-                Total Monthly Budget ($)
+                Total Monthly Budget ({symbol})
               </label>
               <input
                 type="number"
