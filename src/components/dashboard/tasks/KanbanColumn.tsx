@@ -48,8 +48,9 @@ export function KanbanColumn({ status, items, onCardClick, onDelete }: KanbanCol
             />
           ))}
           {items.length === 0 && (
-            <div className="flex items-center justify-center h-20 text-xs text-gray-600 border border-dashed border-white/10 rounded-lg">
-              Drop tasks here
+            <div className="flex flex-col items-center justify-center h-20 text-xs text-gray-600 border border-dashed border-white/10 rounded-lg gap-1">
+              <span>No tasks in this column</span>
+              <span className="text-gray-700">Drag & drop tasks here</span>
             </div>
           )}
         </div>

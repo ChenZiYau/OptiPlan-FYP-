@@ -278,10 +278,7 @@ export function Auth() {
             transition={{ duration: 0.7, ease: 'easeOut' }}
           >
             <Link to="/" className="flex items-center gap-2 mb-12">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-opti-accent to-[#8B5CF6] flex items-center justify-center">
-                <span className="text-opti-bg font-bold text-lg">O</span>
-              </div>
-              <span className="font-semibold text-2xl text-opti-text-primary">OptiPlan</span>
+              <img src="/logo.png" alt="OptiPlan" className="h-10 w-auto" />
             </Link>
 
             <AnimatePresence mode="wait">
@@ -309,10 +306,7 @@ export function Auth() {
             {/* Mobile logo */}
             <motion.div custom={0} variants={fadeIn} className="lg:hidden mb-8 text-center">
               <Link to="/" className="inline-flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-opti-accent to-[#8B5CF6] flex items-center justify-center">
-                  <span className="text-opti-bg font-bold text-sm">O</span>
-                </div>
-                <span className="font-semibold text-xl text-opti-text-primary">OptiPlan</span>
+                <img src="/logo.png" alt="OptiPlan" className="h-8 w-auto" />
               </Link>
             </motion.div>
 

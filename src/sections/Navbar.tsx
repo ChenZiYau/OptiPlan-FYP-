@@ -86,7 +86,7 @@ function DesktopDropdown({
       {/* Panel — static wrapper handles centering, motion.div handles animation */}
       <AnimatePresence>
         {isActive && (
-          <div className="absolute top-[calc(100%+12px)] left-1/2 -translate-x-1/2 w-72 z-50">
+          <div className="absolute top-[calc(100%+12px)] left-1/2 -translate-x-1/2 w-72 max-w-[calc(100vw-2rem)] z-50">
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -259,7 +259,7 @@ function ProfileDropdown({ name, initials, role, onNavigate, onSignOut }: Profil
 
       <AnimatePresence>
         {isOpen && (
-          <div className="absolute top-[calc(100%+8px)] right-0 w-56 z-50">
+          <div className="absolute top-[calc(100%+8px)] right-0 w-56 max-w-[calc(100vw-2rem)] z-50">
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -378,19 +378,18 @@ export function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="relative flex items-center justify-between h-[72px]">
             {/* ── Logo (left) ──────────────────────────────────────── */}
-            <motion.a
-              href="#"
+            <motion.button
+              onClick={() => {
+                scrollToSection('hero');
+                setIsMobileOpen(false);
+                setActiveDropdown(null);
+              }}
               className="relative z-10 flex items-center gap-2.5 shrink-0"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-opti-accent to-[#8B5CF6] flex items-center justify-center">
-                <span className="text-[#0B0A1A] font-bold text-sm">O</span>
-              </div>
-              <span className="font-semibold text-lg text-white tracking-tight">
-                OptiPlan
-              </span>
-            </motion.a>
+              <img src="/logo.png" alt="OptiPlan" className="h-20 sm:h-24 w-auto" />
+            </motion.button>
 
             {/* ── Center nav (absolutely centered on desktop) ──────── */}
             <nav

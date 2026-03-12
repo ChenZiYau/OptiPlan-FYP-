@@ -116,7 +116,9 @@ export function ChatBotPage() {
 
   // Load history on mount
   useEffect(() => {
-    loadHistory().then(() => setHistoryLoaded(true));
+    loadHistory()
+      .then(() => setHistoryLoaded(true))
+      .catch(() => setHistoryLoaded(true));
   }, [loadHistory]);
 
   // Show welcome after history loads

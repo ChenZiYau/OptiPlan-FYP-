@@ -113,8 +113,8 @@ function AccountTab() {
     try {
       await uploadAvatar(file);
       toast.success('Avatar updated!');
-    } catch (err: any) {
-      toast.error('Failed to upload avatar', { description: err.message });
+    } catch (err: unknown) {
+      toast.error('Failed to upload avatar', { description: err instanceof Error ? err.message : 'Unknown error' });
     } finally {
       setUploadingAvatar(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -126,8 +126,8 @@ function AccountTab() {
     try {
       await updateProfile({ display_name: username });
       toast.success('Profile saved!', { description: 'Your changes have been applied.' });
-    } catch (err: any) {
-      toast.error('Failed to save profile', { description: err.message });
+    } catch (err: unknown) {
+      toast.error('Failed to save profile', { description: err instanceof Error ? err.message : 'Unknown error' });
     } finally {
       setSaving(false);
     }
@@ -144,8 +144,8 @@ function AccountTab() {
       toast.success('Password updated!');
       setCurrentPassword('');
       setNewPassword('');
-    } catch (err: any) {
-      toast.error('Failed to change password', { description: err.message });
+    } catch (err: unknown) {
+      toast.error('Failed to change password', { description: err instanceof Error ? err.message : 'Unknown error' });
     } finally {
       setChangingPassword(false);
     }

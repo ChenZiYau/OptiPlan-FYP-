@@ -12,7 +12,7 @@ interface TestimonialCardProps {
 
 export function TestimonialCard({ quote, name, role, initials, quoteColor, nameColor, roleColor }: TestimonialCardProps) {
   return (
-    <div className="glass-card w-[340px] sm:w-[380px] shrink-0 p-6 flex flex-col">
+    <div className="glass-card w-[min(340px,85vw)] sm:w-[380px] shrink-0 p-6 flex flex-col">
       {/* Stars */}
       <div className="flex gap-1 mb-4">
         {Array.from({ length: 5 }).map((_, i) => (

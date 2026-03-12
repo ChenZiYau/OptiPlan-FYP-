@@ -6,6 +6,7 @@ import { useAdminFeedback, useAdminStats, logAdminActivity } from '@/hooks/useAd
 import { useAdminRefresh } from '@/contexts/AdminRefreshContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-US', {
@@ -81,29 +82,36 @@ export function FeedbackPage() {
     if (!profile) return;
     setUpdatingStatus(feedbackId);
 
-    const item = feedback.find(f => f.id === feedbackId);
-    const oldStatus = item?.status;
+    try {
+      const item = feedback.find(f => f.id === feedbackId);
+      const oldStatus = item?.status;
 
-    await supabase
-      .from('feedback')
-      .update({ status: newStatus })
-      .eq('id', feedbackId);
+      const { error } = await supabase
+        .from('feedback')
+        .update({ status: newStatus })
+        .eq('id', feedbackId);
 
-    await logAdminActivity(
-      profile.id,
-      profile.display_name ?? profile.email,
-      'feedback_status_change',
-      null,
-      {
-        feedback_id: feedbackId,
-        old_status: oldStatus,
-        new_status: newStatus,
-        user_email: item?.user_email,
-      },
-    );
+      if (error) throw error;
 
-    setUpdatingStatus(null);
-    refetch();
+      await logAdminActivity(
+        profile.id,
+        profile.display_name ?? profile.email,
+        'feedback_status_change',
+        null,
+        {
+          feedback_id: feedbackId,
+          old_status: oldStatus,
+          new_status: newStatus,
+          user_email: item?.user_email,
+        },
+      );
+
+      refetch();
+    } catch {
+      toast.error('Failed to update feedback status');
+    } finally {
+      setUpdatingStatus(null);
+    }
   };
 
   return (

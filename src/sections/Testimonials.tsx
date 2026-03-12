@@ -17,6 +17,7 @@ interface TestimonialsContent {
   title: string;
   subtitle: string;
   items: TestimonialItem[];
+  textColors?: Record<string, string>;
 }
 
 const defaults = siteDefaults.testimonials as unknown as TestimonialsContent;
@@ -32,7 +33,7 @@ export function Testimonials() {
   const { getContent } = useSiteContentData();
   const content = getContent<TestimonialsContent>('testimonials') ?? defaults;
   const items = content.items ?? defaults.items;
-  const tc = ((content as any).textColors ?? {}) as Record<string, string>;
+  const tc = content.textColors ?? {};
   const duplicated = [...items, ...items];
 
   // Measure half the track (one full set of cards) for the reset point
@@ -82,7 +83,7 @@ export function Testimonials() {
 
         {/* Carousel */}
         <div
-          className="relative"
+          className="relative overflow-hidden"
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
         >

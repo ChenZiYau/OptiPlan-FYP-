@@ -1,4 +1,3 @@
-console.log("[server] Module init: starting imports...");
 import express from "express";
 import cors from "cors";
 import Groq from "groq-sdk";
@@ -6,7 +5,12 @@ import { config } from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { createClient } from "@supabase/supabase-js";
-console.log("[server] Module init: all imports loaded OK");
+
+/** Debug logger — only outputs in local dev, silent in production / Vercel */
+const isDev = !process.env.VERCEL && process.env.NODE_ENV !== "production";
+function log(...args: unknown[]) {
+  if (isDev) console.log(...args);
+}
 
 // NOTE: officeparser and @langchain/textsplitters are lazy-imported inside
 // their respective functions to avoid crashing Vercel on module init.
@@ -72,16 +76,16 @@ async function extractText(buffer: Buffer, filename: string): Promise<string> {
   }
 
   try {
-    console.log(`[extractText] Lazy-importing officeparser...`);
+    log(`[extractText] Lazy-importing officeparser...`);
     const { parseOfficeAsync } = await import("officeparser");
-    console.log(`[extractText] officeparser loaded, parsing ${ext}...`);
+    log(`[extractText] officeparser loaded, parsing ${ext}...`);
 
     // officeparser v4: parseOfficeAsync returns Promise<string>
     // tempFilesLocation needed on Vercel (read-only FS except /tmp)
     const text = await parseOfficeAsync(buffer, {
       tempFilesLocation: isVercel ? "/tmp" : undefined,
     });
-    console.log(`[extractText] Parse complete, ${text.length} chars`);
+    log(`[extractText] Parse complete, ${text.length} chars`);
     return text;
   } catch (parseError: any) {
     throw new Error(
@@ -116,7 +120,7 @@ function getSupabaseClient(req: any) {
 // ── Chunking Helper ────────────────────────────────────────────────────────
 
 async function chunkText(text: string): Promise<string[]> {
-  console.log(`[chunkText] Lazy-importing @langchain/textsplitters...`);
+  log(`[chunkText] Lazy-importing @langchain/textsplitters...`);
   const { RecursiveCharacterTextSplitter } = await import("@langchain/textsplitters");
   const splitter = new RecursiveCharacterTextSplitter({
     chunkSize: 1000,
@@ -141,7 +145,7 @@ app.post("/api/generate-notes", async (req, res) => {
       return res.status(400).json({ error: "notebook_id is required." });
     }
 
-    console.log(`[notes] Generating for notebook ${notebook_id}`);
+    log(`[notes] Generating for notebook ${notebook_id}`);
 
     // 1. Fetch all chunks for this notebook
     const { data: chunks, error: chunkErr } = await getSupabaseClient(req)
@@ -165,7 +169,7 @@ app.post("/api/generate-notes", async (req, res) => {
         });
     }
 
-    console.log(`[notes] Found ${chunks.length} chunks`);
+    log(`[notes] Found ${chunks.length} chunks`);
 
     // 2. Build context from chunks
     const contextText = chunks
@@ -242,7 +246,7 @@ STRICT FORMATTING RULES:
         .json({ error: "AI returned an empty response. Please try again." });
     }
 
-    console.log(`[notes] Generated ${notes.length} chars`);
+    log(`[notes] Generated ${notes.length} chars`);
 
     // 4. Persist to generated_notes
     const { error: insertErr } = await getSupabaseClient(req)
@@ -282,7 +286,7 @@ app.post("/api/ingest", async (req, res) => {
       return res.status(400).json({ error: "storage_path and filename are required." });
     }
 
-    console.log(`[ingest] ① Request received: ${filename} (path: ${storagePath})`);
+    log(`[ingest] ① Request received: ${filename} (path: ${storagePath})`);
 
     // 1. Download file from Supabase Storage
     const supabaseClient = getSupabaseClient(req);
@@ -300,12 +304,12 @@ app.post("/api/ingest", async (req, res) => {
 
     const buffer = Buffer.from(await fileData.arrayBuffer());
     const ext = filename.toLowerCase().split(".").pop() || "";
-    console.log(`[ingest] ② File downloaded from storage: ${(buffer.length / 1024).toFixed(1)}KB (+${Date.now() - t0}ms)`);
+    log(`[ingest] ② File downloaded from storage: ${(buffer.length / 1024).toFixed(1)}KB (+${Date.now() - t0}ms)`);
 
     // 2. Extract text
     let rawText: string;
     try {
-      console.log(`[ingest] ③ Starting text extraction...`);
+      log(`[ingest] ③ Starting text extraction...`);
       rawText = await extractText(buffer, filename);
     } catch (parseErr: any) {
       console.error(`[ingest] ③ Parse failed (+${Date.now() - t0}ms):`, parseErr.message);
@@ -317,11 +321,11 @@ app.post("/api/ingest", async (req, res) => {
       return res.status(422).json({ error: "File contains too little readable text." });
     }
 
-    console.log(`[ingest] ④ Text extracted: ${cleanText.length} chars (+${Date.now() - t0}ms)`);
+    log(`[ingest] ④ Text extracted: ${cleanText.length} chars (+${Date.now() - t0}ms)`);
 
     // 3. Chunk
     const chunks = await chunkText(cleanText);
-    console.log(`[ingest] ⑤ Chunked: ${chunks.length} chunks (+${Date.now() - t0}ms)`);
+    log(`[ingest] ⑤ Chunked: ${chunks.length} chunks (+${Date.now() - t0}ms)`);
 
     // 4. Insert source row
     const { data: source, error: sourceErr } = await supabaseClient
@@ -341,7 +345,7 @@ app.post("/api/ingest", async (req, res) => {
       return res.status(500).json({ error: `Failed to save source: ${sourceErr?.message}` });
     }
 
-    console.log(`[ingest] ⑥ Source row inserted: ${source.id} (+${Date.now() - t0}ms)`);
+    log(`[ingest] ⑥ Source row inserted: ${source.id} (+${Date.now() - t0}ms)`);
 
     // 5. Insert chunk rows (fts column auto-populated by DB trigger)
     const chunkRows = chunks.map((content, i) => ({
@@ -360,12 +364,12 @@ app.post("/api/ingest", async (req, res) => {
       return res.status(500).json({ error: `Failed to save chunks: ${chunkErr.message}` });
     }
 
-    console.log(`[ingest] ⑦ ${chunks.length} chunks inserted (+${Date.now() - t0}ms)`);
+    log(`[ingest] ⑦ ${chunks.length} chunks inserted (+${Date.now() - t0}ms)`);
 
     // 6. Clean up the storage file (text is extracted, no longer needed)
     await supabaseClient.storage.from("study-sources").remove([storagePath]);
 
-    console.log(`[ingest] ⑧ Done! Total: ${Date.now() - t0}ms`);
+    log(`[ingest] ⑧ Done! Total: ${Date.now() - t0}ms`);
     return res.json({ source_id: source.id, chunk_count: chunks.length });
   } catch (err: any) {
     console.error(`[ingest] FATAL (+${Date.now() - t0}ms):`, err);
@@ -408,7 +412,7 @@ app.post("/api/chat", async (req, res) => {
 
     const hasNodeContext =
       typeof context === "string" && context.trim().length > 0;
-    console.log(
+    log(
       `[chat] Query for notebook ${notebook_id}${hasNodeContext ? " (with node context)" : ""}: "${message.slice(0, 80)}..."`,
     );
 
@@ -474,7 +478,7 @@ app.post("/api/chat", async (req, res) => {
       return res.json({ reply: noDocsReply, citations: [] });
     }
 
-    console.log(`[chat] Retrieved ${matchedChunks.length} chunks`);
+    log(`[chat] Retrieved ${matchedChunks.length} chunks`);
 
     // 3. Look up source filenames for the matched chunks
     const sourceIds = [...new Set(matchedChunks.map((c: any) => c.source_id))];
@@ -541,7 +545,7 @@ app.post("/api/chat", async (req, res) => {
       return res.status(502).json({ error: "AI returned an empty response." });
     }
 
-    console.log(`[chat] Groq returned ${aiReply.length} chars`);
+    log(`[chat] Groq returned ${aiReply.length} chars`);
 
     // 7. Build citations array from matched chunks
     const citations = matchedChunks.map((chunk: any) => ({
@@ -642,7 +646,7 @@ app.post("/api/generate-mindmap", async (req, res) => {
       return res.status(400).json({ error: "notebook_id is required." });
     }
 
-    console.log(`[mindmap] Generating for notebook ${notebook_id}`);
+    log(`[mindmap] Generating for notebook ${notebook_id}`);
 
     // 1. Retrieve ALL chunks from this notebook (up to 60 for large docs)
     const { data: chunks, error: chunkErr } = await getSupabaseClient(req)
@@ -693,7 +697,7 @@ app.post("/api/generate-mindmap", async (req, res) => {
           "\n\n[... remaining content truncated ...]"
         : chunksText;
 
-    console.log(
+    log(
       `[mindmap] Sending ${chunks.length} chunks (${contextText.length} chars) from: ${filenames.join(", ")}`,
     );
 
@@ -756,7 +760,7 @@ app.post("/api/generate-mindmap", async (req, res) => {
         .json({ error: `Mind map generation failed: ${genErr.message}` });
     }
 
-    console.log(
+    log(
       `[mindmap] Generated ${graphJson.nodes.length} nodes, ${graphJson.edges.length} edges`,
     );
 
@@ -813,7 +817,7 @@ app.post("/api/generate-flashcards", async (req, res) => {
       return res.status(400).json({ error: "notebook_id is required." });
     }
 
-    console.log(`[flashcards] Generating for notebook ${notebook_id}`);
+    log(`[flashcards] Generating for notebook ${notebook_id}`);
 
     const { data: chunks, error: chunkErr } = await getSupabaseClient(req)
       .from("chunks")
@@ -875,7 +879,7 @@ app.post("/api/generate-flashcards", async (req, res) => {
         .json({ error: `Flashcards generation failed: ${genErr.message}` });
     }
 
-    console.log(
+    log(
       `[flashcards] Generated ${parsedJson.flashcards.length} flashcards`,
     );
 
@@ -944,7 +948,7 @@ app.post("/api/generate-quiz", async (req, res) => {
       return res.status(400).json({ error: "notebook_id is required." });
     }
 
-    console.log(`[quiz] Generating for notebook ${notebook_id}`);
+    log(`[quiz] Generating for notebook ${notebook_id}`);
 
     const { data: chunks, error: chunkErr } = await getSupabaseClient(req)
       .from("chunks")
@@ -1006,7 +1010,7 @@ app.post("/api/generate-quiz", async (req, res) => {
         .json({ error: `Quiz generation failed: ${genErr.message}` });
     }
 
-    console.log(`[quiz] Generated ${parsedJson.questions.length} questions`);
+    log(`[quiz] Generated ${parsedJson.questions.length} questions`);
 
     // Delete existing quiz for this notebook (simplifies sync for this phase)
     await getSupabaseClient(req)
@@ -1067,13 +1071,13 @@ export default app;
 // Only listen when running locally (not on Vercel)
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {
-    console.log(`\n  Study Hub API running on http://localhost:${PORT}`);
-    console.log(`  POST /api/generate-notes`);
-    console.log(`  POST /api/ingest`);
-    console.log(`  POST /api/chat`);
-    console.log(`  POST /api/generate-mindmap`);
-    console.log(`  POST /api/generate-flashcards`);
-    console.log(`  POST /api/generate-quiz`);
-    console.log(`  GET  /api/health\n`);
+    log(`\n  Study Hub API running on http://localhost:${PORT}`);
+    log(`  POST /api/generate-notes`);
+    log(`  POST /api/ingest`);
+    log(`  POST /api/chat`);
+    log(`  POST /api/generate-mindmap`);
+    log(`  POST /api/generate-flashcards`);
+    log(`  POST /api/generate-quiz`);
+    log(`  GET  /api/health\n`);
   });
 }

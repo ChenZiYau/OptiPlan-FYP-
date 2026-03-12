@@ -25,7 +25,9 @@
       "mcp__supabase__execute_sql",
       "WebSearch",
       "WebFetch(domain:typebot.io)",
-      "WebFetch(domain:docs.typebot.io)"
+      "WebFetch(domain:docs.typebot.io)",
+      "Read(//c/Users/yauyau/Desktop/**)",
+      "Read(//c/Users/yauyau/Downloads/**)"
     ]
   },
   "enableAllProjectMcpServers": true

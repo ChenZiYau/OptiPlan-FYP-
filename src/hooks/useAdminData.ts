@@ -31,44 +31,60 @@ export function useAdminUsers() {
   const uid = useSessionUid();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, email, display_name, role, created_at')
-      .order('created_at', { ascending: false });
-    setUsers(data ?? []);
-    setLoading(false);
+    setError(null);
+    try {
+      const { data, error: err } = await supabase
+        .from('profiles')
+        .select('id, email, display_name, role, created_at')
+        .order('created_at', { ascending: false });
+      if (err) throw err;
+      setUsers(data ?? []);
+    } catch {
+      setError('Failed to load users');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     if (uid) fetchUsers();
   }, [uid, fetchUsers]);
 
-  return { users, loading, refetch: fetchUsers };
+  return { users, loading, error, refetch: fetchUsers };
 }
 
 export function useAdminFeedback() {
   const uid = useSessionUid();
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchFeedback = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('feedback')
-      .select('*')
-      .order('created_at', { ascending: false });
-    setFeedback(data ?? []);
-    setLoading(false);
+    setError(null);
+    try {
+      const { data, error: err } = await supabase
+        .from('feedback')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (err) throw err;
+      setFeedback(data ?? []);
+    } catch {
+      setError('Failed to load feedback');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     if (uid) fetchFeedback();
   }, [uid, fetchFeedback]);
 
-  return { feedback, loading, refetch: fetchFeedback };
+  return { feedback, loading, error, refetch: fetchFeedback };
 }
 
 export function useAdminStats() {
@@ -82,55 +98,72 @@ export function useAdminStats() {
     featureRequests: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchStats = useCallback(async () => {
-    const [profilesRes, feedbackRes] = await Promise.all([
-      supabase.from('profiles').select('role'),
-      supabase.from('feedback').select('category'),
-    ]);
+    setError(null);
+    try {
+      const [profilesRes, feedbackRes] = await Promise.all([
+        supabase.from('profiles').select('role'),
+        supabase.from('feedback').select('category'),
+      ]);
+      if (profilesRes.error) throw profilesRes.error;
+      if (feedbackRes.error) throw feedbackRes.error;
 
-    const profiles = profilesRes.data ?? [];
-    const fb = feedbackRes.data ?? [];
+      const profiles = profilesRes.data ?? [];
+      const fb = feedbackRes.data ?? [];
 
-    setStats({
-      totalUsers: profiles.length,
-      regularUsers: profiles.filter((p) => p.role === 'user').length,
-      adminUsers: profiles.filter((p) => p.role === 'admin').length,
-      totalFeedback: fb.length,
-      bugReports: fb.filter((f) => f.category === 'bug').length,
-      featureRequests: fb.filter((f) => f.category === 'feature').length,
-    });
-    setLoading(false);
+      setStats({
+        totalUsers: profiles.length,
+        regularUsers: profiles.filter((p) => p.role === 'user').length,
+        adminUsers: profiles.filter((p) => p.role === 'admin').length,
+        totalFeedback: fb.length,
+        bugReports: fb.filter((f) => f.category === 'bug').length,
+        featureRequests: fb.filter((f) => f.category === 'feature').length,
+      });
+    } catch {
+      setError('Failed to load stats');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     if (uid) fetchStats();
   }, [uid, fetchStats]);
 
-  return { stats, loading, refetch: fetchStats };
+  return { stats, loading, error, refetch: fetchStats };
 }
 
 export function useRecentActivity() {
   const uid = useSessionUid();
   const [activities, setActivities] = useState<AdminActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchActivities = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('admin_activity_log')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(20);
-    setActivities(data ?? []);
-    setLoading(false);
+    setError(null);
+    try {
+      const { data, error: err } = await supabase
+        .from('admin_activity_log')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (err) throw err;
+      setActivities(data ?? []);
+    } catch {
+      setError('Failed to load activity');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     if (uid) fetchActivities();
   }, [uid, fetchActivities]);
 
-  return { activities, loading, refetch: fetchActivities };
+  return { activities, loading, error, refetch: fetchActivities };
 }
 
 interface ActivityFilters {
@@ -144,50 +177,66 @@ export function useAdminActivityLog(filters?: ActivityFilters) {
   const uid = useSessionUid();
   const [activities, setActivities] = useState<AdminActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchActivities = useCallback(async () => {
     setLoading(true);
-    let query = supabase
-      .from('admin_activity_log')
-      .select('*')
-      .order('created_at', { ascending: false });
+    setError(null);
+    try {
+      let query = supabase
+        .from('admin_activity_log')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (filters?.dateFrom) {
-      query = query.gte('created_at', filters.dateFrom);
-    }
-    if (filters?.dateTo) {
-      query = query.lte('created_at', filters.dateTo + 'T23:59:59');
-    }
-    if (filters?.actionType && filters.actionType !== 'all') {
-      query = query.eq('action_type', filters.actionType);
-    }
-    if (filters?.adminName && filters.adminName !== 'all') {
-      query = query.eq('admin_name', filters.adminName);
-    }
+      if (filters?.dateFrom) {
+        query = query.gte('created_at', filters.dateFrom);
+      }
+      if (filters?.dateTo) {
+        query = query.lte('created_at', filters.dateTo + 'T23:59:59');
+      }
+      if (filters?.actionType && filters.actionType !== 'all') {
+        query = query.eq('action_type', filters.actionType);
+      }
+      if (filters?.adminName && filters.adminName !== 'all') {
+        query = query.eq('admin_name', filters.adminName);
+      }
 
-    const { data } = await query;
-    setActivities(data ?? []);
-    setLoading(false);
+      const { data, error: err } = await query;
+      if (err) throw err;
+      setActivities(data ?? []);
+    } catch {
+      setError('Failed to load activity log');
+    } finally {
+      setLoading(false);
+    }
   }, [filters?.dateFrom, filters?.dateTo, filters?.actionType, filters?.adminName]);
 
   useEffect(() => {
     if (uid) fetchActivities();
   }, [uid, fetchActivities]);
 
-  return { activities, loading, refetch: fetchActivities };
+  return { activities, loading, error, refetch: fetchActivities };
 }
 
 export function useUserPresence() {
   const uid = useSessionUid();
   const [presence, setPresence] = useState<UserPresence[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchPresence = useCallback(async () => {
-    const { data } = await supabase
-      .from('user_presence')
-      .select('*');
-    setPresence(data ?? []);
-    setLoading(false);
+    setError(null);
+    try {
+      const { data, error: err } = await supabase
+        .from('user_presence')
+        .select('*');
+      if (err) throw err;
+      setPresence(data ?? []);
+    } catch {
+      setError('Failed to load presence data');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -196,24 +245,32 @@ export function useUserPresence() {
 
   const presenceMap = new Map(presence.map(p => [p.user_id, p]));
 
-  return { presence, presenceMap, loading, refetch: fetchPresence };
+  return { presence, presenceMap, loading, error, refetch: fetchPresence };
 }
 
 export function useSiteContent() {
   const uid = useSessionUid();
   const [content, setContent] = useState<SiteContent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const hasFetched = useRef(false);
 
   const fetchContent = useCallback(async () => {
     if (!hasFetched.current) setLoading(true);
-    const { data } = await supabase
-      .from('site_content')
-      .select('*')
-      .order('section_key');
-    setContent(data ?? []);
-    setLoading(false);
-    hasFetched.current = true;
+    setError(null);
+    try {
+      const { data, error: err } = await supabase
+        .from('site_content')
+        .select('*')
+        .order('section_key');
+      if (err) throw err;
+      setContent(data ?? []);
+      hasFetched.current = true;
+    } catch {
+      setError('Failed to load site content');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -222,7 +279,7 @@ export function useSiteContent() {
 
   const contentMap = new Map(content.map(c => [c.section_key, c]));
 
-  return { content, contentMap, loading, refetch: fetchContent };
+  return { content, contentMap, loading, error, refetch: fetchContent };
 }
 
 export async function updateSiteContent(

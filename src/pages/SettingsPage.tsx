@@ -24,12 +24,7 @@ export function StandaloneSettingsPage() {
       <header className="sticky top-0 z-50 bg-[#07040A]/80 backdrop-blur-xl border-b border-white/[0.06]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-opti-accent to-[#8B5CF6] flex items-center justify-center">
-              <span className="text-[#0B0A1A] font-bold text-sm">O</span>
-            </div>
-            <span className="font-semibold text-lg text-white tracking-tight">
-              OptiPlan
-            </span>
+            <img src="/logo.png" alt="OptiPlan" className="h-8 w-auto" />
           </Link>
           <button
             onClick={() => navigate(-1)}

@@ -278,7 +278,7 @@ export async function getUserGroups(userId: string) {
 
   if (error) throw error;
 
-  return data.map((d: any) => d.groups);
+  return data.map((d: Record<string, unknown>) => d.groups as { id: string; name: string; invite_code: string; creator_id: string });
 }
 
 export async function getGroupMembers(groupId: string) {
@@ -295,10 +295,10 @@ export async function getGroupMembers(groupId: string) {
 
   if (error) throw error;
 
-  return data.map((d: any) => ({
-    uid: d.users.uid,
-    username: d.users.username,
-  }));
+  return data.map((d: Record<string, unknown>) => {
+    const users = d.users as { uid: string; username: string };
+    return { uid: users.uid, username: users.username };
+  });
 }
 
 export async function getGroupInfo(groupId: string) {

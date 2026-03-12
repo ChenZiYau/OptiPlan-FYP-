@@ -3,6 +3,7 @@ import type { ReactNode, MutableRefObject } from 'react';
 import type { DashboardItem, ScheduleEntry, Importance, ItemType } from '@/types/dashboard';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 export type TaskStatusChangeCallback = (
   taskId: string,
@@ -75,12 +76,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       supabase.from('dashboard_items').select('*').eq('user_id', user.id),
       supabase.from('schedule_entries').select('*').eq('user_id', user.id),
     ]).then(([itemsRes, schedulesRes]) => {
-      if (itemsRes.data) {
-        setItems(itemsRes.data.map(rowToItem));
-      }
-      if (schedulesRes.data) {
-        setSchedules(schedulesRes.data.map(rowToSchedule));
-      }
+      if (itemsRes.error) throw itemsRes.error;
+      if (schedulesRes.error) throw schedulesRes.error;
+      setItems((itemsRes.data ?? []).map(rowToItem));
+      setSchedules((schedulesRes.data ?? []).map(rowToSchedule));
+    }).catch(() => {
+      toast.error('Failed to load dashboard data');
+    }).finally(() => {
       setLoading(false);
     });
   }, [user]);
@@ -122,8 +124,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
       const { error } = await supabase.from('dashboard_items').insert(row);
       if (error) {
-        // Rollback on failure
         setItems((prev) => prev.filter((i) => i.id !== item.id));
+        toast.error('Failed to add item');
       }
     },
     [user],
@@ -162,6 +164,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.from('dashboard_items').update(row).eq('id', id);
       if (error) {
         setItems(snapshot);
+        toast.error('Failed to update item');
       }
     },
     [user],
@@ -180,6 +183,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.from('dashboard_items').delete().eq('id', id);
       if (error) {
         setItems(snapshot);
+        toast.error('Failed to delete item');
       }
     },
     [user],
@@ -202,6 +206,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       });
       if (error) {
         setSchedules((prev) => prev.filter((s) => s.id !== entry.id));
+        toast.error('Failed to add schedule');
       }
     },
     [user],
@@ -215,9 +220,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
       const { error } = await supabase.from('schedule_entries').delete().eq('id', id);
       if (error) {
-        // Re-fetch on failure to restore state
         const { data } = await supabase.from('schedule_entries').select('*').eq('user_id', user.id);
         if (data) setSchedules(data.map(rowToSchedule));
+        toast.error('Failed to delete schedule');
       }
     },
     [user],

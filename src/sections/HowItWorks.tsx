@@ -17,6 +17,7 @@ interface StepsContent {
   title: string;
   subtitle: string;
   items: StepItem[];
+  textColors?: Record<string, string>;
 }
 
 const defaults = siteDefaults.steps as unknown as StepsContent;
@@ -25,7 +26,7 @@ export function HowItWorks() {
   const { getContent } = useSiteContentData();
   const content = getContent<StepsContent>('steps') ?? defaults;
   const items = content.items ?? defaults.items;
-  const tc = ((content as any).textColors ?? {}) as Record<string, string>;
+  const tc = content.textColors ?? {};
 
   return (
     <section id="how-it-works" className="relative py-32 overflow-hidden">

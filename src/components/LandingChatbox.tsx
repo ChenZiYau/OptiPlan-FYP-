@@ -657,7 +657,7 @@ export function LandingChatbox() {
             className={
               isMobile
                 ? 'fixed inset-0 z-[60] flex flex-col bg-[#0d0b1e]'
-                : 'fixed bottom-24 right-6 z-[60] w-[380px] h-[540px] flex flex-col rounded-2xl bg-[#0d0b1e]/90 border border-white/10 shadow-2xl shadow-purple-900/20 backdrop-blur-xl overflow-hidden'
+                : 'fixed bottom-24 right-6 z-[60] w-[min(380px,calc(100vw-3rem))] h-[min(540px,calc(100vh-8rem))] flex flex-col rounded-2xl bg-[#0d0b1e]/90 border border-white/10 shadow-2xl shadow-purple-900/20 backdrop-blur-xl overflow-hidden'
             }
           >
             {/* Header */}
@@ -737,6 +737,7 @@ export function LandingChatbox() {
         aria-label="Chat with OptiPlan"
         aria-expanded={open}
         className="fixed bottom-6 right-6 z-[60] w-14 h-14 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 text-white flex items-center justify-center shadow-lg shadow-purple-900/30 hover:shadow-xl hover:shadow-purple-900/40 transition-all hover:scale-105 active:scale-95"
+        style={{ bottom: 'max(1.5rem, env(safe-area-inset-bottom, 0px))' }}
       >
         {!open && !hasOpened && (
           <span className="absolute inset-0 rounded-full bg-purple-500/20 animate-ping" />

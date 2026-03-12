@@ -3,14 +3,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, Plus, Trash2, Loader2, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useNotebooks } from '@/hooks/useNotebooks';
 import { useStudyHub } from '@/contexts/StudyHubContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export function NotebookSelector() {
   const { notebooks, loading, createNotebook, deleteNotebook } = useNotebooks();
   const { activeNotebookId, setActiveNotebookId } = useStudyHub();
+  const isMobile = useIsMobile();
   const [showCreate, setShowCreate] = useState(false);
   const [title, setTitle] = useState('');
   const [creating, setCreating] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(isMobile);
 
   async function handleCreate() {
     const t = title.trim();

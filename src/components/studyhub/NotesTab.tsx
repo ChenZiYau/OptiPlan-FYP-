@@ -17,11 +17,14 @@ export function NotesTab() {
       setSourceCount(0);
       return;
     }
-    supabase
-      .from('sources')
-      .select('id', { count: 'exact', head: true })
-      .eq('notebook_id', activeNotebookId)
-      .then(({ count }) => setSourceCount(count ?? 0));
+    Promise.resolve(
+      supabase
+        .from('sources')
+        .select('id', { count: 'exact', head: true })
+        .eq('notebook_id', activeNotebookId)
+    )
+      .then(({ count }) => setSourceCount(count ?? 0))
+      .catch(() => setSourceCount(0));
   }, [activeNotebookId]);
 
   if (!activeNotebookId) {

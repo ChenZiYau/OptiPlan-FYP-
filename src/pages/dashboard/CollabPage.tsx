@@ -104,7 +104,7 @@ interface VaultResource {
   category: ResourceCategory;
   addedBy: string; // userId
   icon: 'figma' | 'github' | 'drive' | 'trello' | 'link' | 'pdf' | 'doc' | 'key' | 'file';
-  isSecret?: boolean; // for credentials (unused now but keeps compat)
+  isSecret?: boolean;
 }
 
 const CATEGORY_META: Record<ResourceCategory, { label: string; emoji: string }> = {
@@ -172,7 +172,7 @@ export function CollabPage() {
   useEffect(() => {
     if (user?.id) {
       getUserGroups(user.id).then(g => {
-        const mapped = g.map((x: any) => ({
+        const mapped = g.map(x => ({
           id: x.id,
           name: x.name,
           joinCode: x.invite_code,
@@ -182,7 +182,7 @@ export function CollabPage() {
         if (mapped.length > 0 && !selectedProject) {
           setSelectedProject(mapped[0]);
         }
-      }).catch(console.error);
+      }).catch(() => toast.error('Failed to load groups'));
     }
   }, [user]);
 
@@ -190,15 +190,15 @@ export function CollabPage() {
     if (selectedProject) {
       localStorage.setItem('collab-project', JSON.stringify(selectedProject));
       getGroupMembers(selectedProject.id).then(m => {
-        setMembers(m.map((x: any) => ({
+        setMembers(m.map(x => ({
           userId: x.uid,
           name: x.username,
           initials: generateInitials(x.username),
           color: 'bg-purple-500',
-          isOnline: true, // simplified mock
+          isOnline: true,
           role: x.uid === selectedProject.creatorId ? 'admin' : 'member',
         })));
-      }).catch(console.error);
+      }).catch(() => toast.error('Failed to load members'));
     }
   }, [selectedProject]);
 
@@ -276,7 +276,7 @@ export function CollabPage() {
           timestamp: new Date(m.created_at),
           isSystem: false,
         })));
-      }).catch(console.error);
+      }).catch(() => toast.error('Failed to load messages'));
 
       getGroupTasks(selectedProject.id).then(t => {
         setTasks(t.map(x => ({
@@ -289,21 +289,20 @@ export function CollabPage() {
           status: x.status,
           assigneeUsername: x.assigneeUsername,
         })));
-      }).catch(console.error);
+      }).catch(() => toast.error('Failed to load tasks'));
 
       getGroupSchedules(selectedProject.id, currentWeekOffset).then(data => {
         if (scheduleScale === 'month') {
-          // Fetch all 4 visible weeks for month view
           Promise.all(
             Array.from({ length: 4 }, (_, i) => getGroupSchedules(selectedProject.id, currentWeekOffset + i))
-          ).then(results => setSchedules(results.flat())).catch(console.error);
+          ).then(results => setSchedules(results.flat())).catch(() => toast.error('Failed to load schedules'));
         } else {
           setSchedules(data);
         }
-      }).catch(console.error);
+      }).catch(() => toast.error('Failed to load schedules'));
 
       // Load schedule calendar tasks
-      getGroupScheduleTasks(selectedProject.id).then(setScheduleTasks).catch(console.error);
+      getGroupScheduleTasks(selectedProject.id).then(setScheduleTasks).catch(() => toast.error('Failed to load schedule tasks'));
 
       // Real-time Kanban syncing
       const tasksChannel = supabase.channel(`group_tasks_${selectedProject.id}`)
@@ -388,7 +387,7 @@ export function CollabPage() {
           'postgres_changes',
           { event: '*', schema: 'public', table: 'group_schedule_tasks', filter: `group_id=eq.${selectedProject.id}` },
           () => {
-            getGroupScheduleTasks(selectedProject.id).then(setScheduleTasks).catch(console.error);
+            getGroupScheduleTasks(selectedProject.id).then(setScheduleTasks).catch(() => {});
           }
         )
         .subscribe();
@@ -646,7 +645,7 @@ export function CollabPage() {
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
-                  className="absolute z-50 mt-2 w-64 rounded-xl bg-[#18162e] border border-white/10 shadow-xl overflow-hidden"
+                  className="absolute z-50 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-xl bg-[#18162e] border border-white/10 shadow-xl overflow-hidden"
                 >
                   {projects.map(p => (
                     <button
@@ -669,7 +668,7 @@ export function CollabPage() {
           </div>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <HoverTip label="Join an existing group with a code">
             <button
               onClick={() => { setModalInput(''); setShowJoinModal(true); }}
@@ -690,7 +689,7 @@ export function CollabPage() {
             <HoverTip label="Copy setup invite link to share with teammates">
               <button
                 onClick={() => { if (selectedProject) { navigator.clipboard.writeText(selectedProject.joinCode); toast.success('Invite code copied to clipboard!'); } }}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-white/10 text-gray-300 text-sm hover:bg-white/[0.06] transition-colors ml-2"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-white/10 text-gray-300 text-sm hover:bg-white/[0.06] transition-colors"
                 title="Copy Invite Code"
               >
                 <Copy className="w-4 h-4" />
@@ -774,7 +773,7 @@ export function CollabPage() {
           {collabView === 'chat' ? (
           <>
           {/* ── Chat View Layout ─────────────────────────── */}
-          <div className="flex flex-col xl:flex-row gap-6">
+          <div className="flex flex-col xl:flex-row gap-4 sm:gap-6">
 
             {/* ── Main Content Area ─────────────────────────── */}
             <div className="flex-1 space-y-6 min-w-0">
@@ -784,7 +783,7 @@ export function CollabPage() {
                   variants={fadeUp}
                   initial="hidden"
                   animate="show"
-                  className="flex flex-col h-[600px] rounded-xl bg-white/[0.03] border border-white/10 overflow-hidden"
+                  className="flex flex-col h-[400px] sm:h-[500px] xl:h-[600px] rounded-xl bg-white/[0.03] border border-white/10 overflow-hidden"
                 >
                   <button
                     onClick={() => setShowGroupInfo(true)}
@@ -1452,8 +1451,8 @@ function FriendSidebar() {
 
   function reload() {
     if (!user) return;
-    getFriends(user.id).then(setFriends).catch(console.error);
-    getPendingRequests(user.id).then(setPendingRequests).catch(console.error);
+    getFriends(user.id).then(setFriends).catch(() => toast.error('Failed to load friends'));
+    getPendingRequests(user.id).then(setPendingRequests).catch(() => toast.error('Failed to load friend requests'));
   }
 
   useEffect(() => {
@@ -1929,7 +1928,7 @@ function ScheduleMatcherCalendar({
       {/* Day-of-week Header */}
       <div className="grid grid-cols-7 border-b border-[#1A1A1A]">
         {dayNames.map(d => (
-          <div key={d} className="py-2.5 text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+          <div key={d} className="py-1.5 sm:py-2.5 text-center text-[10px] sm:text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
             {d}
           </div>
         ))}
@@ -2261,8 +2260,8 @@ function ResourceVault({ selectedProject, members }: { selectedProject: GroupPro
         });
 
         setResources([...mappedLinks, ...mappedFiles].sort((a, b) => a.title.localeCompare(b.title)));
-      } catch (e: any) {
-        console.error('Failed to load resources:', e);
+      } catch {
+        toast.error('Failed to load resources');
       }
     }
 

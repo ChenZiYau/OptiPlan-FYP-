@@ -94,6 +94,7 @@ export function AdminSettingsPage() {
 
   // Fetch current settings from Supabase
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       try {
         const { data } = await supabase
@@ -101,14 +102,15 @@ export function AdminSettingsPage() {
           .select('content')
           .eq('section_key', 'site_settings')
           .single();
-        if (data?.content) {
+        if (!cancelled && data?.content) {
           const loaded = { ...INITIAL_DEFAULTS, ...data.content } as SiteSettings;
           setSettings(loaded);
           setOriginal(loaded);
         }
       } catch { /* use defaults */ }
-      setLoading(false);
+      if (!cancelled) setLoading(false);
     })();
+    return () => { cancelled = true; };
   }, []);
 
   const hasChanges = JSON.stringify(settings) !== JSON.stringify(original);
@@ -125,8 +127,8 @@ export function AdminSettingsPage() {
       );
       setOriginal({ ...settings });
       toast.success('Site defaults saved!', { description: 'New visitors will see these settings.' });
-    } catch (err: any) {
-      toast.error('Failed to save', { description: err.message });
+    } catch (err: unknown) {
+      toast.error('Failed to save', { description: err instanceof Error ? err.message : 'Unknown error' });
     } finally {
       setSaving(false);
     }

@@ -924,7 +924,7 @@ export function FloatingAIAssistant() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-24 right-6 z-50 w-[370px] h-[520px] bg-[#18162e] border border-white/10 rounded-2xl shadow-2xl shadow-black/50 flex flex-col overflow-hidden"
+            className="fixed bottom-24 right-6 z-50 w-[min(370px,calc(100vw-3rem))] h-[min(520px,calc(100vh-8rem))] bg-[#18162e] border border-white/10 rounded-2xl shadow-2xl shadow-black/50 flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0">

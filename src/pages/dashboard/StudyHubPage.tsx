@@ -57,7 +57,7 @@ function StudyHubInner() {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-[#1F1F1F] flex items-center justify-between shrink-0">
+        <div className="px-4 sm:px-6 py-4 border-b border-[#1F1F1F] flex items-center justify-between shrink-0">
           <div>
             <h1 className="text-lg font-semibold text-zinc-100">Study Hub</h1>
             <p className="text-xs text-zinc-500 mt-0.5">AI-powered notes, flashcards & quizzes</p>
@@ -66,7 +66,7 @@ function StudyHubInner() {
         </div>
 
         {/* Tab navigation */}
-        <div className="px-6 pt-4 pb-2 shrink-0">
+        <div className="px-4 sm:px-6 pt-4 pb-2 shrink-0">
           <div className="flex overflow-x-auto whitespace-nowrap rounded-lg bg-[#111111] p-1 w-fit">
             {TABS.map((tab) => (
               <HoverTip key={tab.key} label={tab.tip}>
@@ -92,7 +92,7 @@ function StudyHubInner() {
         </div>
 
         {/* Tab content */}
-        <div className="flex-1 overflow-y-auto px-6 py-6">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}

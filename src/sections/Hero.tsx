@@ -17,6 +17,7 @@ interface HeroContent {
   ctaPrimary: string;
   ctaSecondary: string;
   rotatingWords: string[];
+  textColors?: Record<string, string>;
 }
 
 const defaults = siteDefaults.hero as unknown as HeroContent;
@@ -46,7 +47,7 @@ export function Hero() {
   const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
   const content = getContent<HeroContent>('hero') ?? defaults;
-  const tc = ((content as any).textColors ?? {}) as Record<string, string>;
+  const tc = content.textColors ?? {};
 
   // ── Dynamic calendar data ──────────────────────────────────────────
   const now = useMemo(() => new Date(), []);
@@ -90,11 +91,7 @@ export function Hero() {
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (titleNumber === titles.length - 1) {
-        setTitleNumber(0);
-      } else {
-        setTitleNumber(titleNumber + 1);
-      }
+      setTitleNumber(prev => (prev >= titles.length - 1 ? 0 : prev + 1));
     }, 2000);
     return () => clearTimeout(timeoutId);
   }, [titleNumber, titles]);
@@ -126,7 +123,7 @@ export function Hero() {
               &nbsp;
               {titles.map((title, index) => (
                 <motion.span
-                  key={index}
+                  key={title}
                   className="absolute font-semibold text-gradient"
                   initial={{ opacity: 0, y: "-100" }}
                   transition={{ type: "spring", stiffness: 50 }}
@@ -207,7 +204,7 @@ export function Hero() {
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95, y: -4 }}
                                 transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-                                className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 bg-[#131127] border border-white/10 rounded-xl w-56 shadow-2xl flex flex-col text-center z-50"
+                                className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 bg-[#131127] border border-white/10 rounded-xl w-56 max-w-[calc(100vw-2rem)] shadow-2xl flex flex-col text-center z-50"
                               >
                                 {/* Header */}
                                 <div className="px-4 pt-3 pb-2 border-b border-white/[0.06]">

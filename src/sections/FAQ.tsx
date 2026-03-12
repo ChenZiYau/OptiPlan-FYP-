@@ -16,6 +16,7 @@ interface FAQContent {
   title: string;
   subtitle: string;
   items: FAQItemData[];
+  textColors?: Record<string, string>;
 }
 
 const defaults = siteDefaults.faqs as unknown as FAQContent;
@@ -41,7 +42,7 @@ function FAQItem({
         onClick={onClick}
         className="w-full py-5 flex items-center justify-between text-left group"
       >
-        <span className="font-medium text-opti-text-primary pr-4 group-hover:text-opti-accent transition-colors" style={{ color: questionColor || undefined }}>
+        <span className="font-medium text-opti-text-primary pr-2 sm:pr-4 group-hover:text-opti-accent transition-colors" style={{ color: questionColor || undefined }}>
           {question}
         </span>
         <motion.div
@@ -61,7 +62,7 @@ function FAQItem({
             transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
             className="overflow-hidden"
           >
-            <p className="pb-5 text-opti-text-secondary leading-relaxed pr-8" style={{ color: answerColor || undefined }}>
+            <p className="pb-5 text-opti-text-secondary leading-relaxed pr-2 sm:pr-8" style={{ color: answerColor || undefined }}>
               {answer}
             </p>
           </motion.div>
@@ -76,7 +77,7 @@ export function FAQ() {
   const { getContent } = useSiteContentData();
   const content = getContent<FAQContent>('faqs') ?? defaults;
   const items = content.items ?? defaults.items;
-  const tc = ((content as any).textColors ?? {}) as Record<string, string>;
+  const tc = content.textColors ?? {};
 
   return (
     <section id="faq" className="relative py-32 overflow-hidden">
@@ -103,10 +104,10 @@ export function FAQ() {
 
         {/* FAQ List */}
         <AnimatedSection delay={0.3}>
-          <div className="glass-card p-6">
+          <div className="glass-card p-4 sm:p-6">
             {items.map((faq, index) => (
               <FAQItem
-                key={index}
+                key={faq.question}
                 question={faq.question}
                 answer={faq.answer}
                 isOpen={openIndex === index}

@@ -187,13 +187,17 @@ export function FinanceTracker() {
   }
 
   async function saveBalancePopover() {
-    await saveSettings({
-      starting_balance: parseFloat(balanceInput) || 0,
-      main_income: parseFloat(mainIncomeInput) || 0,
-      side_income: parseFloat(sideIncomeInput) || 0,
-    });
-    toast.success('Balance & income updated');
-    setBalancePopover(false);
+    try {
+      await saveSettings({
+        starting_balance: parseFloat(balanceInput) || 0,
+        main_income: parseFloat(mainIncomeInput) || 0,
+        side_income: parseFloat(sideIncomeInput) || 0,
+      });
+      toast.success('Balance & income updated');
+      setBalancePopover(false);
+    } catch {
+      toast.error('Failed to update balance & income');
+    }
   }
 
   async function handleDelete(id: string) {

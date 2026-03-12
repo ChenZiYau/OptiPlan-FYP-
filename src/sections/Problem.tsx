@@ -15,6 +15,7 @@ interface ProblemsContent {
   title: string;
   subtitle: string;
   items: ProblemItem[];
+  textColors?: Record<string, string>;
 }
 
 const defaults = siteDefaults.problems as unknown as ProblemsContent;
@@ -22,7 +23,7 @@ const defaults = siteDefaults.problems as unknown as ProblemsContent;
 export function Problem() {
   const { getContent } = useSiteContentData();
   const content = getContent<ProblemsContent>('problems') ?? defaults;
-  const tc = ((content as any).textColors ?? {}) as Record<string, string>;
+  const tc = content.textColors ?? {};
 
   return (
     <section id="problem" className="relative py-32 overflow-hidden">

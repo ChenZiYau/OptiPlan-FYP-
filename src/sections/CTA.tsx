@@ -11,6 +11,7 @@ interface CTAContent {
   subheadline: string;
   buttonText: string;
   disclaimer: string;
+  textColors?: Record<string, string>;
 }
 
 const defaults = siteDefaults.cta as unknown as CTAContent;
@@ -21,7 +22,7 @@ export function CTA() {
   const navigate = useNavigate();
   const { getContent } = useSiteContentData();
   const content = getContent<CTAContent>('cta') ?? defaults;
-  const tc = ((content as any).textColors ?? {}) as Record<string, string>;
+  const tc = content.textColors ?? {};
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -18,6 +18,7 @@ interface FeaturesContent {
   title: string;
   subtitle: string;
   items: FeatureItem[];
+  textColors?: Record<string, string>;
 }
 
 const defaults = siteDefaults.features as unknown as FeaturesContent;
@@ -26,7 +27,7 @@ export function Features() {
   const { getContent } = useSiteContentData();
   const content = getContent<FeaturesContent>('features') ?? defaults;
   const items = content.items ?? defaults.items;
-  const tc = ((content as any).textColors ?? {}) as Record<string, string>;
+  const tc = content.textColors ?? {};
 
   return (
     <section id="features" className="relative py-32 overflow-hidden">

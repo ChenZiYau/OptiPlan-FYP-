@@ -73,11 +73,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setProfileAndFetchAvatar = useCallback((u: User) => {
     setProfile(buildProfile(u));
     // Fire-and-forget: fetch avatar URL and update profile when ready
-    fetchAvatarUrl(u.id).then(avatarUrl => {
-      if (avatarUrl) {
-        setProfile(prev => prev && prev.id === u.id ? { ...prev, avatar_url: avatarUrl } : prev);
-      }
-    });
+    fetchAvatarUrl(u.id)
+      .then(avatarUrl => {
+        if (avatarUrl) {
+          setProfile(prev => prev && prev.id === u.id ? { ...prev, avatar_url: avatarUrl } : prev);
+        }
+      })
+      .catch(() => { /* avatar fetch failed — profile still works without it */ });
   }, []);
 
   // Upsert user presence
