@@ -376,8 +376,9 @@ export function WrappedPage() {
       link.download = 'optiplan-wrapped-spring-2026.png';
       link.href = canvas.toDataURL();
       link.click();
-    } catch (err) {
-      console.error('Download failed:', err);
+    } catch {
+      const { toast } = await import('sonner');
+      toast.error('Download failed. Please try again.');
     }
     setDownloading(false);
   }

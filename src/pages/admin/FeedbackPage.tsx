@@ -51,8 +51,8 @@ const statusOptions = [
 ];
 
 export function FeedbackPage() {
-  const { feedback, loading, refetch } = useAdminFeedback();
-  const { stats, loading: statsLoading, refetch: refetchStats } = useAdminStats();
+  const { feedback, loading, error: fbError, refetch } = useAdminFeedback();
+  const { stats, loading: statsLoading, error: statsError, refetch: refetchStats } = useAdminStats();
   const { profile } = useAuth();
 
   useAdminRefresh(refetch, refetchStats);
@@ -114,8 +114,16 @@ export function FeedbackPage() {
     }
   };
 
+  const loadError = fbError || statsError;
+
   return (
     <div className="space-y-6">
+      {loadError && (
+        <div className="p-3 rounded-xl bg-red-400/10 border border-red-400/20 text-red-400 text-sm">
+          {loadError}
+        </div>
+      )}
+
       {/* Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard

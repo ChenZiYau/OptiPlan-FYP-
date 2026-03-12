@@ -168,9 +168,11 @@ export function CollabPage() {
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [modalInput, setModalInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [groupsLoading, setGroupsLoading] = useState(true);
 
   useEffect(() => {
     if (user?.id) {
+      setGroupsLoading(true);
       getUserGroups(user.id).then(g => {
         const mapped = g.map(x => ({
           id: x.id,
@@ -182,7 +184,10 @@ export function CollabPage() {
         if (mapped.length > 0 && !selectedProject) {
           setSelectedProject(mapped[0]);
         }
-      }).catch(() => toast.error('Failed to load groups'));
+      }).catch(() => toast.error('Failed to load groups'))
+        .finally(() => setGroupsLoading(false));
+    } else {
+      setGroupsLoading(false);
     }
   }, [user]);
 
@@ -700,7 +705,11 @@ export function CollabPage() {
       </div>
 
       {/* ── Empty State ─────────────────────────────────── */}
-      {!hasProjects ? (
+      {groupsLoading ? (
+        <div className="flex items-center justify-center py-24">
+          <div className="w-8 h-8 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
+        </div>
+      ) : !hasProjects ? (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

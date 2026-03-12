@@ -32,7 +32,7 @@ function fmtCompact(n: number) {
 }
 
 export function DashboardOverview() {
-  const { items } = useDashboard();
+  const { items, loading } = useDashboard();
   const { todaySpending } = useFinance();
   const { level, totalXP, streak } = useGamification();
   const [calendarExpanded, setCalendarExpanded] = useState(false);
@@ -47,10 +47,10 @@ export function DashboardOverview() {
     <div className="space-y-6">
       {/* Stat cards row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard title="Items Today" value={todayItems.length} subtitle={`${todayItems.filter(i => i.status === 'completed').length} completed`} icon={CheckSquare} />
-        <StatCard title="XP Level" value={`Lv. ${level}`} subtitle={`${totalXP.toLocaleString()} XP${streak > 0 ? ` · ${streak}🔥` : ''}`} icon={Zap} />
-        <StatCard title="Productivity" value={`${productivityPct}%`} subtitle={`${completedTasks.length} of ${items.length} items done`} icon={TrendingUp} />
-        <StatCard title="Spending Today" value={fmtCompact(todaySpending)} subtitle={todaySpending > 0 ? 'Keep tracking!' : 'No expenses yet'} icon={DollarSign} />
+        <StatCard title="Items Today" value={loading ? '—' : todayItems.length} subtitle={loading ? 'Loading...' : `${todayItems.filter(i => i.status === 'completed').length} completed`} icon={CheckSquare} />
+        <StatCard title="XP Level" value={loading ? '—' : `Lv. ${level}`} subtitle={loading ? 'Loading...' : `${totalXP.toLocaleString()} XP${streak > 0 ? ` · ${streak}🔥` : ''}`} icon={Zap} />
+        <StatCard title="Productivity" value={loading ? '—' : `${productivityPct}%`} subtitle={loading ? 'Loading...' : `${completedTasks.length} of ${items.length} items done`} icon={TrendingUp} />
+        <StatCard title="Spending Today" value={loading ? '—' : fmtCompact(todaySpending)} subtitle={loading ? 'Loading...' : todaySpending > 0 ? 'Keep tracking!' : 'No expenses yet'} icon={DollarSign} />
       </div>
 
       {/* Bento Grid */}

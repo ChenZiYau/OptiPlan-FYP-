@@ -122,7 +122,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
             setSettings(prev => ({ ...prev, ...adminDefaults }));
           }
         }
-      } catch { /* silently use hardcoded defaults */ }
+      } catch (err) {
+        console.warn('Failed to load admin settings, using defaults:', err);
+      }
     })();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

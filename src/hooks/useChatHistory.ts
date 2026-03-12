@@ -38,7 +38,7 @@ export function useChatHistory() {
       if (error) throw error;
       setHistory((data ?? []).map(toHistoryMessage));
     } catch (err) {
-      console.error('Failed to load chat history:', err);
+      // Error silently — non-critical background load
     } finally {
       setLoading(false);
     }
@@ -55,7 +55,7 @@ export function useChatHistory() {
           component_type: componentType,
         });
       } catch (err) {
-        console.error('Failed to save chat message:', err);
+        // Non-critical — message still shown in UI
       }
     },
     [user],
@@ -71,7 +71,7 @@ export function useChatHistory() {
       if (error) throw error;
       setHistory([]);
     } catch (err) {
-      console.error('Failed to clear chat history:', err);
+      // Non-critical — UI already cleared
     }
   }, [user]);
 

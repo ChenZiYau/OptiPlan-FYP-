@@ -70,21 +70,25 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    let cancelled = false;
     setLoading(true);
 
     Promise.all([
       supabase.from('dashboard_items').select('*').eq('user_id', user.id),
       supabase.from('schedule_entries').select('*').eq('user_id', user.id),
     ]).then(([itemsRes, schedulesRes]) => {
+      if (cancelled) return;
       if (itemsRes.error) throw itemsRes.error;
       if (schedulesRes.error) throw schedulesRes.error;
       setItems((itemsRes.data ?? []).map(rowToItem));
       setSchedules((schedulesRes.data ?? []).map(rowToSchedule));
     }).catch(() => {
-      toast.error('Failed to load dashboard data');
+      if (!cancelled) toast.error('Failed to load dashboard data');
     }).finally(() => {
-      setLoading(false);
+      if (!cancelled) setLoading(false);
     });
+
+    return () => { cancelled = true; };
   }, [user]);
 
   const openModal = useCallback(() => setIsModalOpen(true), []);

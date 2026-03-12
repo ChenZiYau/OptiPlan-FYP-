@@ -771,7 +771,7 @@ function SectionEditor({
 }
 
 export function ContentEditor() {
-  const { content, loading, refetch } = useSiteContent();
+  const { content, loading, error: contentError, refetch } = useSiteContent();
   const { profile } = useAuth();
 
   useAdminRefresh(refetch);
@@ -811,7 +811,6 @@ export function ContentEditor() {
       await refetch();
       showToast(`${sectionLabels[section.section_key] ?? section.section_key} saved successfully`, 'success');
     } catch (err: any) {
-      console.error('Failed to save:', err);
       showToast(`Failed to save: ${err?.message || err}`, 'error');
     }
     setSaving(null);
@@ -839,7 +838,6 @@ export function ContentEditor() {
       setTimeout(() => setExpandedSection(section.section_key), 50);
       showToast(`${sectionLabels[section.section_key] ?? section.section_key} reset to default`, 'success');
     } catch (err: any) {
-      console.error('Failed to reset:', err);
       showToast(`Failed to reset: ${err?.message || err}`, 'error');
     }
     setResetting(null);
@@ -860,7 +858,6 @@ export function ContentEditor() {
       await refetch();
       showToast(`${label} is now ${newVisibility ? 'visible' : 'hidden'}`, 'success');
     } catch (err: any) {
-      console.error('Failed to toggle:', err);
       showToast(`Failed to toggle: ${err?.message || err}`, 'error');
     }
     setTogglingVisibility(null);
@@ -878,6 +875,12 @@ export function ContentEditor() {
           }`}
         >
           {toast.message}
+        </div>
+      )}
+
+      {contentError && (
+        <div className="p-3 rounded-xl bg-red-400/10 border border-red-400/20 text-red-400 text-sm">
+          {contentError}
         </div>
       )}
 
@@ -903,6 +906,10 @@ export function ContentEditor() {
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-14 rounded-lg bg-[#18162e] border border-white/10 animate-pulse" />
           ))}
+        </div>
+      ) : filteredSections.length === 0 ? (
+        <div className="p-12 text-center text-gray-500 text-sm">
+          No sections match your search
         </div>
       ) : (
         <div className="space-y-2">

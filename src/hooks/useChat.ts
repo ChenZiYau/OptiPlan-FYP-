@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { chatWithNotebook } from '@/services/studyhub-api';
@@ -10,6 +10,12 @@ export function useChat(notebookId: string | null) {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   // Load existing messages from Supabase
   const fetchMessages = useCallback(async () => {
@@ -27,18 +33,41 @@ export function useChat(notebookId: string | null) {
         .order('created_at', { ascending: true });
 
       if (fetchErr) throw fetchErr;
-      setMessages(data || []);
+      if (mountedRef.current) setMessages(data || []);
     } catch (err: any) {
-      console.error('Failed to fetch chat messages:', err);
-      setError(err.message || 'Failed to load messages');
+
+      if (mountedRef.current) setError(err.message || 'Failed to load messages');
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   }, [notebookId]);
 
   useEffect(() => {
-    fetchMessages();
-  }, [fetchMessages]);
+    let cancelled = false;
+    if (!notebookId) {
+      setMessages([]);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    Promise.resolve(
+      supabase
+        .from('notebook_chat_messages')
+        .select('*')
+        .eq('notebook_id', notebookId)
+        .order('created_at', { ascending: true })
+    ).then(({ data, error: fetchErr }) => {
+      if (cancelled) return;
+      if (fetchErr) throw fetchErr;
+      setMessages(data || []);
+    }).catch((err: any) => {
+      if (cancelled) return;
+      setError(err.message || 'Failed to load messages');
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [notebookId]);
 
   // Send a message and get AI response
   const sendMessage = useCallback(async (content: string, context?: string) => {
@@ -59,6 +88,8 @@ export function useChat(notebookId: string | null) {
     try {
       const response = await chatWithNotebook(notebookId, content.trim(), session.access_token, context);
 
+      if (!mountedRef.current) return;
+
       // Add assistant message
       const assistantMsg: ChatMessageData = {
         id: `temp-${Date.now() + 1}`,
@@ -73,6 +104,7 @@ export function useChat(notebookId: string | null) {
       // Refetch to get real IDs from DB
       await fetchMessages();
     } catch (err: any) {
+      if (!mountedRef.current) return;
       // Add error message
       const errorMsg: ChatMessageData = {
         id: `error-${Date.now()}`,
@@ -84,7 +116,7 @@ export function useChat(notebookId: string | null) {
       };
       setMessages(prev => [...prev, errorMsg]);
     } finally {
-      setSending(false);
+      if (mountedRef.current) setSending(false);
     }
   }, [notebookId, session, fetchMessages]);
 
@@ -96,10 +128,10 @@ export function useChat(notebookId: string | null) {
         .delete()
         .eq('notebook_id', notebookId);
       if (deleteErr) throw deleteErr;
-      setMessages([]);
+      if (mountedRef.current) setMessages([]);
     } catch (err: any) {
-      console.error('Failed to clear messages:', err);
-      setError(err.message || 'Failed to clear messages');
+
+      if (mountedRef.current) setError(err.message || 'Failed to clear messages');
     }
   }, [notebookId]);
 

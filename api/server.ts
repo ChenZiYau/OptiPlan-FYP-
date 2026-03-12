@@ -61,8 +61,8 @@ function getGroq(): Groq {
   return groq;
 }
 
-// Groq request timeout: 50s on Vercel (leaves 10s buffer within 60s maxDuration), 120s local
-const GROQ_TIMEOUT = isVercel ? 50_000 : 120_000;
+// Groq request timeout: 8s on Vercel Hobby (leaves 2s buffer within 10s maxDuration), 120s local
+const GROQ_TIMEOUT = isVercel ? 8_000 : 120_000;
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -702,8 +702,7 @@ app.post("/api/generate-mindmap", async (req, res) => {
     );
 
     // 4. Call Groq to build mind map tree
-    // 70B model produces best results but is slow (~15-30s). On Vercel Hobby (10s limit)
-    // this WILL timeout — Vercel Pro (60s limit) is required for mind map generation.
+    // 70B model is slow (~15-30s); use fast 8B model on Vercel to fit within 10s limit.
     const mindmapModel = isVercel
       ? "llama-3.1-8b-instant"
       : "llama-3.3-70b-versatile";
@@ -752,7 +751,7 @@ app.post("/api/generate-mindmap", async (req, res) => {
           .status(504)
           .json({
             error:
-              "Mind map generation timed out. This feature requires Vercel Pro plan (60s limit). Try regenerating or uploading a smaller document.",
+              "Mind map generation timed out. Try regenerating or uploading a smaller document.",
           });
       }
       return res

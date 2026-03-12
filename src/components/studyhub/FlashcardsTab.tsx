@@ -52,7 +52,8 @@ export function FlashcardsTab() {
     );
   }
 
-  const card = flashcards[currentIndex];
+  const safeIndex = Math.min(currentIndex, flashcards.length - 1);
+  const card = flashcards[safeIndex];
   const masteredCount = flashcards.filter((c) => c.mastery_level === 'mastered').length;
   const progressPct = (masteredCount / flashcards.length) * 100;
 
@@ -62,6 +63,7 @@ export function FlashcardsTab() {
   }
 
   function handleRate(level: FlashcardData['mastery_level']) {
+    if (!card) return;
     updateMastery(card.id, level);
     goNext();
   }

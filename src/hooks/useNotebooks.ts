@@ -7,17 +7,23 @@ export function useNotebooks() {
   const { user } = useAuth();
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchNotebooks = useCallback(async () => {
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
     setLoading(true);
-    const { data, error } = await supabase
+    setError(null);
+    const { data, error: fetchErr } = await supabase
       .from('notebooks')
       .select('*')
       .eq('user_id', user.id)
       .order('updated_at', { ascending: false });
 
-    if (!error && data) setNotebooks(data);
+    if (fetchErr) {
+      setError(fetchErr.message);
+    } else if (data) {
+      setNotebooks(data);
+    }
     setLoading(false);
   }, [user]);
 
@@ -27,13 +33,17 @@ export function useNotebooks() {
 
   const createNotebook = useCallback(async (title: string) => {
     if (!user) return null;
-    const { data, error } = await supabase
+    const { data, error: createErr } = await supabase
       .from('notebooks')
       .insert({ user_id: user.id, title })
       .select()
       .single();
 
-    if (!error && data) {
+    if (createErr) {
+      setError(createErr.message);
+      return null;
+    }
+    if (data) {
       await fetchNotebooks();
       return data as Notebook;
     }
@@ -41,9 +51,13 @@ export function useNotebooks() {
   }, [user, fetchNotebooks]);
 
   const deleteNotebook = useCallback(async (id: string) => {
-    const { error } = await supabase.from('notebooks').delete().eq('id', id);
-    if (!error) await fetchNotebooks();
+    const { error: deleteErr } = await supabase.from('notebooks').delete().eq('id', id);
+    if (deleteErr) {
+      setError(deleteErr.message);
+    } else {
+      await fetchNotebooks();
+    }
   }, [fetchNotebooks]);
 
-  return { notebooks, loading, fetchNotebooks, createNotebook, deleteNotebook };
+  return { notebooks, loading, error, fetchNotebooks, createNotebook, deleteNotebook };
 }

@@ -41,6 +41,7 @@ export function TaskModal() {
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
   const [subject, setSubject] = useState('');
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const resetForm = useCallback(() => {
     setTitle('');
@@ -51,12 +52,29 @@ export function TaskModal() {
     setStartTime('09:00');
     setEndTime('10:00');
     setSubject('');
+    setValidationError(null);
   }, []);
 
   const resolvedDate = datePreset === 'today' ? formatTodayISO() : datePreset === 'tomorrow' ? formatTomorrowISO() : customDate;
 
   const handleSubmit = () => {
     if (!title.trim()) return;
+
+    // Validate time fields for events and study sessions
+    if (activeTab === 'event' || activeTab === 'study') {
+      if (endTime <= startTime) {
+        setValidationError('End time must be after start time');
+        return;
+      }
+    }
+
+    // Validate subject for study sessions
+    if (activeTab === 'study' && !subject.trim()) {
+      setValidationError('Subject is required for study sessions');
+      return;
+    }
+
+    setValidationError(null);
 
     const base = {
       id: uuid(),
@@ -252,6 +270,10 @@ export function TaskModal() {
 
               {/* Importance */}
               <ImportanceSlider value={importance} onChange={setImportance} />
+
+              {validationError && (
+                <p className="text-xs text-red-400">{validationError}</p>
+              )}
 
               {/* Submit */}
               <button

@@ -24,7 +24,7 @@ export function StandaloneSettingsPage() {
       <header className="sticky top-0 z-50 bg-[#07040A]/80 backdrop-blur-xl border-b border-white/[0.06]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5">
-            <img src="/logo.png" alt="OptiPlan" className="h-8 w-auto" />
+            <img src="/logo2.png" alt="OptiPlan" className="h-8 w-auto" />
           </Link>
           <button
             onClick={() => navigate(-1)}

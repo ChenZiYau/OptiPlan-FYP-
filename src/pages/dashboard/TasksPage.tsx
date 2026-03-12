@@ -11,7 +11,7 @@ import { ListView } from '@/components/dashboard/tasks/ListView';
 import { TaskDetailDrawer } from '@/components/dashboard/tasks/TaskDetailDrawer';
 
 export function TasksPage() {
-  const { items, updateItem, removeItem, openModal } = useDashboard();
+  const { items, loading, updateItem, removeItem, openModal } = useDashboard();
 
   // View & filter state
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
@@ -127,7 +127,11 @@ export function TasksPage() {
       />
 
       {/* Content */}
-      {viewMode === 'kanban' ? (
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : viewMode === 'kanban' ? (
         <KanbanBoard
           items={filteredItems}
           onStatusChange={handleStatusChange}

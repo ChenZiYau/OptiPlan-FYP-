@@ -97,7 +97,7 @@ export function Hero() {
   }, [titleNumber, titles]);
 
   return (
-    <section ref={sectionRef} className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20 pb-24">
+    <section id="hero" ref={sectionRef} className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20 pb-24">
       {/* Background glow */}
       <div className="absolute inset-0 bg-radial-glow pointer-events-none" />
 

@@ -93,6 +93,7 @@ export function useAdminStats() {
     totalUsers: 0,
     regularUsers: 0,
     adminUsers: 0,
+    newUsersToday: 0,
     totalFeedback: 0,
     bugReports: 0,
     featureRequests: 0,
@@ -104,7 +105,7 @@ export function useAdminStats() {
     setError(null);
     try {
       const [profilesRes, feedbackRes] = await Promise.all([
-        supabase.from('profiles').select('role'),
+        supabase.from('profiles').select('role, created_at'),
         supabase.from('feedback').select('category'),
       ]);
       if (profilesRes.error) throw profilesRes.error;
@@ -112,11 +113,14 @@ export function useAdminStats() {
 
       const profiles = profilesRes.data ?? [];
       const fb = feedbackRes.data ?? [];
+      const todayStr = new Date().toISOString().split('T')[0];
+      const newToday = profiles.filter((p) => p.created_at?.startsWith(todayStr)).length;
 
       setStats({
         totalUsers: profiles.length,
         regularUsers: profiles.filter((p) => p.role === 'user').length,
         adminUsers: profiles.filter((p) => p.role === 'admin').length,
+        newUsersToday: newToday,
         totalFeedback: fb.length,
         bugReports: fb.filter((f) => f.category === 'bug').length,
         featureRequests: fb.filter((f) => f.category === 'feature').length,

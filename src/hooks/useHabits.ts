@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import * as LucideIcons from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { uuid } from '@/lib/utils';
@@ -32,8 +32,8 @@ const STORAGE_KEY = 'optiplan-custom-habits';
 
 export function useHabits() {
   const [habits, setHabits] = useState<HabitWithIcon[]>([]);
-  const todayKey = new Date().toISOString().slice(0, 10);
-  const COMPLETED_STORAGE_KEY = `optiplan-completed-habits-${todayKey}`;
+  const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const COMPLETED_STORAGE_KEY = useMemo(() => `optiplan-completed-habits-${todayKey}`, [todayKey]);
   const [completedHabits, setCompletedHabits] = useState<Set<string>>(new Set());
 
   // Load from local storage or use defaults
@@ -53,24 +53,28 @@ export function useHabits() {
     }
   }, [COMPLETED_STORAGE_KEY]);
 
-  const saveHabits = useCallback((newHabits: HabitWithIcon[]) => {
-    setHabits(newHabits);
-    const toSave: Habit[] = newHabits.map(({ icon, ...rest }) => rest);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-  }, []);
-
   const addHabit = useCallback((habit: Omit<Habit, 'id'>) => {
     const newHabit: HabitWithIcon = {
       ...habit,
       id: uuid(),
       icon: resolveIcon(habit.iconName),
     };
-    saveHabits([...habits, newHabit]);
-  }, [habits, saveHabits]);
+    setHabits(prev => {
+      const updated = [...prev, newHabit];
+      const toSave: Habit[] = updated.map(({ icon, ...rest }) => rest);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+      return updated;
+    });
+  }, []);
 
   const removeHabit = useCallback((id: string) => {
-    saveHabits(habits.filter(h => h.id !== id));
-  }, [habits, saveHabits]);
+    setHabits(prev => {
+      const updated = prev.filter(h => h.id !== id);
+      const toSave: Habit[] = updated.map(({ icon, ...rest }) => rest);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+      return updated;
+    });
+  }, []);
 
   const toggleHabit = useCallback((id: string) => {
     setCompletedHabits(prev => {

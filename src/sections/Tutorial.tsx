@@ -4,7 +4,7 @@ import { Play } from 'lucide-react';
 
 export function Tutorial() {
   return (
-    <section id="how-it-works" className="relative py-16 overflow-hidden">
+    <section id="tutorial" className="relative py-16 overflow-hidden">
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <AnimatedSection delay={0.3}>
           <MacWindow title="">
