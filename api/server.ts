@@ -690,10 +690,13 @@ app.post("/api/generate-mindmap", async (req, res) => {
       })
       .join("\n\n");
 
-    // Truncate to ~28k chars to stay within context window
+    // Truncate to stay within Groq token limits
+    // Free tier (on_demand) has 6k TPM; system prompt uses ~1.5k tokens,
+    // so cap user content at ~16k chars (~4k tokens) to stay safely under.
+    const maxChars = isVercel ? 16000 : 28000;
     const contextText =
-      chunksText.length > 28000
-        ? chunksText.slice(0, 28000) +
+      chunksText.length > maxChars
+        ? chunksText.slice(0, maxChars) +
           "\n\n[... remaining content truncated ...]"
         : chunksText;
 

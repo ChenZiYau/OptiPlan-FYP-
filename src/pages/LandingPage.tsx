@@ -15,6 +15,7 @@ import { useSiteContentData } from '@/hooks/useSiteContent';
 import { AnimatedShaderBackground } from '@/components/ui/animated-shader-background';
 import { MeshGradientBackground } from '@/components/ui/mesh-gradient-background';
 import { useSettings, THEMES } from '@/contexts/SettingsContext';
+import { FloatingChatWidget } from '@/components/landing/FloatingChatWidget';
 
 function hexToRgbStr(hex: string) {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -101,9 +102,10 @@ export function LandingPage() {
         </div>
       </div>
 
-      {/* Footer */}
+      {/* Footer & Widgets */}
       <div className="relative z-10">
         <Footer />
+        <FloatingChatWidget />
       </div>
     </div>
   );

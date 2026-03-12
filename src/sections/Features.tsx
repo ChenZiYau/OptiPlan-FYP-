@@ -5,6 +5,7 @@ import { useSiteContentData } from '@/hooks/useSiteContent';
 import { siteDefaults } from '@/constants/siteDefaults';
 import { features as featureConstants } from '@/constants/features';
 import { Check } from 'lucide-react';
+import { InteractiveFeatureShowcase } from '@/components/landing/InteractiveFeatureShowcase';
 
 interface FeatureItem {
   title: string;
@@ -116,6 +117,8 @@ export function Features() {
             );
           })}
         </StaggerContainer>
+
+        <InteractiveFeatureShowcase />
       </div>
     </section>
   );

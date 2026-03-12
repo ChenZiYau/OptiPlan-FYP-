@@ -61,12 +61,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
         {/* Brand */}
         <div className="flex items-center justify-between px-5 h-16 shrink-0">
           <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">A</span>
-            </div>
-            <span className="font-semibold text-lg text-white tracking-tight">
-              AdminPlan
-            </span>
+            <img src="/logo2.png" alt="OptiPlan Admin" className="h-10 w-auto" />
           </Link>
           <button
             onClick={onClose}
