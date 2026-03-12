@@ -1,8 +1,12 @@
-import { Menu, Flame, Zap } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { Menu, Flame, Zap, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useGamification } from '@/contexts/GamificationContext';
+import { useFinance } from '@/contexts/FinanceContext';
 import { xpProgressInLevel } from '@/types/gamification';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
+import { HoverTip } from '@/components/HoverTip';
 
 interface DashboardHeaderProps {
   title: string;
@@ -19,7 +23,21 @@ function getGreeting() {
 export function DashboardHeader({ title, onMenuToggle }: DashboardHeaderProps) {
   const { profile } = useAuth();
   const { totalXP, level, streak } = useGamification();
+  const { refresh } = useFinance();
   const firstName = profile?.display_name?.split(' ')[0] ?? 'there';
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refresh();
+      toast.success('Data refreshed');
+    } catch {
+      toast.error('Failed to refresh');
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refresh]);
 
   const progress = xpProgressInLevel(totalXP);
   const progressPct = Math.min((progress.current / progress.required) * 100, 100);
@@ -41,6 +59,17 @@ export function DashboardHeader({ title, onMenuToggle }: DashboardHeaderProps) {
           </p>
         </div>
       </div>
+
+      <div className="flex items-center gap-2 sm:gap-3">
+        <HoverTip label="Refresh data">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-colors duration-150 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
+        </HoverTip>
 
       <Link
         to="/dashboard/achievements"
@@ -72,6 +101,7 @@ export function DashboardHeader({ title, onMenuToggle }: DashboardHeaderProps) {
           </span>
         </div>
       </Link>
+      </div>
     </header>
   );
 }

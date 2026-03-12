@@ -12,29 +12,13 @@ import { XPWidget } from '@/components/dashboard/widgets/XPWidget';
 import { TimetableWidget } from '@/components/dashboard/widgets/TimetableWidget';
 import { StudyHubWidget } from '@/components/dashboard/widgets/StudyHubWidget';
 import { WellnessWidget } from '@/components/dashboard/widgets/WellnessWidget';
-
-function fmtCompact(n: number) {
-  const num = Number(n) || 0;
-  const abs = Math.abs(num);
-  const sign = num < 0 ? '-' : '';
-  if (abs >= 1_000_000) {
-    const v = abs / 1_000_000;
-    return `${sign}$${v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)}m`;
-  }
-  if (abs >= 100_000) {
-    return `${sign}$${Math.round(abs / 1_000)}k`;
-  }
-  if (abs >= 1_000) {
-    const v = abs / 1_000;
-    return `${sign}$${v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)}k`;
-  }
-  return `${sign}$${abs.toFixed(2)}`;
-}
+import { useCurrency } from '@/hooks/useCurrency';
 
 export function DashboardOverview() {
   const { items, loading } = useDashboard();
   const { todaySpending } = useFinance();
   const { level, totalXP, streak } = useGamification();
+  const { fmtCompact } = useCurrency();
   const [calendarExpanded, setCalendarExpanded] = useState(false);
 
   const todayISO = new Date().toISOString().slice(0, 10);
@@ -56,7 +40,6 @@ export function DashboardOverview() {
       {/* Bento Grid */}
       <LayoutGroup>
         <motion.div
-          layout
           className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6 auto-rows-min"
         >
           {/* Calendar — scales between 1x1 and 2x2 */}

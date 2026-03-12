@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react';
 import { HoverTip } from '@/components/HoverTip';
 import { motion } from 'framer-motion';
 import { useDashboard } from '@/contexts/DashboardContext';
-import type { DashboardItem, TaskStatus, Importance, ItemType } from '@/types/dashboard';
+import type { DashboardItem, TaskStatus, Importance } from '@/types/dashboard';
 import { TaskFilters } from '@/components/dashboard/tasks/TaskFilters';
 import type { ViewMode } from '@/components/dashboard/tasks/TaskFilters';
 import { KanbanBoard } from '@/components/dashboard/tasks/KanbanBoard';
@@ -18,7 +18,6 @@ export function TasksPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
   const [importanceFilter, setImportanceFilter] = useState<Importance | 'all'>('all');
-  const [typeFilter, setTypeFilter] = useState<ItemType | 'all'>('all');
 
   // Drawer state
   const [drawerItem, setDrawerItem] = useState<DashboardItem | null>(null);
@@ -30,10 +29,6 @@ export function TasksPage() {
   // Apply filters
   const filteredItems = useMemo(() => {
     let result = taskItems;
-
-    if (typeFilter !== 'all') {
-      result = result.filter((i) => i.type === typeFilter);
-    }
 
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -51,7 +46,7 @@ export function TasksPage() {
     }
 
     return result;
-  }, [taskItems, search, statusFilter, importanceFilter, typeFilter]);
+  }, [taskItems, search, statusFilter, importanceFilter]);
 
   const handleStatusChange = useCallback(
     (id: string, status: TaskStatus) => {
@@ -64,6 +59,20 @@ export function TasksPage() {
     setDrawerItem(item);
     setDrawerOpen(true);
   }, []);
+
+  const currentIndex = drawerItem ? filteredItems.findIndex(i => i.id === drawerItem.id) : -1;
+
+  const handlePrev = useCallback(() => {
+    if (currentIndex > 0) {
+      setDrawerItem(filteredItems[currentIndex - 1]);
+    }
+  }, [currentIndex, filteredItems]);
+
+  const handleNext = useCallback(() => {
+    if (currentIndex < filteredItems.length - 1) {
+      setDrawerItem(filteredItems[currentIndex + 1]);
+    }
+  }, [currentIndex, filteredItems]);
 
   const handleDrawerClose = useCallback(() => {
     setDrawerOpen(false);
@@ -122,8 +131,6 @@ export function TasksPage() {
         onStatusFilterChange={setStatusFilter}
         importanceFilter={importanceFilter}
         onImportanceFilterChange={setImportanceFilter}
-        typeFilter={typeFilter}
-        onTypeFilterChange={setTypeFilter}
       />
 
       {/* Content */}
@@ -154,6 +161,10 @@ export function TasksPage() {
         onClose={handleDrawerClose}
         onUpdate={updateItem}
         onDelete={handleDelete}
+        onPrev={handlePrev}
+        onNext={handleNext}
+        hasPrev={currentIndex > 0}
+        hasNext={currentIndex < filteredItems.length - 1}
       />
     </motion.div>
   );

@@ -519,8 +519,8 @@ export function ChatBotPage() {
     setProcessing(false);
   }
 
-  function handleCollabResourceInput(field: string, value: string) {
-    const d = { ...(draft as Extract<DraftPayload, { type: 'collab-resource' }>) };
+  function handleCollabResourceInput(field: string, value: string, overrideDraft?: DraftPayload) {
+    const d = { ...((overrideDraft ?? draft) as Extract<DraftPayload, { type: 'collab-resource' }>) };
 
     if (field === 'groupId') {
       const [groupId, groupName] = value.split('::');
@@ -588,7 +588,7 @@ export function ChatBotPage() {
     if (!draft || draft.type !== 'collab-resource') return;
     const d = { ...draft, file, title: file.name };
     setDraft(d);
-    handleCollabResourceInput('file', file.name);
+    handleCollabResourceInput('file', file.name, d);
   }
 
   // ── Dispatch input to current flow ──

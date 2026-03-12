@@ -678,8 +678,8 @@ export function FloatingAIAssistant() {
     setProcessing(false);
   }
 
-  function handleCollabResourceInput(field: string, value: string) {
-    const d = { ...(draft as Extract<DraftPayload, { type: 'collab-resource' }>) };
+  function handleCollabResourceInput(field: string, value: string, overrideDraft?: DraftPayload) {
+    const d = { ...((overrideDraft ?? draft) as Extract<DraftPayload, { type: 'collab-resource' }>) };
     if (field === 'groupId') {
       const [groupId, groupName] = value.split('::');
       d.groupId = groupId; d.groupName = groupName; setDraft(d); pushUser(groupName);
@@ -710,7 +710,7 @@ export function FloatingAIAssistant() {
     if (!draft || draft.type !== 'collab-resource') return;
     const d = { ...draft, file, title: file.name };
     setDraft(d);
-    handleCollabResourceInput('file', file.name);
+    handleCollabResourceInput('file', file.name, d);
   }
 
   // ── Dispatch ──

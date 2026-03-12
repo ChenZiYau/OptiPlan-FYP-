@@ -42,33 +42,9 @@ import {
 import { HoverTip } from '@/components/HoverTip';
 import { AddTransactionModal } from '@/components/dashboard/AddTransactionModal';
 import { SetBudgetModal } from '@/components/dashboard/SetBudgetModal';
+import { useCurrency } from '@/hooks/useCurrency';
+import { useSettings, type CurrencyCode } from '@/contexts/SettingsContext';
 import type { LucideIcon } from 'lucide-react';
-
-// ── Helpers ─────────────────────────────────────────────────────────────────
-
-/** Full precision: $1,234.56 */
-function fmt(n: number) {
-  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-/** Compact: $1.2k, $10k, $1.5m — used on stat cards */
-function fmtCompact(n: number) {
-  const num = Number(n) || 0;
-  const abs = Math.abs(num);
-  const sign = num < 0 ? '-' : '';
-  if (abs >= 1_000_000) {
-    const v = abs / 1_000_000;
-    return `${sign}$${v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)}m`;
-  }
-  if (abs >= 100_000) {
-    return `${sign}$${Math.round(abs / 1_000)}k`;
-  }
-  if (abs >= 1_000) {
-    const v = abs / 1_000;
-    return `${sign}$${v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)}k`;
-  }
-  return `${sign}$${abs.toFixed(2)}`;
-}
 
 type TimeRange = 'week' | 'month' | 'year';
 
@@ -105,6 +81,9 @@ export function FinanceTracker() {
     upsertBudgetLimit,
     saveSettings,
   } = useFinance();
+
+  const { fmt, fmtCompact, symbol, currency } = useCurrency();
+  const { updateSettings } = useSettings();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [budgetModalOpen, setBudgetModalOpen] = useState(false);
@@ -215,6 +194,21 @@ export function FinanceTracker() {
           <p className="text-sm text-gray-400">Track spending, manage budgets, and plan finances</p>
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
+          {/* Currency Toggle */}
+          <div className="flex rounded-lg bg-white/5 p-0.5">
+            {(['USD', 'MYR'] as CurrencyCode[]).map((c) => (
+              <button
+                key={c}
+                onClick={() => updateSettings({ currency: c })}
+                className={`relative px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  currency === c ? 'text-white bg-purple-500/20 border border-purple-500/30' : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                {c === 'USD' ? '$ USD' : 'RM MYR'}
+              </button>
+            ))}
+          </div>
+
           <HoverTip label="Set monthly budget limits">
             <button
               onClick={() => setBudgetModalOpen(true)}
@@ -233,6 +227,34 @@ export function FinanceTracker() {
           </HoverTip>
         </div>
       </div>
+
+      {/* Budget Warning Banner */}
+      {budgetRemaining < 0 && (
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+          <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center shrink-0">
+            <Wallet className="w-4 h-4 text-red-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-red-400">Monthly budget exceeded</p>
+            <p className="text-xs text-gray-400">
+              You've spent {fmtCompact(monthSpending)} of your {fmtCompact(totalMonthlyBudget)} budget — {fmtCompact(Math.abs(budgetRemaining))} over limit
+            </p>
+          </div>
+        </div>
+      )}
+      {budgetRemaining >= 0 && budgetRemaining < totalMonthlyBudget * 0.1 && totalMonthlyBudget > 0 && (
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+          <div className="w-8 h-8 rounded-lg bg-yellow-500/20 flex items-center justify-center shrink-0">
+            <Wallet className="w-4 h-4 text-yellow-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-yellow-400">Budget almost used up</p>
+            <p className="text-xs text-gray-400">
+              Only {fmtCompact(budgetRemaining)} remaining of {fmtCompact(totalMonthlyBudget)} — {Math.round((monthSpending / totalMonthlyBudget) * 100)}% spent
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── Stat Cards ────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -317,7 +339,7 @@ export function FinanceTracker() {
                     <div key={label}>
                       <label className="text-xs text-gray-400 mb-1 block">{label}</label>
                       <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">$</span>
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">{symbol}</span>
                         <input
                           type="number"
                           step="0.01"
@@ -332,7 +354,7 @@ export function FinanceTracker() {
                 </div>
                 <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
                   <span className="text-xs text-gray-400">
-                    Total: <span className="text-green-400 font-semibold">${fmt(
+                    Total: <span className="text-green-400 font-semibold">{fmt(
                       (parseFloat(balanceInput) || 0) +
                       (parseFloat(mainIncomeInput) || 0) +
                       (parseFloat(sideIncomeInput) || 0)
@@ -422,7 +444,7 @@ export function FinanceTracker() {
                             <div className="flex items-baseline justify-between gap-4">
                               <span className="text-xs text-gray-400">Amount</span>
                               <span className="text-base font-bold" style={{ color }}>
-                                ${fmt(value)}
+                                {fmt(value)}
                               </span>
                             </div>
                             <div className="flex items-baseline justify-between gap-4 mt-1">
@@ -447,7 +469,7 @@ export function FinanceTracker() {
                       }}
                     />
                     <span className="text-xs text-gray-400 truncate flex-1">{d.name}</span>
-                    <span className="text-xs font-medium text-gray-300">${fmt(d.value)}</span>
+                    <span className="text-xs font-medium text-gray-300">{fmt(d.value)}</span>
                   </div>
                 ))}
               </div>
@@ -500,7 +522,7 @@ export function FinanceTracker() {
                         </p>
                       </div>
                       <span className="text-sm font-semibold text-red-400 mr-1">
-                        -${fmt(Number(tx.amount))}
+                        -{fmt(Number(tx.amount))}
                       </span>
 
                       {/* Hover tooltip */}
@@ -591,7 +613,7 @@ export function FinanceTracker() {
                         color: '#fff',
                         fontSize: 12,
                       }}
-                      formatter={(v: number) => [`$${fmt(v)}`, '']}
+                      formatter={(v: number) => [fmt(v), '']}
                     />
                     <Area
                       type="monotone"
@@ -614,6 +636,9 @@ export function FinanceTracker() {
         budgets={budgets}
         categorySpending={categorySpending}
         onUpdateLimit={upsertBudgetLimit}
+        symbol={symbol}
+        fmtCompact={fmtCompact}
+        fmt={fmt}
       />
 
       <AddTransactionModal open={modalOpen} onOpenChange={setModalOpen} />
@@ -702,10 +727,16 @@ function BudgetOverviewCard({
   budgets,
   categorySpending,
   onUpdateLimit,
+  symbol,
+  fmtCompact,
+  fmt,
 }: {
   budgets: { category: string; limit_amount: number }[];
   categorySpending: Record<string, number>;
   onUpdateLimit: (category: string, limit: number) => void;
+  symbol: string;
+  fmtCompact: (n: number) => string;
+  fmt: (n: number) => string;
 }) {
   const [setAllValue, setSetAllValue] = useState('');
   const [applyingAll, setApplyingAll] = useState(false);
@@ -746,7 +777,7 @@ function BudgetOverviewCard({
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-400 whitespace-nowrap">Set all limits:</span>
           <div className="relative">
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-500">$</span>
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-500">{symbol}</span>
             <input
               type="number"
               step="0.01"
@@ -845,7 +876,7 @@ function BudgetOverviewCard({
                       <div className="flex-1">
                         <label className="text-xs text-gray-400 mb-1 block">Monthly Limit</label>
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">$</span>
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">{symbol}</span>
                           <input
                             type="number"
                             step="0.01"
@@ -865,7 +896,7 @@ function BudgetOverviewCard({
 
                     <div className="mt-3 flex items-center justify-between">
                       <span className="text-xs text-gray-500">
-                        Spent: <span className="text-white font-medium">${fmt(spent)}</span>
+                        Spent: <span className="text-white font-medium">{fmt(spent)}</span>
                       </span>
                       <div className="flex gap-2">
                         <button

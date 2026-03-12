@@ -4,6 +4,7 @@ import { DollarSign, Utensils, Bus, ShoppingBag, Gamepad2, GraduationCap, HeartP
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useFinance } from '@/contexts/FinanceContext';
 import { spendingByCategory, CATEGORY_COLORS, EXPENSE_CATEGORIES, DEFAULT_CATEGORY_BUDGET } from '@/hooks/useFinanceData';
+import { useCurrency } from '@/hooks/useCurrency';
 import { Link } from 'react-router-dom';
 
 const CATEGORY_ICONS: Record<string, typeof DollarSign> = {
@@ -17,35 +18,27 @@ const CATEGORY_ICONS: Record<string, typeof DollarSign> = {
   Other: MoreHorizontal,
 };
 
-function fmtCompact(n: number) {
-  const num = Number(n) || 0;
-  const abs = Math.abs(num);
-  const sign = num < 0 ? '-' : '';
-  if (abs >= 1_000) {
-    const v = abs / 1_000;
-    return `${sign}$${v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)}k`;
-  }
-  return `${sign}$${abs.toFixed(0)}`;
-}
 
 interface CustomTooltipProps {
   active?: boolean;
   payload?: Array<{ name: string; value: number }>;
+  currencySymbol?: string;
 }
 
-function ChartTooltip({ active, payload }: CustomTooltipProps) {
+function ChartTooltip({ active, payload, currencySymbol = '$' }: CustomTooltipProps) {
   if (!active || !payload?.length) return null;
   const { name, value } = payload[0];
   return (
     <div className="bg-[#131127] border border-white/10 rounded-lg px-3 py-2 shadow-xl">
       <p className="text-xs font-medium text-white">{name}</p>
-      <p className="text-xs text-purple-400">${value.toFixed(2)}</p>
+      <p className="text-xs text-purple-400">{currencySymbol}{value.toFixed(2)}</p>
     </div>
   );
 }
 
 export function FinanceWidget() {
   const { transactions, budgets, monthSpending, totalMonthlyBudget, budgetRemaining } = useFinance();
+  const { fmtCompact, symbol } = useCurrency();
 
   const categoryData = useMemo(() => spendingByCategory(transactions, 'month'), [transactions]);
 
@@ -73,7 +66,6 @@ export function FinanceWidget() {
 
   return (
     <motion.div
-      layout
       className="rounded-2xl bg-[#18162e] border border-white/10 p-5 hover:border-white/20 transition-colors"
     >
       {/* Header */}
@@ -89,8 +81,8 @@ export function FinanceWidget() {
 
       {/* Donut Chart */}
       <div className="flex items-center gap-4 mb-4">
-        <div className="w-[100px] h-[100px] flex-shrink-0">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="w-[100px] h-[100px] flex-shrink-0" style={{ minWidth: 100, minHeight: 100 }}>
+          <ResponsiveContainer width={100} height={100}>
             <PieChart>
               <Pie
                 data={chartData}
@@ -106,7 +98,7 @@ export function FinanceWidget() {
                   <Cell key={idx} fill={chartColors[idx]} />
                 ))}
               </Pie>
-              <Tooltip content={<ChartTooltip />} />
+              <Tooltip content={<ChartTooltip currencySymbol={symbol} />} />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -143,7 +135,7 @@ export function FinanceWidget() {
                   </div>
                 </div>
                 <span className="text-[10px] text-gray-400 font-medium whitespace-nowrap">
-                  ${row.spent.toFixed(0)} / ${row.limit.toFixed(0)}
+                  {symbol}{row.spent.toFixed(0)} / {symbol}{row.limit.toFixed(0)}
                 </span>
               </div>
             );

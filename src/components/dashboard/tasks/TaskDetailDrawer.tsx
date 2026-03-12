@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Send, Trash2 } from 'lucide-react';
+import { X, Calendar, Send, Trash2, ChevronUp, ChevronDown, Archive } from 'lucide-react';
 import { uuid } from '@/lib/utils';
 import type { DashboardItem, TaskStatus, Importance, TaskNote } from '@/types/dashboard';
 import { ImportanceSlider } from '@/components/dashboard/ImportanceSlider';
@@ -17,9 +17,13 @@ interface TaskDetailDrawerProps {
   onClose: () => void;
   onUpdate: (id: string, updates: Partial<DashboardItem>) => void;
   onDelete: (id: string) => void;
+  onPrev?: () => void;
+  onNext?: () => void;
+  hasPrev?: boolean;
+  hasNext?: boolean;
 }
 
-export function TaskDetailDrawer({ item, open, onClose, onUpdate, onDelete }: TaskDetailDrawerProps) {
+export function TaskDetailDrawer({ item, open, onClose, onUpdate, onDelete, onPrev, onNext, hasPrev, hasNext }: TaskDetailDrawerProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
@@ -120,12 +124,34 @@ export function TaskDetailDrawer({ item, open, onClose, onUpdate, onDelete }: Ta
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
               <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Task Details</span>
-              <button
-                onClick={onClose}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1">
+                {onPrev && (
+                  <button
+                    onClick={onPrev}
+                    disabled={!hasPrev}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Previous task"
+                  >
+                    <ChevronUp className="w-4 h-4" />
+                  </button>
+                )}
+                {onNext && (
+                  <button
+                    onClick={onNext}
+                    disabled={!hasNext}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Next task"
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                )}
+                <button
+                  onClick={onClose}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* Body */}
@@ -246,12 +272,23 @@ export function TaskDetailDrawer({ item, open, onClose, onUpdate, onDelete }: Ta
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-white/10">
+            <div className="px-6 py-4 border-t border-white/10 flex gap-2">
+              <button
+                onClick={() => {
+                  if (!item) return;
+                  onUpdate(item.id, { status: 'completed' as TaskStatus });
+                  onClose();
+                }}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-gray-400 hover:bg-white/5 border border-white/10 transition-colors flex-1 justify-center"
+                title="Archive (mark completed and close)"
+              >
+                <Archive className="w-3.5 h-3.5" /> Archive
+              </button>
               <button
                 onClick={handleDelete}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-red-400 hover:bg-red-500/10 border border-red-500/20 transition-colors w-full justify-center"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-red-400 hover:bg-red-500/10 border border-red-500/20 transition-colors flex-1 justify-center"
               >
-                <Trash2 className="w-3.5 h-3.5" /> Delete Task
+                <Trash2 className="w-3.5 h-3.5" /> Delete
               </button>
             </div>
           </motion.div>
