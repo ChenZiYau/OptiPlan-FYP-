@@ -207,6 +207,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         days: entry.days,
         start_time: entry.startTime,
         end_time: entry.endTime,
+        location: entry.location || null,
       });
       if (error) {
         setSchedules((prev) => prev.filter((s) => s.id !== entry.id));
@@ -291,5 +292,6 @@ function rowToSchedule(row: Record<string, unknown>): ScheduleEntry {
     days: row.days as number[],
     startTime: row.start_time as string,
     endTime: row.end_time as string,
+    location: (row.location as string) || undefined,
   };
 }

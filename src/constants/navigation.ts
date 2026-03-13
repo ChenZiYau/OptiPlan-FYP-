@@ -1,11 +1,6 @@
 import {
-  Github,
-  Twitter,
-  Linkedin,
-  Instagram,
   AlertTriangle,
   Layers,
-
   HelpCircle,
   MessageSquare,
 } from 'lucide-react';
@@ -93,39 +88,11 @@ export interface FooterLink {
 export const footerLinks: Record<string, FooterLink[]> = {
   product: [
     { label: 'Features', href: '#features' },
-    { label: 'Pricing', href: '#' },
-    { label: 'Integrations', href: '#' },
-    { label: 'Changelog', href: '#' },
-  ],
-  company: [
-    { label: 'About', href: '#' },
-    { label: 'Blog', href: '#' },
-    { label: 'Careers', href: '#' },
-    { label: 'Press', href: '#' },
+    { label: 'How It Works', href: '#how-it-works' },
+    { label: 'FAQ', href: '#faq' },
   ],
   resources: [
-    { label: 'Documentation', href: '#' },
-    { label: 'Help Center', href: '#' },
-    { label: 'Community', href: '#' },
-    { label: 'Contact', href: '#' },
-  ],
-  legal: [
-    { label: 'Privacy', href: '#' },
-    { label: 'Terms', href: '#' },
-    { label: 'Security', href: '#' },
-    { label: 'Cookies', href: '#' },
+    { label: 'Feedback', href: '#feedback' },
+    { label: 'About', href: '#about-creator' },
   ],
 };
-
-export interface SocialLink {
-  icon: LucideIcon;
-  href: string;
-  label: string;
-}
-
-export const socialLinks: SocialLink[] = [
-  { icon: Twitter, href: '#', label: 'Twitter' },
-  { icon: Github, href: '#', label: 'GitHub' },
-  { icon: Linkedin, href: '#', label: 'LinkedIn' },
-  { icon: Instagram, href: '#', label: 'Instagram' },
-];

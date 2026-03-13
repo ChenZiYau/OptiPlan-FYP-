@@ -222,6 +222,14 @@ export function useAdminActivityLog(filters?: ActivityFilters) {
   return { activities, loading, error, refetch: fetchActivities };
 }
 
+/** Consider a user online if their last_seen is within this many ms */
+const ONLINE_THRESHOLD_MS = 2 * 60 * 1000; // 2 minutes
+
+function isRecentlyOnline(lastSeen: string | null | undefined): boolean {
+  if (!lastSeen) return false;
+  return Date.now() - new Date(lastSeen).getTime() < ONLINE_THRESHOLD_MS;
+}
+
 export function useUserPresence() {
   const uid = useSessionUid();
   const [presence, setPresence] = useState<UserPresence[]>([]);
@@ -247,9 +255,41 @@ export function useUserPresence() {
     if (uid) fetchPresence();
   }, [uid, fetchPresence]);
 
-  const presenceMap = new Map(presence.map(p => [p.user_id, p]));
+  // Realtime subscription: refetch when any row changes
+  useEffect(() => {
+    if (!uid) return;
+    const channel = supabase
+      .channel('admin_presence_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'user_presence' },
+        () => fetchPresence(),
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [uid, fetchPresence]);
 
-  return { presence, presenceMap, loading, error, refetch: fetchPresence };
+  // Re-evaluate online status every 60s so stale heartbeats expire
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => tick(t => t + 1), 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Build map with time-based online check
+  const presenceMap = new Map(
+    presence.map(p => [
+      p.user_id,
+      { ...p, is_online: isRecentlyOnline(p.last_seen) },
+    ]),
+  );
+
+  const livePresence = presence.map(p => ({
+    ...p,
+    is_online: isRecentlyOnline(p.last_seen),
+  }));
+
+  return { presence: livePresence, presenceMap, loading, error, refetch: fetchPresence };
 }
 
 export function useSiteContent() {

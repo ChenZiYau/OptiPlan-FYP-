@@ -1066,6 +1066,44 @@ app.post("/api/generate-quiz", async (req, res) => {
   }
 });
 
+// ── Landing-page chat (no auth, no notebook) ────────────────────────────
+
+app.post("/api/landing-chat", async (req, res) => {
+  try {
+    const { message } = req.body;
+    if (!message || typeof message !== "string") {
+      return res.status(400).json({ error: "message is required." });
+    }
+
+    const completion = await getGroq().chat.completions.create({
+      model: "llama-3.1-8b-instant",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a helpful, very brief and witty assistant for OptiPlan, an AI-powered student productivity app. " +
+            "OptiPlan helps students with smart scheduling, study tools (flashcards, quizzes, mind maps, AI-powered notes), " +
+            "finance tracking, habit tracking, group collaboration, and gamification. " +
+            "Keep answers concise (2-3 sentences max). Be friendly and conversational. Do not output markdown, just plain text.",
+        },
+        { role: "user", content: message },
+      ],
+      max_tokens: 150,
+      temperature: 0.7,
+    });
+
+    const reply =
+      completion.choices?.[0]?.message?.content ||
+      "I'm having trouble thinking right now!";
+    return res.json({ reply });
+  } catch (err: any) {
+    console.error("[landing-chat] error:", err.message || err);
+    return res
+      .status(500)
+      .json({ error: "Chat is temporarily unavailable." });
+  }
+});
+
 // ── Export for Vercel serverless & start for local dev ───────────────────
 
 export default app;

@@ -42,7 +42,7 @@ interface InputField {
 
 type DraftPayload =
   | { type: 'expense'; title?: string; amount?: number; category?: ExpenseCategory; date?: string; description?: string }
-  | { type: 'schedule'; subjectName?: string; startTime?: string; durationHours?: number; days?: number[]; color?: string }
+  | { type: 'schedule'; subjectName?: string; location?: string; startTime?: string; durationHours?: number; days?: number[]; color?: string }
   | { type: 'study'; title?: string; subject?: string; date?: string; importance?: Importance }
   | { type: 'task'; title?: string; date?: string; importance?: Importance; description?: string }
   | { type: 'collab-schedule'; groupId?: string; groupName?: string; name?: string; priority?: string; startDate?: string; endDate?: string; estimatedTime?: string }
@@ -500,6 +500,15 @@ export function FloatingAIAssistant() {
     if (field === 'subjectName') {
       d.subjectName = value; setDraft(d); pushUser(value);
       setTimeout(() => {
+        pushBot('Classroom or location? (type **skip** if none)', 'input-prompt', {
+          inputField: { placeholder: 'e.g. Room 301, Lab A2', type: 'text', field: 'location' },
+        });
+        setPendingField('location');
+      }, 300);
+    } else if (field === 'location') {
+      d.location = value.toLowerCase() === 'skip' ? undefined : value;
+      setDraft(d); pushUser(value.toLowerCase() === 'skip' ? 'Skipped' : value);
+      setTimeout(() => {
         pushBot('Which days?', 'sub-menu', { options: DAY_NAMES.map((dn, i) => ({ label: dn, value: String(i) })) });
         setPendingField('days');
       }, 300);
@@ -747,7 +756,7 @@ export function FloatingAIAssistant() {
         const endH = Math.min(Math.floor(totalMin / 60), 23);
         const endM = totalMin % 60;
         const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-        await addSchedule({ id: uid(), subjectName: draft.subjectName, startTime: draft.startTime, endTime, days: draft.days, color: draft.color ?? pickColor(schedules) });
+        await addSchedule({ id: uid(), subjectName: draft.subjectName, startTime: draft.startTime, endTime, days: draft.days, color: draft.color ?? pickColor(schedules), location: draft.location });
         toast.success(`Schedule added: ${draft.subjectName}`);
         pushBot(`Done! **${draft.subjectName}** added to your timetable.`);
       } else if (draft.type === 'task' && draft.title) {
@@ -866,9 +875,9 @@ export function FloatingAIAssistant() {
             if (!d.subjectName) {
               setPendingField('subjectName');
             } else if (!d.startTime) {
-              setPendingField('startTime');
-              setTimeout(() => pushBot('Enter the start time:', 'input-prompt', {
-                inputField: { placeholder: 'e.g. 09:00', type: 'time', field: 'startTime' },
+              setPendingField('location');
+              setTimeout(() => pushBot('Classroom or location? (type **skip** if none)', 'input-prompt', {
+                inputField: { placeholder: 'e.g. Room 301, Lab A2', type: 'text', field: 'location' },
               }), 400);
             }
           } else if (result.type === 'study') {
@@ -1172,6 +1181,7 @@ function ConfirmCard({ draft, onConfirm, onCancel }: { draft: DraftPayload; onCo
         {draft.type === 'schedule' && (
           <>
             <Field label="Subject" value={draft.subjectName} />
+            {draft.location && <Field label="Location" value={draft.location} />}
             <Field label="Days" value={draft.days?.map((d) => DAY_NAMES[d]).join(', ')} />
             <Field label="Start" value={draft.startTime} />
             <Field label="Duration" value={draft.durationHours ? `${draft.durationHours}h` : undefined} />

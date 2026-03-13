@@ -73,10 +73,15 @@ export function SetBudgetModal({ open, onOpenChange }: SetBudgetModalProps) {
   }
 
   async function handleSave() {
+    if (!totalBudget.trim() || isNaN(parseFloat(totalBudget)) || parseFloat(totalBudget) <= 0) {
+      toast.error('Please enter a valid total budget greater than 0.');
+      return;
+    }
+
     setSaving(true);
 
     try {
-      const totalVal = parseFloat(totalBudget) || 0;
+      const totalVal = parseFloat(totalBudget);
 
       // Save overall monthly budget to finance_settings
       await saveSettings({ monthly_budget: totalVal });

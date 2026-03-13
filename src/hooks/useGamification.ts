@@ -631,7 +631,7 @@ export function useGamificationData(): GamificationHookData {
           unlockedCount: stateRef.current.unlockedAchievements.length,
         });
         checkAchievements(quickStats, user.id, stateRef.current.unlockedAchievements);
-      }).catch(() => {});
+      }).catch((err) => console.error('Gamification stats error:', err));
     } finally {
       actionLock.current = false;
     }
@@ -730,7 +730,7 @@ export function useGamificationData(): GamificationHookData {
           unlockedCount: stateRef.current.unlockedAchievements.length,
         });
         checkAchievements(quickStats, user.id, stateRef.current.unlockedAchievements);
-      }).catch(() => {});
+      }).catch((err) => console.error('Gamification stats error:', err));
     } finally {
       actionLock.current = false;
     }
@@ -780,7 +780,7 @@ export function useGamificationData(): GamificationHookData {
           unlockedCount: stateRef.current.unlockedAchievements.length,
         });
         checkAchievements(quickStats, user.id, stateRef.current.unlockedAchievements);
-      }).catch(() => {});
+      }).catch((err) => console.error('Gamification stats error:', err));
     } finally {
       actionLock.current = false;
     }
@@ -855,7 +855,7 @@ export function useGamificationData(): GamificationHookData {
         unlockedCount: stateRef.current.unlockedAchievements.length,
       });
       checkAchievements(quickStats, user.id, stateRef.current.unlockedAchievements);
-    }).catch(() => {});
+    }).catch((err) => console.error('Gamification stats error:', err));
   }, [user, persistXP, broadcast, checkAchievements, buildQuickStats]);
 
   // ── Full Achievement Check (for achievements page) ──────────────────────

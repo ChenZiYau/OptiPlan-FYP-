@@ -35,39 +35,16 @@ export function useChat(notebookId: string | null) {
       if (fetchErr) throw fetchErr;
       if (mountedRef.current) setMessages(data || []);
     } catch (err: any) {
-
       if (mountedRef.current) setError(err.message || 'Failed to load messages');
     } finally {
       if (mountedRef.current) setLoading(false);
     }
   }, [notebookId]);
 
+  // Fetch on notebookId change
   useEffect(() => {
-    let cancelled = false;
-    if (!notebookId) {
-      setMessages([]);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    Promise.resolve(
-      supabase
-        .from('notebook_chat_messages')
-        .select('*')
-        .eq('notebook_id', notebookId)
-        .order('created_at', { ascending: true })
-    ).then(({ data, error: fetchErr }) => {
-      if (cancelled) return;
-      if (fetchErr) throw fetchErr;
-      setMessages(data || []);
-    }).catch((err: any) => {
-      if (cancelled) return;
-      setError(err.message || 'Failed to load messages');
-    }).finally(() => {
-      if (!cancelled) setLoading(false);
-    });
-    return () => { cancelled = true; };
-  }, [notebookId]);
+    fetchMessages();
+  }, [fetchMessages]);
 
   // Send a message and get AI response
   const sendMessage = useCallback(async (content: string, context?: string) => {
@@ -130,7 +107,6 @@ export function useChat(notebookId: string | null) {
       if (deleteErr) throw deleteErr;
       if (mountedRef.current) setMessages([]);
     } catch (err: any) {
-
       if (mountedRef.current) setError(err.message || 'Failed to clear messages');
     }
   }, [notebookId]);

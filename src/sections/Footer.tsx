@@ -117,14 +117,6 @@ export function Footer() {
           </p>
 
           <div className="flex items-center gap-6">
-            {/* Status Indicator */}
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/5 border border-green-500/10">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-[10px] uppercase font-medium text-green-500/80 tracking-wider">
-                All Systems Normal
-              </span>
-            </div>
-
             {/* Back to Top */}
             <motion.button
               onClick={() => document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth' })}

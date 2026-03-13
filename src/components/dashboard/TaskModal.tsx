@@ -126,13 +126,16 @@ export function TaskModal() {
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             className="relative bg-[#18162e] border border-white/10 rounded-xl max-w-lg w-full p-6 shadow-2xl"
           >
-            {/* Close button */}
-            <button
-              onClick={handleClose}
-              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            {/* Header with close button */}
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-white">Create New Item</h2>
+              <button
+                onClick={handleClose}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
             {/* Tabs */}
             <div className="flex gap-1 mb-6 bg-white/5 rounded-lg p-1">

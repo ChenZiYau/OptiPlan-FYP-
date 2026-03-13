@@ -191,20 +191,50 @@ export function CollabPage() {
     }
   }, [user]);
 
+  // Fetch members and their online status from user_presence
   useEffect(() => {
-    if (selectedProject) {
-      localStorage.setItem('collab-project', JSON.stringify(selectedProject));
-      getGroupMembers(selectedProject.id).then(m => {
-        setMembers(m.map(x => ({
-          userId: x.uid,
-          name: x.username,
-          initials: generateInitials(x.username),
-          color: 'bg-purple-500',
-          isOnline: true,
-          role: x.uid === selectedProject.creatorId ? 'admin' : 'member',
-        })));
-      }).catch(() => toast.error('Failed to load members'));
+    if (!selectedProject) return;
+    localStorage.setItem('collab-project', JSON.stringify(selectedProject));
+
+    async function loadMembers() {
+      try {
+        const m = await getGroupMembers(selectedProject!.id);
+        const userIds = m.map(x => x.uid);
+        const { data: presenceData } = await supabase
+          .from('user_presence')
+          .select('user_id, last_seen')
+          .in('user_id', userIds);
+        const presMap = new Map((presenceData ?? []).map(p => [p.user_id, p.last_seen]));
+        const now = Date.now();
+        setMembers(m.map(x => {
+          const lastSeen = presMap.get(x.uid);
+          const isOnline = lastSeen ? now - new Date(lastSeen).getTime() < 2 * 60 * 1000 : false;
+          return {
+            userId: x.uid,
+            name: x.username,
+            initials: generateInitials(x.username),
+            color: 'bg-purple-500',
+            isOnline,
+            role: x.uid === selectedProject!.creatorId ? 'admin' : 'member',
+          };
+        }));
+      } catch {
+        toast.error('Failed to load members');
+      }
     }
+    loadMembers();
+
+    // Subscribe to presence changes so online dots update live
+    const channel = supabase
+      .channel(`collab_presence_${selectedProject.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'user_presence' },
+        () => loadMembers(),
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [selectedProject]);
 
   async function handleCreateGroup() {
@@ -392,7 +422,7 @@ export function CollabPage() {
           'postgres_changes',
           { event: '*', schema: 'public', table: 'group_schedule_tasks', filter: `group_id=eq.${selectedProject.id}` },
           () => {
-            getGroupScheduleTasks(selectedProject.id).then(setScheduleTasks).catch(() => {});
+            getGroupScheduleTasks(selectedProject.id).then(setScheduleTasks).catch(() => toast.error('Failed to reload schedule tasks'));
           }
         )
         .subscribe();

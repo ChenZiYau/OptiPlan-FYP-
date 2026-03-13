@@ -3,38 +3,99 @@ import { Bot, FileText, Network, Calendar, Database, Target, Brain, Award } from
 import { ChatWindow } from './ChatWindow';
 import type { Message } from './ChatWindow';
 
+// Helper for structured feature replies
+function FeatureReply({ heading, points }: { heading: string; points: string[] }) {
+  return (
+    <div className="space-y-1.5">
+      <p className="font-medium">{heading}</p>
+      <ul className="space-y-1 pl-1">
+        {points.map((pt) => (
+          <li key={pt} className="flex items-start gap-1.5">
+            <span className="text-indigo-400 mt-0.5 shrink-0">•</span>
+            <span className="text-zinc-300">{pt}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 // Predefined AI flows based on codebase analysis
-export const featureFlows: Record<string, { reply: string; icon: React.ReactNode }> = {
+export const featureFlows: Record<string, { reply: React.ReactNode; icon: React.ReactNode }> = {
   "Study Hub": {
-    reply: "Upload your source documents and our AI instantly generates study notes, mind maps, flashcards, and quizzes for you! 🧠 We even included a built-in Pomodoro timer.",
+    reply: <FeatureReply heading="Your all-in-one study toolkit 🧠" points={[
+      "Upload PDFs, DOCX & slides — AI extracts everything",
+      "Auto-generates study notes & mind maps",
+      "Create flashcards & quizzes from your sources",
+      "Built-in Pomodoro timer to keep you focused",
+      "Chat with your documents using AI-powered Q&A",
+    ]} />,
     icon: <Database className="w-5 h-5" />
   },
   "Schedule Matcher": {
-    reply: "No more back-and-forth texting! We automatically compare your timetable with your friends' to find the perfect common free time. ✨",
+    reply: <FeatureReply heading="Find free time with friends instantly ✨" points={[
+      "Import your class timetable in seconds",
+      "Auto-compare schedules with friends",
+      "See overlapping free slots at a glance",
+      "No more back-and-forth texting to plan meetups",
+    ]} />,
     icon: <Calendar className="w-5 h-5" />
   },
   "Collaboration Groups": {
-    reply: "Create dedicated spaces for your project teams. Share files, chat in real-time, and manage collective deadlines without breaking a sweat. 🤝",
+    reply: <FeatureReply heading="Team up and get things done 🤝" points={[
+      "Create project groups with your classmates",
+      "Real-time group chat & file sharing",
+      "Shared Kanban board for task management",
+      "Group calendar with deadlines & milestones",
+      "Resource vault for links, docs & uploads",
+    ]} />,
     icon: <Network className="w-5 h-5" />
   },
   "GPA Tracker & Wrapped": {
-    reply: "Keep your academic goals in focus with our GPA tracker, and get a cool 'Wrapped' summary of your study habits at the end of every semester! 📈",
+    reply: <FeatureReply heading="Track your academic journey 📈" points={[
+      "Log your grades and calculate your GPA",
+      "Set target GPA goals and track progress",
+      "Semester 'Wrapped' — a visual recap of your habits",
+      "See stats on tasks completed, study hours & more",
+    ]} />,
     icon: <Target className="w-5 h-5" />
   },
   "Tasks & Kanban": {
-    reply: "Stay on top of assignments with an interactive, drag-and-drop Kanban board. Breaking down large projects has never been easier. ✅",
+    reply: <FeatureReply heading="Stay organized, never miss a deadline ✅" points={[
+      "Drag-and-drop Kanban board (To Do → In Progress → Done)",
+      "Create tasks, study sessions & events",
+      "Set priorities and due dates",
+      "Filter and sort by status, date or importance",
+      "AI assistant helps you create tasks via chat",
+    ]} />,
     icon: <FileText className="w-5 h-5" />
   },
   "Finance Tracker": {
-    reply: "Keep your student budget in check! Track your daily expenses and categorize your spending so you always know where your money goes. 💸",
+    reply: <FeatureReply heading="Student budget, under control 💸" points={[
+      "Log daily expenses with categories",
+      "Set monthly budgets with per-category limits",
+      "Visual spending breakdown with pie charts",
+      "Track trends and spot overspending early",
+      "Currency toggle for international students",
+    ]} />,
     icon: <Target className="w-5 h-5" />
   },
   "Wellness & Health": {
-    reply: "Burnout is real. Log your mood, get personalized wellness tips, and remember to take mindful breaks during those intense study sessions. 🧘‍♀️",
+    reply: <FeatureReply heading="Take care of yourself too 🧘‍♀️" points={[
+      "Daily mood logging & habit tracking",
+      "Personalized wellness tips based on your patterns",
+      "Break reminders during long study sessions",
+      "Build healthy routines with streak tracking",
+    ]} />,
     icon: <Brain className="w-5 h-5" />
   },
   "Achievements": {
-    reply: "Gamify your studying! Earn badges and level up as you complete tasks, ace quizzes, and stick to your schedule. 🏆",
+    reply: <FeatureReply heading="Gamify your productivity 🏆" points={[
+      "Earn XP for completing tasks & study sessions",
+      "Level up and unlock badges & achievements",
+      "Track streaks for daily consistency",
+      "Compete with yourself — see your stats grow",
+    ]} />,
     icon: <Award className="w-5 h-5" />
   }
 };
@@ -94,32 +155,17 @@ export function InteractiveFeatureShowcase() {
     setIsTyping(true);
 
     try {
-      // 2. Call Groq API
-      const apiKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.GROQ_API_KEY || '';
-      
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      const apiBase = import.meta.env.VITE_API_URL || '/api';
+      const response = await fetch(`${apiBase}/landing-chat`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'llama3-8b-8192', 
-          messages: [
-            { role: 'system', content: 'You are a helpful, very brief and witty assistant for exactly the OptiPlan student productivity app. Do not output markdown, just plain text.' },
-            { role: 'user', content: text }
-          ],
-          max_tokens: 150,
-          temperature: 0.7
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
       });
 
-      if (!response.ok) {
-        throw new Error('API request failed');
-      }
+      if (!response.ok) throw new Error('API request failed');
 
       const data = await response.json();
-      const botReply = data.choices?.[0]?.message?.content || "I'm having trouble thinking right now!";
+      const botReply = data.reply || "I'm having trouble thinking right now!";
 
       const botMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -143,7 +189,7 @@ export function InteractiveFeatureShowcase() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch my-16">
-      {/* Left Column: Feature Buttons */}
+      {/* Left Column: Feature Buttons — defines the row height */}
       <div className="space-y-3">
         <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
           <Bot className="w-6 h-6 text-indigo-400" /> Let's Chat Features
@@ -171,15 +217,12 @@ export function InteractiveFeatureShowcase() {
         </div>
       </div>
 
-      {/* Right Column: Chat Window */}
-      <div className="h-full w-full flex flex-col mt-8 lg:mt-0 relative">
-        {/* Decorative background glow behind chat */}
-        <div className="absolute inset-x-0 -top-40 -bottom-40 overflow-hidden -z-10 bg-indigo-500/5 blur-[120px] rounded-full pointer-events-none" />
-        
-        <div className="flex-1 min-h-[500px] lg:min-h-0 h-full w-full">
-          <ChatWindow 
-            messages={messages} 
-            isTyping={isTyping} 
+      {/* Right Column: Chat Window — locked to left column height, scrolls internally */}
+      <div className="relative h-[500px] lg:h-auto mt-8 lg:mt-0">
+        <div className="lg:absolute lg:inset-0">
+          <ChatWindow
+            messages={messages}
+            isTyping={isTyping}
             className="shadow-2xl shadow-black/50 h-full w-full"
             onSendMessage={handleSendMessage}
           />

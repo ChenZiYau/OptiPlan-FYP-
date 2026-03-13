@@ -94,8 +94,8 @@ export function FinanceWidget() {
                 dataKey="value"
                 stroke="none"
               >
-                {chartData.map((_, idx) => (
-                  <Cell key={idx} fill={chartColors[idx]} />
+                {chartData.map((entry, idx) => (
+                  <Cell key={entry.name} fill={chartColors[idx]} />
                 ))}
               </Pie>
               <Tooltip content={<ChartTooltip currencySymbol={symbol} />} />

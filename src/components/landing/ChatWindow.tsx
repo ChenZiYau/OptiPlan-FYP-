@@ -5,7 +5,7 @@ import { Sparkles, User } from 'lucide-react';
 export interface Message {
   id: string;
   sender: 'bot' | 'user';
-  text: string;
+  text: string | React.ReactNode;
 }
 
 interface ChatWindowProps {
@@ -17,14 +17,11 @@ interface ChatWindowProps {
 
 export function ChatWindow({ messages, isTyping, className = '', onSendMessage }: ChatWindowProps) {
   const [inputValue, setInputValue] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    scrollToBottom();
+    const el = scrollAreaRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }, [messages, isTyping]);
 
   return (
@@ -41,7 +38,7 @@ export function ChatWindow({ messages, isTyping, className = '', onSendMessage }
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth">
+      <div ref={scrollAreaRef} className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth">
         <AnimatePresence initial={false}>
           {messages.map((message) => (
             <motion.div
@@ -102,7 +99,6 @@ export function ChatWindow({ messages, isTyping, className = '', onSendMessage }
             </motion.div>
           )}
         </AnimatePresence>
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Input Area */}

@@ -69,6 +69,10 @@ export function AddTransactionModal({ open, onOpenChange }: Props) {
       setError('Please select a category.');
       return;
     }
+    if (datePreset === 'custom' && !customDate) {
+      setError('Please select a date.');
+      return;
+    }
     const txDate = getDate();
     if (!txDate) {
       setError('Please select a date.');

@@ -341,7 +341,7 @@ export async function deleteGroup(groupId: string, userId: string) {
 
   for (const table of tables) {
     const { error } = await supabase.from(table).delete().eq('group_id', groupId);
-    if (error) console.error(`Failed to delete from ${table}:`, error);
+    if (error) throw new Error(`Failed to delete from ${table}: ${error.message}`);
   }
 
   // Delete the group itself
@@ -400,7 +400,7 @@ export async function sendGroupMessage(groupId: string, senderId: string, conten
 
   if (error) throw error;
 
-  const usersArray = data.users as any;
+  const usersArray = data.users as { username?: string } | { username?: string }[] | null;
   const username = Array.isArray(usersArray) ? usersArray[0]?.username : usersArray?.username;
 
   return {
@@ -472,7 +472,7 @@ export async function addGroupLink(groupId: string, addedBy: string, url: string
 
   if (error) throw error;
 
-  const usersArray = data.users as any;
+  const usersArray = data.users as { username?: string } | { username?: string }[] | null;
   const username = Array.isArray(usersArray) ? usersArray[0]?.username : usersArray?.username;
 
   return {
@@ -560,7 +560,7 @@ export async function uploadGroupFile(groupId: string, uploadedBy: string, file:
 
   if (insertError) throw insertError;
 
-  const usersArray = data.users as any;
+  const usersArray = data.users as { username?: string } | { username?: string }[] | null;
   const username = Array.isArray(usersArray) ? usersArray[0]?.username : usersArray?.username;
 
   return {
@@ -647,8 +647,8 @@ export async function createGroupTask(
     description: data.description || '',
     status: data.status as 'todo' | 'doing' | 'done' | 'archived',
     createdAt: data.created_at,
-    creatorUsername: (data as any).creator?.username || 'Unknown',
-    assigneeUsername: (data as any).assignee?.username || null,
+    creatorUsername: (data.creator as { username?: string } | null)?.username || 'Unknown',
+    assigneeUsername: (data.assignee as { username?: string } | null)?.username || null,
   };
 }
 

@@ -67,34 +67,17 @@ export function FloatingChatWidget() {
     setIsTyping(true);
 
     try {
-      // 2. Call Groq API
-      // Note: In Vite, env variables usually need the VITE_ prefix to be exposed to the client.
-      // Assuming a simple fetch to Groq's completions endpoint.
-      const apiKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.GROQ_API_KEY || '';
-      
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      const apiBase = import.meta.env.VITE_API_URL || '/api';
+      const response = await fetch(`${apiBase}/landing-chat`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'llama3-8b-8192', // or any lightweight fast model
-          messages: [
-            { role: 'system', content: 'You are a helpful, very brief and witty assistant for exactly the OptiPlan student productivity app. Do not output markdown, just plain text.' },
-            { role: 'user', content: text }
-          ],
-          max_tokens: 150,
-          temperature: 0.7
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
       });
 
-      if (!response.ok) {
-        throw new Error('API request failed');
-      }
+      if (!response.ok) throw new Error('API request failed');
 
       const data = await response.json();
-      const botReply = data.choices?.[0]?.message?.content || "I'm having trouble thinking right now!";
+      const botReply = data.reply || "I'm having trouble thinking right now!";
 
       const botMsg: Message = {
         id: (Date.now() + 1).toString(),

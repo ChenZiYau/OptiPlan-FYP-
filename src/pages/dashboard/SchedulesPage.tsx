@@ -62,6 +62,7 @@ export function SchedulesPage() {
 
   // Form state
   const [subjectName, setSubjectName] = useState('');
+  const [location, setLocation] = useState('');
   const [color, setColor] = useState(PRESET_COLORS[0]);
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [startTime, setStartTime] = useState('09:00');
@@ -81,6 +82,7 @@ export function SchedulesPage() {
 
   const resetForm = () => {
     setSubjectName('');
+    setLocation('');
     setColor(PRESET_COLORS[0]);
     setSelectedDays([]);
     setStartTime('09:00');
@@ -101,6 +103,7 @@ export function SchedulesPage() {
       days: selectedDays.sort(),
       startTime,
       endTime,
+      location: location.trim() || undefined,
     });
     resetForm();
     setShowForm(false);
@@ -151,6 +154,18 @@ export function SchedulesPage() {
                   value={subjectName}
                   onChange={(e) => setSubjectName(e.target.value)}
                   placeholder="e.g. Calculus 101"
+                  className="w-full px-3 py-2.5 rounded-lg bg-white/5 border border-[#1F1F1F] text-sm text-white placeholder:text-gray-600 outline-none focus:border-indigo-500/40 transition-colors duration-150"
+                />
+              </div>
+
+              {/* Location / Classroom */}
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">Classroom / Location <span className="text-gray-600">(optional)</span></label>
+                <input
+                  type="text"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="e.g. Room 301, Lab A2, Online"
                   className="w-full px-3 py-2.5 rounded-lg bg-white/5 border border-[#1F1F1F] text-sm text-white placeholder:text-gray-600 outline-none focus:border-indigo-500/40 transition-colors duration-150"
                 />
               </div>
@@ -265,7 +280,7 @@ export function SchedulesPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-white">{s.subjectName}</p>
                       <p className="text-xs text-zinc-500">
-                        {s.days.map((d) => DAYS[d]).join(', ')} · {s.startTime} – {s.endTime}
+                        {s.days.map((d) => DAYS[d]).join(', ')} · {s.startTime} – {s.endTime}{s.location ? ` · ${s.location}` : ''}
                       </p>
                     </div>
                     <button
@@ -371,6 +386,7 @@ export function SchedulesPage() {
               <span className="font-semibold text-white">{formatSlot(tooltip.entry.endTime)}</span>
             </p>
             <p className="text-[11px] text-zinc-500">{(timeToHour(tooltip.entry.endTime) - timeToHour(tooltip.entry.startTime))}h duration</p>
+            {tooltip.entry.location && <p className="text-[11px] text-zinc-400">{tooltip.entry.location}</p>}
           </div>
         </div>,
         document.body,

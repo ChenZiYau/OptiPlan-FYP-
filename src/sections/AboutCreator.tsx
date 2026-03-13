@@ -8,6 +8,7 @@ interface AboutCreatorContent {
   title: string;
   paragraphs: string[];
   signature: string;
+  textColors?: Record<string, string>;
 }
 
 const defaults = siteDefaults.about_creator as unknown as AboutCreatorContent;
@@ -15,7 +16,7 @@ const defaults = siteDefaults.about_creator as unknown as AboutCreatorContent;
 export function AboutCreator() {
   const { getContent } = useSiteContentData();
   const content = getContent<AboutCreatorContent>('about_creator') ?? defaults;
-  const tc = ((content as any).textColors ?? {}) as Record<string, string>;
+  const tc = content.textColors ?? {};
 
   return (
     <section id="about-creator" className="relative py-32 overflow-hidden">
@@ -38,8 +39,8 @@ export function AboutCreator() {
 
         <AnimatedSection delay={0.2}>
           <div className="glass-card p-8 text-center space-y-4">
-            {(content.paragraphs ?? defaults.paragraphs).map((paragraph, i) => (
-              <p key={i} className="text-opti-text-secondary leading-relaxed" style={{ color: tc.paragraphs || undefined }}>
+            {(content.paragraphs ?? defaults.paragraphs).map((paragraph) => (
+              <p key={paragraph} className="text-opti-text-secondary leading-relaxed" style={{ color: tc.paragraphs || undefined }}>
                 {paragraph}
               </p>
             ))}
