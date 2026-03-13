@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { generateMindMap } from '@/services/studyhub-api';
+import { useRateLimit } from '@/hooks/useRateLimit';
 import type { MindMapNode, MindMapEdge } from '@/types/studyhub';
 
 interface MindMapState {
@@ -16,6 +17,7 @@ export function useMindMap(notebookId: string | null) {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
+  const { rateLimitSeconds, isRateLimited, triggerRateLimit } = useRateLimit();
 
   useEffect(() => {
     mountedRef.current = true;
@@ -99,11 +101,15 @@ export function useMindMap(notebookId: string | null) {
       const result = await generateMindMap(notebookId, session.access_token);
       if (mountedRef.current) setData({ nodes: result.nodes, edges: result.edges });
     } catch (err: any) {
-      if (mountedRef.current) setError(err.message || 'Failed to generate mind map');
+      if (mountedRef.current) {
+        if (!triggerRateLimit(err)) {
+          setError(err.message || 'Failed to generate mind map');
+        }
+      }
     } finally {
       if (mountedRef.current) setGenerating(false);
     }
-  }, [notebookId, session?.access_token]);
+  }, [notebookId, session?.access_token, triggerRateLimit]);
 
-  return { data, loading, generating, error, generate, refetch: fetchMindMap };
+  return { data, loading, generating, error, generate, refetch: fetchMindMap, rateLimitSeconds, isRateLimited };
 }

@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
-import { chatWithNotebook } from '@/services/studyhub-api';
+import { chatWithNotebook, RateLimitError } from '@/services/studyhub-api';
+import { useRateLimit } from '@/hooks/useRateLimit';
 import type { ChatMessageData } from '@/types/studyhub';
 
 export function useChat(notebookId: string | null) {
@@ -11,6 +12,7 @@ export function useChat(notebookId: string | null) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
+  const { rateLimitSeconds, isRateLimited, triggerRateLimit } = useRateLimit();
 
   useEffect(() => {
     mountedRef.current = true;
@@ -82,12 +84,15 @@ export function useChat(notebookId: string | null) {
       await fetchMessages();
     } catch (err: any) {
       if (!mountedRef.current) return;
-      // Add error message
+      const wasRateLimited = triggerRateLimit(err);
+      const errorContent = wasRateLimited
+        ? `⏳ Rate limit reached. Please wait about a minute before sending another message.`
+        : `Error: ${err.message || 'Failed to get response. Please try again.'}`;
       const errorMsg: ChatMessageData = {
         id: `error-${Date.now()}`,
         notebook_id: notebookId,
         role: 'assistant',
-        content: `Error: ${err.message || 'Failed to get response. Please try again.'}`,
+        content: errorContent,
         citations: null,
         created_at: new Date().toISOString(),
       };
@@ -111,5 +116,5 @@ export function useChat(notebookId: string | null) {
     }
   }, [notebookId]);
 
-  return { messages, loading, sending, error, sendMessage, clearMessages };
+  return { messages, loading, sending, error, sendMessage, clearMessages, rateLimitSeconds, isRateLimited };
 }

@@ -64,6 +64,16 @@ function getGroq(): Groq {
 // Groq request timeout: 8s on Vercel Hobby (leaves 2s buffer within 10s maxDuration), 120s local
 const GROQ_TIMEOUT = isVercel ? 8_000 : 120_000;
 
+// Groq free-tier (on_demand) has 6000 TPM. Reserve tokens for system prompt + response.
+// ~4 chars per token is a rough estimate. We cap user content to stay safely under.
+const GROQ_MAX_INPUT_CHARS = 10000; // ~2500 tokens, leaves room for system prompt + max_tokens
+
+/** Truncate text to stay within Groq token limits */
+function truncateForGroq(text: string, maxChars = GROQ_MAX_INPUT_CHARS): string {
+  if (text.length <= maxChars) return text;
+  return text.slice(0, maxChars) + "\n\n[... content truncated to fit AI model limits ...]";
+}
+
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 /** Extract text from a file buffer using officeparser v4 (supports PDF, PPTX, DOCX, PPT, DOC, RTF, ODT, ODP) */
@@ -176,13 +186,8 @@ app.post("/api/generate-notes", async (req, res) => {
       .map((c: any, i: number) => `[Chunk ${i + 1}]\n${c.content}`)
       .join("\n\n---\n\n");
 
-    // 3. Call Groq/Llama to generate notes
-    // Truncate context to fit within 8k token window (~20k chars)
-    const truncatedContext =
-      contextText.length > 20000
-        ? contextText.slice(0, 20000) +
-          "\n\n[... remaining chunks truncated to fit context window ...]"
-        : contextText;
+    // 3. Call Groq/Llama to generate notes — truncate to fit TPM limits
+    const truncatedContext = truncateForGroq(contextText);
 
     const notesPrompt = `You are an expert academic tutor and a master of aesthetic, highly-structured Markdown formatting. I will provide you with raw text chunks extracted from a student's study material (which might be messy, unstructured PPTX slides or PDFs).
 
@@ -210,18 +215,19 @@ STRICT FORMATTING RULES:
             },
           ],
           temperature: 0.3,
-          max_tokens: 4096,
+          max_tokens: 2048,
         },
         { timeout: GROQ_TIMEOUT },
       );
       notes = chatCompletion.choices?.[0]?.message?.content || "";
     } catch (groqErr: any) {
       console.error(`[notes] Groq error:`, groqErr.message);
-      if (groqErr.status === 429) {
+      if (groqErr.status === 413 || groqErr.status === 429 || (groqErr.error?.type === 'tokens')) {
         return res
           .status(429)
           .json({
-            error: "Rate limit reached. Please wait a moment and try again.",
+            error: "Rate limit reached. Please wait a minute before generating again.",
+            retryAfterSeconds: 60,
           });
       }
       if (
@@ -237,7 +243,7 @@ STRICT FORMATTING RULES:
       }
       return res
         .status(502)
-        .json({ error: `Notes generation failed: ${groqErr.message}` });
+        .json({ error: `Notes generation failed. Please try again.` });
     }
 
     if (!notes || notes.trim().length === 0) {
@@ -503,12 +509,13 @@ app.post("/api/chat", async (req, res) => {
       .join("\n\n---\n\n");
 
     // 5. Build prompt — use explain prompt when node context is provided
+    const truncatedBlocks = truncateForGroq(contextBlocks);
     const systemPrompt = hasNodeContext
       ? EXPLAIN_SYSTEM_PROMPT
       : RAG_SYSTEM_PROMPT;
     const userPrompt = hasNodeContext
-      ? `CONCEPT CONTEXT (from mind map):\n${context}\n\n---\n\nDOCUMENT CHUNKS:\n\n${contextBlocks}\n\n---\n\nSTUDENT QUESTION: ${message}`
-      : `DOCUMENT CONTEXT:\n\n${contextBlocks}\n\n---\n\nUSER QUESTION: ${message}`;
+      ? `CONCEPT CONTEXT (from mind map):\n${context}\n\n---\n\nDOCUMENT CHUNKS:\n\n${truncatedBlocks}\n\n---\n\nSTUDENT QUESTION: ${message}`
+      : `DOCUMENT CONTEXT:\n\n${truncatedBlocks}\n\n---\n\nUSER QUESTION: ${message}`;
 
     // 6. Call Groq for answer generation
     let aiReply: string;
@@ -521,13 +528,18 @@ app.post("/api/chat", async (req, res) => {
             { role: "user", content: userPrompt },
           ],
           temperature: 0.3,
-          max_tokens: 4096,
+          max_tokens: 2048,
         },
         { timeout: GROQ_TIMEOUT },
       );
       aiReply = chatCompletion.choices?.[0]?.message?.content || "";
     } catch (groqErr: any) {
       console.error(`[chat] Groq error:`, groqErr.message);
+      if (groqErr.status === 413 || groqErr.status === 429 || (groqErr.error?.type === 'tokens')) {
+        return res
+          .status(429)
+          .json({ error: "Rate limit reached. Please wait a minute before trying again.", retryAfterSeconds: 60 });
+      }
       if (
         groqErr.name === "APIConnectionTimeoutError" ||
         groqErr.code === "ETIMEDOUT"
@@ -538,7 +550,7 @@ app.post("/api/chat", async (req, res) => {
       }
       return res
         .status(502)
-        .json({ error: `AI generation failed: ${groqErr.message}` });
+        .json({ error: "AI generation failed. Please try again." });
     }
 
     if (!aiReply || aiReply.trim().length === 0) {
@@ -691,14 +703,7 @@ app.post("/api/generate-mindmap", async (req, res) => {
       .join("\n\n");
 
     // Truncate to stay within Groq token limits
-    // Free tier (on_demand) has 6k TPM; system prompt uses ~1.5k tokens,
-    // so cap user content at ~16k chars (~4k tokens) to stay safely under.
-    const maxChars = isVercel ? 16000 : 28000;
-    const contextText =
-      chunksText.length > maxChars
-        ? chunksText.slice(0, maxChars) +
-          "\n\n[... remaining content truncated ...]"
-        : chunksText;
+    const contextText = truncateForGroq(chunksText);
 
     log(
       `[mindmap] Sending ${chunks.length} chunks (${contextText.length} chars) from: ${filenames.join(", ")}`,
@@ -746,6 +751,11 @@ app.post("/api/generate-mindmap", async (req, res) => {
       }));
     } catch (genErr: any) {
       console.error(`[mindmap] Generation error:`, genErr.message);
+      if (genErr.status === 413 || genErr.status === 429 || (genErr.error?.type === 'tokens')) {
+        return res
+          .status(429)
+          .json({ error: "Rate limit reached. Please wait a minute before generating again.", retryAfterSeconds: 60 });
+      }
       if (
         genErr.name === "APIConnectionTimeoutError" ||
         genErr.code === "ETIMEDOUT"
@@ -759,7 +769,7 @@ app.post("/api/generate-mindmap", async (req, res) => {
       }
       return res
         .status(502)
-        .json({ error: `Mind map generation failed: ${genErr.message}` });
+        .json({ error: "Mind map generation failed. Please try again." });
     }
 
     log(
@@ -841,9 +851,10 @@ app.post("/api/generate-flashcards", async (req, res) => {
         });
     }
 
-    const contextText = chunks
+    const rawContext = chunks
       .map((c: any) => `[Chunk ID: ${c.id}]\n${c.content}`)
       .join("\n\n");
+    const contextText = truncateForGroq(rawContext);
 
     let parsedJson: { flashcards: any[] };
     try {
@@ -868,6 +879,11 @@ app.post("/api/generate-flashcards", async (req, res) => {
       }
     } catch (genErr: any) {
       console.error(`[flashcards] Generation error:`, genErr.message);
+      if (genErr.status === 413 || genErr.status === 429 || (genErr.error?.type === 'tokens')) {
+        return res
+          .status(429)
+          .json({ error: "Rate limit reached. Please wait a minute before generating again.", retryAfterSeconds: 60 });
+      }
       if (
         genErr.name === "APIConnectionTimeoutError" ||
         genErr.code === "ETIMEDOUT"
@@ -878,7 +894,7 @@ app.post("/api/generate-flashcards", async (req, res) => {
       }
       return res
         .status(502)
-        .json({ error: `Flashcards generation failed: ${genErr.message}` });
+        .json({ error: "Flashcard generation failed. Please try again." });
     }
 
     log(
@@ -972,9 +988,10 @@ app.post("/api/generate-quiz", async (req, res) => {
         });
     }
 
-    const contextText = chunks
+    const rawContext = chunks
       .map((c: any) => `[Chunk ID: ${c.id}]\n${c.content}`)
       .join("\n\n");
+    const contextText = truncateForGroq(rawContext);
 
     let parsedJson: { questions: any[] };
     try {
@@ -999,6 +1016,11 @@ app.post("/api/generate-quiz", async (req, res) => {
       }
     } catch (genErr: any) {
       console.error(`[quiz] Generation error:`, genErr.message);
+      if (genErr.status === 413 || genErr.status === 429 || (genErr.error?.type === 'tokens')) {
+        return res
+          .status(429)
+          .json({ error: "Rate limit reached. Please wait a minute before generating again.", retryAfterSeconds: 60 });
+      }
       if (
         genErr.name === "APIConnectionTimeoutError" ||
         genErr.code === "ETIMEDOUT"
@@ -1009,7 +1031,7 @@ app.post("/api/generate-quiz", async (req, res) => {
       }
       return res
         .status(502)
-        .json({ error: `Quiz generation failed: ${genErr.message}` });
+        .json({ error: "Quiz generation failed. Please try again." });
     }
 
     log(`[quiz] Generated ${parsedJson.questions.length} questions`);

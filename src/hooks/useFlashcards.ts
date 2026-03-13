@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { generateFlashcards as apiGenerateFlashcards } from '@/services/studyhub-api';
+import { useRateLimit } from '@/hooks/useRateLimit';
 import type { FlashcardData } from '@/types/studyhub';
 
 export function useFlashcards(notebookId: string | null) {
@@ -11,6 +12,7 @@ export function useFlashcards(notebookId: string | null) {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
+  const { rateLimitSeconds, isRateLimited, triggerRateLimit } = useRateLimit();
 
   useEffect(() => {
     mountedRef.current = true;
@@ -72,8 +74,11 @@ export function useFlashcards(notebookId: string | null) {
       const newFlashcards = await apiGenerateFlashcards(notebookId, session.access_token);
       if (mountedRef.current) setFlashcards(newFlashcards);
     } catch (err: any) {
-
-      if (mountedRef.current) setError(err.message || 'Failed to generate flashcards');
+      if (mountedRef.current) {
+        if (!triggerRateLimit(err)) {
+          setError(err.message || 'Failed to generate flashcards');
+        }
+      }
     } finally {
       if (mountedRef.current) setGenerating(false);
     }
@@ -99,5 +104,5 @@ export function useFlashcards(notebookId: string | null) {
     }
   };
 
-  return { flashcards, loading, generating, error, generateFlashcards, updateMastery };
+  return { flashcards, loading, generating, error, generateFlashcards, updateMastery, rateLimitSeconds, isRateLimited };
 }

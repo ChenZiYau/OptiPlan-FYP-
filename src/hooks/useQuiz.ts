@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { generateQuiz as apiGenerateQuiz } from '@/services/studyhub-api';
+import { useRateLimit } from '@/hooks/useRateLimit';
 import type { QuizQuestionData } from '@/types/studyhub';
 
 export function useQuiz(notebookId: string | null) {
@@ -11,6 +12,7 @@ export function useQuiz(notebookId: string | null) {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
+  const { rateLimitSeconds, isRateLimited, triggerRateLimit } = useRateLimit();
 
   useEffect(() => {
     mountedRef.current = true;
@@ -51,12 +53,15 @@ export function useQuiz(notebookId: string | null) {
       const newQuiz = await apiGenerateQuiz(notebookId, session.access_token);
       if (mountedRef.current) setQuestions(newQuiz);
     } catch (err: any) {
-
-      if (mountedRef.current) setError(err.message || 'Failed to generate quiz');
+      if (mountedRef.current) {
+        if (!triggerRateLimit(err)) {
+          setError(err.message || 'Failed to generate quiz');
+        }
+      }
     } finally {
       if (mountedRef.current) setGenerating(false);
     }
   };
 
-  return { questions, loading, generating, error, generateQuiz };
+  return { questions, loading, generating, error, generateQuiz, rateLimitSeconds, isRateLimited };
 }

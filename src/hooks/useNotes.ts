@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { generateNotes as generateNotesApi } from '@/services/studyhub-api';
+import { useRateLimit } from '@/hooks/useRateLimit';
 
 export interface Note {
   id: string;
@@ -16,6 +17,7 @@ export function useNotes(notebookId: string | null) {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
+  const { rateLimitSeconds, isRateLimited, triggerRateLimit } = useRateLimit();
 
   useEffect(() => {
     mountedRef.current = true;
@@ -82,13 +84,17 @@ export function useNotes(notebookId: string | null) {
         await generateNotesApi(notebookId, session.access_token);
         if (mountedRef.current) await fetchNotes();
       } catch (e: any) {
-        if (mountedRef.current) setError(e.message);
+        if (mountedRef.current) {
+          if (!triggerRateLimit(e)) {
+            setError(e.message);
+          }
+        }
       } finally {
         if (mountedRef.current) setGenerating(false);
       }
     },
-    [notebookId, fetchNotes],
+    [notebookId, fetchNotes, triggerRateLimit],
   );
 
-  return { notes, loading, generating, error, generateNotes, refetch: fetchNotes };
+  return { notes, loading, generating, error, generateNotes, refetch: fetchNotes, rateLimitSeconds, isRateLimited };
 }

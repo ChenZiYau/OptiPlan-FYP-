@@ -12,6 +12,33 @@ import { supabase } from '@/lib/supabase';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
+// ── Rate-limit error ────────────────────────────────────────────────────────
+
+export class RateLimitError extends Error {
+  retryAfterSeconds: number;
+  constructor(message: string, retryAfterSeconds = 60) {
+    super(message);
+    this.name = 'RateLimitError';
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
+/** Check response for 429 and throw RateLimitError with retry info */
+async function throwIfRateLimited(res: Response): Promise<void> {
+  if (res.status === 429) {
+    try {
+      const body = await res.json();
+      throw new RateLimitError(
+        body.error || 'Rate limit reached. Please wait before trying again.',
+        body.retryAfterSeconds ?? 60,
+      );
+    } catch (e) {
+      if (e instanceof RateLimitError) throw e;
+      throw new RateLimitError('Rate limit reached. Please wait a minute before trying again.', 60);
+    }
+  }
+}
+
 // ── Ingest (upload file → Supabase Storage → API extracts & chunks) ─────────
 
 export interface IngestResponse {
@@ -53,6 +80,7 @@ export async function ingestFile(
   if (!res.ok) {
     // Clean up the uploaded file on failure
     await supabase.storage.from('study-sources').remove([storagePath]);
+    await throwIfRateLimited(res);
     throw new Error(await res.text());
   }
   return res.json();
@@ -80,6 +108,7 @@ export async function chatWithNotebook(
     body: JSON.stringify({ notebook_id: notebookId, message, ...(context ? { context } : {}) }),
   });
 
+  await throwIfRateLimited(res);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
@@ -104,6 +133,7 @@ export async function generateMindMap(
     body: JSON.stringify({ notebook_id: notebookId }),
   });
 
+  await throwIfRateLimited(res);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
@@ -123,6 +153,7 @@ export async function generateFlashcards(
     body: JSON.stringify({ notebook_id: notebookId }),
   });
 
+  await throwIfRateLimited(res);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
@@ -147,6 +178,7 @@ export async function generateNotes(
     body: JSON.stringify({ notebook_id: notebookId }),
   });
 
+  await throwIfRateLimited(res);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
@@ -166,6 +198,7 @@ export async function generateQuiz(
     body: JSON.stringify({ notebook_id: notebookId }),
   });
 
+  await throwIfRateLimited(res);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
