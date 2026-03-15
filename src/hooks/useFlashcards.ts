@@ -1,7 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { generateFlashcards as apiGenerateFlashcards } from '@/services/studyhub-api';
+import { useRateLimit } from '@/hooks/useRateLimit';
 import type { FlashcardData } from '@/types/studyhub';
 
 export function useFlashcards(notebookId: string | null) {
@@ -10,6 +11,13 @@ export function useFlashcards(notebookId: string | null) {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
+  const { rateLimitSeconds, isRateLimited, triggerRateLimit } = useRateLimit();
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const fetchFlashcards = useCallback(async () => {
     if (!notebookId || !session?.access_token) return;
@@ -23,18 +31,40 @@ export function useFlashcards(notebookId: string | null) {
         .order('created_at', { ascending: true });
 
       if (fetchErr) throw fetchErr;
-      setFlashcards(data || []);
+      if (mountedRef.current) setFlashcards(data || []);
     } catch (err: any) {
-      console.error('Failed to fetch flashcards:', err);
-      setError(err.message || 'Failed to fetch flashcards');
+
+      if (mountedRef.current) setError(err.message || 'Failed to fetch flashcards');
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   }, [notebookId, session?.access_token]);
 
   useEffect(() => {
-    fetchFlashcards();
-  }, [fetchFlashcards]);
+    let cancelled = false;
+    if (!notebookId || !session?.access_token) return;
+
+    setLoading(true);
+    setError(null);
+    Promise.resolve(
+      supabase
+        .from('flashcards')
+        .select('*')
+        .eq('notebook_id', notebookId)
+        .order('created_at', { ascending: true })
+    ).then(({ data, error: fetchErr }) => {
+      if (cancelled) return;
+      if (fetchErr) throw fetchErr;
+      setFlashcards(data || []);
+    }).catch((err: any) => {
+      if (cancelled) return;
+      setError(err.message || 'Failed to fetch flashcards');
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+
+    return () => { cancelled = true; };
+  }, [notebookId, session?.access_token]);
 
   const generateFlashcards = async () => {
     if (!notebookId || !session?.access_token) return;
@@ -42,12 +72,15 @@ export function useFlashcards(notebookId: string | null) {
     setError(null);
     try {
       const newFlashcards = await apiGenerateFlashcards(notebookId, session.access_token);
-      setFlashcards(newFlashcards);
+      if (mountedRef.current) setFlashcards(newFlashcards);
     } catch (err: any) {
-      console.error('Failed to generate flashcards:', err);
-      setError(err.message || 'Failed to generate flashcards');
+      if (mountedRef.current) {
+        if (!triggerRateLimit(err)) {
+          setError(err.message || 'Failed to generate flashcards');
+        }
+      }
     } finally {
-      setGenerating(false);
+      if (mountedRef.current) setGenerating(false);
     }
   };
 
@@ -65,11 +98,11 @@ export function useFlashcards(notebookId: string | null) {
 
       if (updateErr) throw updateErr;
     } catch (err: any) {
-      console.error('Failed to update mastery:', err);
+
       // Revert on failure
-      fetchFlashcards();
+      if (mountedRef.current) fetchFlashcards();
     }
   };
 
-  return { flashcards, loading, generating, error, generateFlashcards, updateMastery };
+  return { flashcards, loading, generating, error, generateFlashcards, updateMastery, rateLimitSeconds, isRateLimited };
 }

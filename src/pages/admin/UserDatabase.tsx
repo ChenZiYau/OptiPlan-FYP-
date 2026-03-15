@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Users, UserCircle, Shield, Search, Pencil, Trash2 } from 'lucide-react';
 import { StatCard } from '@/components/admin/StatCard';
 import { CustomDropdown } from '@/components/ui/custom-dropdown';
@@ -43,9 +44,9 @@ const roleOptions = [
 ];
 
 export function UserDatabase() {
-  const { users, loading, refetch } = useAdminUsers();
-  const { stats, loading: statsLoading, refetch: refetchStats } = useAdminStats();
-  const { presenceMap, refetch: refetchPresence } = useUserPresence();
+  const { users, loading, error: usersError, refetch } = useAdminUsers();
+  const { stats, loading: statsLoading, error: statsError, refetch: refetchStats } = useAdminStats();
+  const { presenceMap, error: presenceError, refetch: refetchPresence } = useUserPresence();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -61,8 +62,16 @@ export function UserDatabase() {
     return matchesSearch && matchesRole;
   });
 
+  const loadError = usersError || statsError || presenceError;
+
   return (
     <div className="space-y-6">
+      {loadError && (
+        <div className="p-3 rounded-xl bg-red-400/10 border border-red-400/20 text-red-400 text-sm">
+          {loadError}
+        </div>
+      )}
+
       {/* Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard
@@ -209,7 +218,11 @@ export function UserDatabase() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-1">
-                          <button className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors">
+                          <button
+                            onClick={() => toast.info('User editing coming soon')}
+                            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                            title="Edit user (coming soon)"
+                          >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button

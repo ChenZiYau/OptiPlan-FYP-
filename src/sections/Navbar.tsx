@@ -388,7 +388,7 @@ export function Navbar() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <img src="/logo.png" alt="OptiPlan" className="h-20 sm:h-24 w-auto" />
+              <img src="/logo2.png" alt="OptiPlan" className="h-12 sm:h-14 w-auto" />
             </motion.button>
 
             {/* ── Center nav (absolutely centered on desktop) ──────── */}

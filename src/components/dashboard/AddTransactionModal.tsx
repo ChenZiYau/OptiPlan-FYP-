@@ -8,13 +8,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useFinance } from '@/contexts/FinanceContext';
-import { EXPENSE_CATEGORIES } from '@/hooks/useFinanceData';
+import { EXPENSE_CATEGORIES, DEFAULT_CATEGORY_BUDGET } from '@/hooks/useFinanceData';
+import { useCurrency } from '@/hooks/useCurrency';
 import {
   DollarSign,
   Calendar,
   FileText,
   Tag,
-  Repeat,
   TrendingDown,
   Loader2,
 } from 'lucide-react';
@@ -27,14 +27,14 @@ interface Props {
 type DatePreset = 'today' | 'yesterday' | 'custom';
 
 export function AddTransactionModal({ open, onOpenChange }: Props) {
-  const { addTransaction } = useFinance();
+  const { addTransaction, monthSpending, totalMonthlyBudget, budgets, transactions } = useFinance();
+  const { symbol } = useCurrency();
 
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [datePreset, setDatePreset] = useState<DatePreset>('today');
   const [customDate, setCustomDate] = useState('');
   const [description, setDescription] = useState('');
-  const [isRecurring, setIsRecurring] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -54,7 +54,6 @@ export function AddTransactionModal({ open, onOpenChange }: Props) {
     setDatePreset('today');
     setCustomDate('');
     setDescription('');
-    setIsRecurring(false);
     setError('');
   }
 
@@ -68,6 +67,10 @@ export function AddTransactionModal({ open, onOpenChange }: Props) {
     }
     if (!category) {
       setError('Please select a category.');
+      return;
+    }
+    if (datePreset === 'custom' && !customDate) {
+      setError('Please select a date.');
       return;
     }
     const txDate = getDate();
@@ -86,11 +89,37 @@ export function AddTransactionModal({ open, onOpenChange }: Props) {
         category,
         transaction_date: txDate,
         description: description.trim() || null,
-        is_recurring: isRecurring,
+        is_recurring: false,
       });
-      toast.success(`Expense of $${parsedAmount.toFixed(2)} added`, {
+      toast.success(`Expense of ${symbol}${parsedAmount.toFixed(2)} added`, {
         description: `${category} · ${txDate}`,
       });
+
+      // Budget warnings
+      const newMonthTotal = monthSpending + parsedAmount;
+      if (newMonthTotal > totalMonthlyBudget) {
+        toast.warning('You\'ve exceeded your monthly budget!', {
+          description: `${symbol}${newMonthTotal.toFixed(2)} spent of ${symbol}${totalMonthlyBudget.toFixed(2)} budget`,
+        });
+      } else if (newMonthTotal >= totalMonthlyBudget * 0.9) {
+        toast.warning('Approaching monthly budget limit', {
+          description: `${symbol}${newMonthTotal.toFixed(2)} spent — ${Math.round((newMonthTotal / totalMonthlyBudget) * 100)}% used`,
+        });
+      }
+
+      // Per-category budget warning
+      const monthStart = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`;
+      const catSpent = transactions
+        .filter(t => t.type === 'expense' && t.category === category && t.transaction_date >= monthStart)
+        .reduce((sum, t) => sum + Number(t.amount), 0) + parsedAmount;
+      const catBudget = budgets.find(b => b.category === category);
+      const catLimit = catBudget?.limit_amount ?? DEFAULT_CATEGORY_BUDGET;
+      if (catSpent > catLimit) {
+        toast.warning(`${category} budget exceeded!`, {
+          description: `${symbol}${catSpent.toFixed(2)} spent of ${symbol}${catLimit.toFixed(2)} limit`,
+        });
+      }
+
       reset();
       onOpenChange(false);
     } catch {
@@ -118,7 +147,7 @@ export function AddTransactionModal({ open, onOpenChange }: Props) {
             </label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-gray-500">
-                $
+                {symbol}
               </span>
               <input
                 type="number"
@@ -127,7 +156,7 @@ export function AddTransactionModal({ open, onOpenChange }: Props) {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full pl-10 pr-4 py-3 text-2xl font-bold bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="w-full pl-14 pr-4 py-3 text-2xl font-bold bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 autoFocus
               />
             </div>
@@ -210,28 +239,6 @@ export function AddTransactionModal({ open, onOpenChange }: Props) {
             />
           </div>
 
-          {/* Recurring toggle */}
-          <div className="flex items-center justify-between py-2">
-            <label className="flex items-center gap-2 text-sm text-gray-300">
-              <Repeat className="w-4 h-4 text-gray-400" />
-              Recurring Subscription/Bill
-            </label>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={isRecurring}
-              onClick={() => setIsRecurring(!isRecurring)}
-              className={`relative w-11 h-6 rounded-full transition-colors ${
-                isRecurring ? 'bg-purple-500' : 'bg-white/10'
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                  isRecurring ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
 
           {/* Error */}
           {error && (

@@ -120,24 +120,33 @@ export function useFinanceData(): FinanceData {
 
     setLoading(true);
 
-    const [settingsRes, txRes, budgetsRes] = await Promise.all([
-      supabase
-        .from('finance_settings')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle(),
-      supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('transaction_date', { ascending: false })
-        .order('created_at', { ascending: false }),
-      supabase.from('budgets').select('*').eq('user_id', user.id),
-    ]);
+    try {
+      const [settingsRes, txRes, budgetsRes] = await Promise.all([
+        supabase
+          .from('finance_settings')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle(),
+        supabase
+          .from('transactions')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('transaction_date', { ascending: false })
+          .order('created_at', { ascending: false }),
+        supabase.from('budgets').select('*').eq('user_id', user.id),
+      ]);
 
-    if (settingsRes.data) setSettings(settingsRes.data);
-    if (txRes.data) setTransactions(txRes.data);
-    if (budgetsRes.data) setBudgets(budgetsRes.data);
+      if (settingsRes.error) throw settingsRes.error;
+      if (txRes.error) throw txRes.error;
+      if (budgetsRes.error) throw budgetsRes.error;
+
+      if (settingsRes.data) setSettings(settingsRes.data);
+      setTransactions(txRes.data ?? []);
+      setBudgets(budgetsRes.data ?? []);
+    } catch (err: any) {
+      const { toast } = await import('sonner');
+      toast.error(err.message || 'Failed to load finance data');
+    }
 
     setLoading(false);
   }, [user]);

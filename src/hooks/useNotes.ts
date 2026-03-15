@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { generateNotes as generateNotesApi } from '@/services/studyhub-api';
+import { useRateLimit } from '@/hooks/useRateLimit';
 
 export interface Note {
   id: string;
@@ -15,6 +16,13 @@ export function useNotes(notebookId: string | null) {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
+  const { rateLimitSeconds, isRateLimited, triggerRateLimit } = useRateLimit();
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const fetchNotes = useCallback(async () => {
     if (!notebookId) {
@@ -31,17 +39,39 @@ export function useNotes(notebookId: string | null) {
         .order('created_at', { ascending: false });
 
       if (err) throw err;
-      setNotes(data ?? []);
+      if (mountedRef.current) setNotes(data ?? []);
     } catch (e: any) {
-      setError(e.message);
+      if (mountedRef.current) setError(e.message);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   }, [notebookId]);
 
   useEffect(() => {
-    fetchNotes();
-  }, [fetchNotes]);
+    let cancelled = false;
+    if (!notebookId) {
+      setNotes([]);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    Promise.resolve(
+      supabase
+        .from('generated_notes')
+        .select('*')
+        .eq('notebook_id', notebookId)
+        .order('created_at', { ascending: false })
+    ).then(({ data, error: err }) => {
+      if (cancelled) return;
+      if (err) throw err;
+      setNotes(data ?? []);
+    }).catch((e: any) => {
+      if (!cancelled) setError(e.message);
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [notebookId]);
 
   const generateNotes = useCallback(
     async () => {
@@ -52,15 +82,19 @@ export function useNotes(notebookId: string | null) {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) throw new Error('Not authenticated');
         await generateNotesApi(notebookId, session.access_token);
-        await fetchNotes();
+        if (mountedRef.current) await fetchNotes();
       } catch (e: any) {
-        setError(e.message);
+        if (mountedRef.current) {
+          if (!triggerRateLimit(e)) {
+            setError(e.message);
+          }
+        }
       } finally {
-        setGenerating(false);
+        if (mountedRef.current) setGenerating(false);
       }
     },
-    [notebookId, fetchNotes],
+    [notebookId, fetchNotes, triggerRateLimit],
   );
 
-  return { notes, loading, generating, error, generateNotes, refetch: fetchNotes };
+  return { notes, loading, generating, error, generateNotes, refetch: fetchNotes, rateLimitSeconds, isRateLimited };
 }

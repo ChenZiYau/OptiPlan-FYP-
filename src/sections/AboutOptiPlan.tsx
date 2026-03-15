@@ -12,6 +12,7 @@ interface AboutOptiPlanContent {
   heading: string;
   description: string;
   checklist: string[];
+  textColors?: Record<string, string>;
 }
 
 const defaults = siteDefaults.about_optiplan as unknown as AboutOptiPlanContent;
@@ -19,7 +20,7 @@ const defaults = siteDefaults.about_optiplan as unknown as AboutOptiPlanContent;
 export function AboutOptiPlan() {
   const { getContent } = useSiteContentData();
   const content = getContent<AboutOptiPlanContent>('about_optiplan') ?? defaults;
-  const tc = ((content as any).textColors ?? {}) as Record<string, string>;
+  const tc = content.textColors ?? {};
 
   return (
     <section id="about-optiplan" className="relative py-32 overflow-hidden">

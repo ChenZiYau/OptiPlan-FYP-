@@ -103,12 +103,12 @@ export function InteractiveCalendar({ showSchedules = false, mondayFirst = false
   }
 
   // Get pills (short names + colors) for display inside calendar cells
-  function getPillsForDate(dateISO: string, dayOfWeek: number): { label: string; color: string }[] {
+  function getPillsForDate(dateISO: string, dayOfWeek: number): { id: string; label: string; color: string }[] {
     const { dateItems, daySchedules } = getDateItems(dateISO, dayOfWeek);
-    const pills: { label: string; color: string }[] = [];
+    const pills: { id: string; label: string; color: string }[] = [];
 
     for (const item of dateItems) {
-      pills.push({ label: item.title, color: item.color });
+      pills.push({ id: item.id, label: item.title, color: item.color });
     }
     for (const s of daySchedules) {
       // Create short abbreviation for subject names
@@ -116,7 +116,7 @@ export function InteractiveCalendar({ showSchedules = false, mondayFirst = false
       const abbr = words.length > 1
         ? words.map((w) => w[0]).join('').toUpperCase()
         : s.subjectName.slice(0, 4).toUpperCase();
-      pills.push({ label: abbr, color: s.color });
+      pills.push({ id: s.id, label: abbr, color: s.color });
     }
 
     return pills.slice(0, 3); // Max 3 pills per cell
@@ -229,9 +229,9 @@ export function InteractiveCalendar({ showSchedules = false, mondayFirst = false
                 {/* Event pills */}
                 {pills.length > 0 && (
                   <div className="w-full mt-0.5 space-y-0.5">
-                    {pills.map((pill, j) => (
+                    {pills.map((pill) => (
                       <div
-                        key={j}
+                        key={pill.id}
                         className="truncate text-[9px] leading-tight px-1 py-[1px] rounded-sm w-full text-left font-medium"
                         style={{
                           backgroundColor: `${pill.color}20`,

@@ -106,4 +106,5 @@ export interface ScheduleEntry {
   days: number[];        // 0 = Sun … 6 = Sat
   startTime: string;     // HH:mm
   endTime: string;       // HH:mm
+  location?: string;     // e.g. "Room 301"
 }

@@ -131,15 +131,15 @@ function renderActivityDetails(item: any) {
 }
 
 export function Overview() {
-  const { stats, loading: statsLoading, refetch: refetchStats } = useAdminStats();
-  const { presence, refetch: refetchPresence } = useUserPresence();
+  const { stats, loading: statsLoading, error: statsError, refetch: refetchStats } = useAdminStats();
+  const { presence, error: presenceError, refetch: refetchPresence } = useUserPresence();
 
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [actionType, setActionType] = useState('all');
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
-  const { activities, loading: actLoading, refetch: refetchActivities } = useAdminActivityLog({
+  const { activities, loading: actLoading, error: actError, refetch: refetchActivities } = useAdminActivityLog({
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
     actionType,
@@ -148,9 +148,6 @@ export function Overview() {
   useAdminRefresh(refetchStats, refetchPresence, refetchActivities);
 
   const onlineCount = presence.filter(p => p.is_online).length;
-
-  // Count users created today
-  const todayStr = new Date().toISOString().split('T')[0];
 
   const groupedActivities = useMemo(() => {
     const groups: {
@@ -181,8 +178,16 @@ export function Overview() {
     return groups;
   }, [activities]);
 
+  const loadError = statsError || presenceError || actError;
+
   return (
     <div className="space-y-6">
+      {loadError && (
+        <div className="p-3 rounded-xl bg-red-400/10 border border-red-400/20 text-red-400 text-sm">
+          {loadError}
+        </div>
+      )}
+
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
@@ -201,7 +206,7 @@ export function Overview() {
         />
         <StatCard
           title="New Users Today"
-          value={statsLoading ? '—' : todayStr ? '—' : 0}
+          value={statsLoading ? '—' : stats.newUsersToday ?? 0}
           subtitle="↑ Joined today"
           icon={UserPlus}
         />

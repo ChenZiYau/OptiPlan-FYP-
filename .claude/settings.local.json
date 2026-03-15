@@ -27,7 +27,9 @@
       "WebFetch(domain:typebot.io)",
       "WebFetch(domain:docs.typebot.io)",
       "Read(//c/Users/yauyau/Desktop/**)",
-      "Read(//c/Users/yauyau/Downloads/**)"
+      "Read(//c/Users/yauyau/Downloads/**)",
+      "mcp__supabase__list_tables",
+      "Bash(npm ls:*)"
     ]
   },
   "enableAllProjectMcpServers": true

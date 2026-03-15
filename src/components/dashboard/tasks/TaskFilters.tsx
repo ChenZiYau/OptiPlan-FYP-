@@ -1,5 +1,5 @@
 import { LayoutGrid, List, Search } from 'lucide-react';
-import type { Importance, TaskStatus, ItemType } from '@/types/dashboard';
+import type { Importance, TaskStatus } from '@/types/dashboard';
 
 export type ViewMode = 'kanban' | 'list';
 
@@ -12,8 +12,6 @@ interface TaskFiltersProps {
   onStatusFilterChange: (value: TaskStatus | 'all') => void;
   importanceFilter: Importance | 'all';
   onImportanceFilterChange: (value: Importance | 'all') => void;
-  typeFilter: ItemType | 'all';
-  onTypeFilterChange: (value: ItemType | 'all') => void;
 }
 
 export function TaskFilters({
@@ -25,8 +23,6 @@ export function TaskFilters({
   onStatusFilterChange,
   importanceFilter,
   onImportanceFilterChange,
-  typeFilter,
-  onTypeFilterChange,
 }: TaskFiltersProps) {
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -89,18 +85,6 @@ export function TaskFilters({
         <option value="3" className="bg-[#1a1735] text-white">High</option>
       </select>
 
-      {/* Type filter */}
-      <select
-        value={typeFilter}
-        onChange={(e) => onTypeFilterChange(e.target.value as ItemType | 'all')}
-        className="px-3 py-1.5 rounded-lg bg-[#1a1735] border border-white/10 text-sm text-white outline-none cursor-pointer hover:border-purple-500/40 focus:border-purple-500/50 transition-all appearance-none bg-[length:16px_16px] bg-[right_8px_center] bg-no-repeat pr-8"
-        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")` }}
-      >
-        <option value="all" className="bg-[#1a1735] text-white">All Types</option>
-        <option value="task" className="bg-[#1a1735] text-white">Task</option>
-        <option value="event" className="bg-[#1a1735] text-white">Event</option>
-        <option value="study" className="bg-[#1a1735] text-white">Study</option>
-      </select>
     </div>
   );
 }

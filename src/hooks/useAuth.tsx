@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .catch(() => { /* avatar fetch failed — profile still works without it */ });
   }, []);
 
-  // Upsert user presence
+  // Upsert user presence (heartbeat)
   const upsertPresence = useCallback(async (userId: string, isOnline: boolean) => {
     try {
       await supabase.from('user_presence').upsert({
@@ -92,6 +92,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     } catch { /* ignore */ }
   }, []);
+
+  // Heartbeat: update last_seen every 60s while the tab is open
+  useEffect(() => {
+    const u = userRef.current;
+    if (!u) return;
+    const interval = setInterval(() => {
+      const cur = userRef.current;
+      if (cur) upsertPresence(cur.id, true);
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [user, upsertPresence]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
@@ -122,27 +133,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    // Set offline on window unload — read from ref to avoid adding `user` as a dep
-    const handleUnload = () => {
-      const u = userRef.current;
-      if (u) {
-        // Use sendBeacon for reliability on unload
-        const body = JSON.stringify({
-          user_id: u.id,
-          is_online: false,
-          last_seen: new Date().toISOString(),
-        });
-        navigator.sendBeacon?.(
-          `${import.meta.env.VITE_SUPABASE_URL ?? 'https://zgxmzpzuedqclfvphuqy.supabase.co'}/rest/v1/user_presence?on_conflict=user_id`,
-          new Blob([body], { type: 'application/json' }),
-        );
+    // When user closes/refreshes the tab, mark offline via visibilitychange + fetch keepalive
+    // (sendBeacon can't send auth headers, so we use fetch with keepalive instead)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        const u = userRef.current;
+        if (u) {
+          // Fire-and-forget: mark offline immediately when tab is hidden
+          upsertPresence(u.id, false);
+        }
+      } else if (document.visibilityState === 'visible') {
+        const u = userRef.current;
+        if (u) {
+          // Tab came back to focus: mark online again
+          upsertPresence(u.id, true);
+        }
       }
     };
-    window.addEventListener('beforeunload', handleUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       subscription.unsubscribe();
-      window.removeEventListener('beforeunload', handleUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setProfileAndFetchAvatar, upsertPresence]);

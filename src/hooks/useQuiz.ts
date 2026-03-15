@@ -1,7 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { generateQuiz as apiGenerateQuiz } from '@/services/studyhub-api';
+import { useRateLimit } from '@/hooks/useRateLimit';
 import type { QuizQuestionData } from '@/types/studyhub';
 
 export function useQuiz(notebookId: string | null) {
@@ -10,31 +11,39 @@ export function useQuiz(notebookId: string | null) {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
+  const { rateLimitSeconds, isRateLimited, triggerRateLimit } = useRateLimit();
 
-  const fetchQuiz = useCallback(async () => {
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
     if (!notebookId || !session?.access_token) return;
+
     setLoading(true);
     setError(null);
-    try {
-      const { data, error: fetchErr } = await supabase
+    Promise.resolve(
+      supabase
         .from('quiz_questions')
         .select('*')
         .eq('notebook_id', notebookId)
-        .order('created_at', { ascending: true });
-
+        .order('created_at', { ascending: true })
+    ).then(({ data, error: fetchErr }) => {
+      if (cancelled) return;
       if (fetchErr) throw fetchErr;
       setQuestions(data || []);
-    } catch (err: any) {
-      console.error('Failed to fetch quiz:', err);
+    }).catch((err: any) => {
+      if (cancelled) return;
       setError(err.message || 'Failed to fetch quiz');
-    } finally {
-      setLoading(false);
-    }
-  }, [notebookId, session?.access_token]);
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
+    });
 
-  useEffect(() => {
-    fetchQuiz();
-  }, [fetchQuiz]);
+    return () => { cancelled = true; };
+  }, [notebookId, session?.access_token]);
 
   const generateQuiz = async () => {
     if (!notebookId || !session?.access_token) return;
@@ -42,14 +51,17 @@ export function useQuiz(notebookId: string | null) {
     setError(null);
     try {
       const newQuiz = await apiGenerateQuiz(notebookId, session.access_token);
-      setQuestions(newQuiz);
+      if (mountedRef.current) setQuestions(newQuiz);
     } catch (err: any) {
-      console.error('Failed to generate quiz:', err);
-      setError(err.message || 'Failed to generate quiz');
+      if (mountedRef.current) {
+        if (!triggerRateLimit(err)) {
+          setError(err.message || 'Failed to generate quiz');
+        }
+      }
     } finally {
-      setGenerating(false);
+      if (mountedRef.current) setGenerating(false);
     }
   };
 
-  return { questions, loading, generating, error, generateQuiz };
+  return { questions, loading, generating, error, generateQuiz, rateLimitSeconds, isRateLimited };
 }

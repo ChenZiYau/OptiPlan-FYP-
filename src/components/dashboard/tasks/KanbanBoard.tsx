@@ -142,17 +142,23 @@ export function KanbanBoard({ items, onStatusChange, onCardClick, onDelete }: Ka
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {STATUSES.map((status) => (
-          <KanbanColumn
-            key={status}
-            status={status}
-            items={getColumnItems(status)}
-            onCardClick={onCardClick}
-            onDelete={onDelete}
-          />
-        ))}
-      </div>
+      {items.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <p className="text-gray-400 text-sm">No tasks yet. Create one to get started.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {STATUSES.map((status) => (
+            <KanbanColumn
+              key={status}
+              status={status}
+              items={getColumnItems(status)}
+              onCardClick={onCardClick}
+              onDelete={onDelete}
+            />
+          ))}
+        </div>
+      )}
 
       <DragOverlay>
         {activeItem ? (

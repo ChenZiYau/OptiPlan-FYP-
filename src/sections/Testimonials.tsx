@@ -93,7 +93,7 @@ export function Testimonials() {
             style={{ x }}
           >
             {duplicated.map((testimonial, i) => (
-              <TestimonialCard key={`${testimonial.name}-${i}`} {...testimonial} quoteColor={tc.quote} nameColor={tc.name} roleColor={tc.role} />
+              <TestimonialCard key={`${testimonial.name}-${testimonial.role}-${i}`} {...testimonial} quoteColor={tc.quote} nameColor={tc.name} roleColor={tc.role} />
             ))}
           </motion.div>
 

@@ -84,7 +84,7 @@ export function DashboardSidebar({ isOpen, onClose, collapsed, onToggleCollapse 
         {/* Brand */}
         <div className={`flex items-center h-16 shrink-0 ${collapsed ? 'justify-center px-2' : 'justify-between px-5'}`}>
           <Link to="/" className={`flex items-center gap-2.5 ${collapsed ? 'justify-center' : ''}`}>
-            <img src="/logo.png" alt="OptiPlan" className={`${collapsed ? 'h-8 w-auto' : 'h-8 w-auto'}`} />
+            <img src="/logo2.png" alt="OptiPlan" className={`${collapsed ? 'h-8 w-auto' : 'h-10 w-auto'}`} />
           </Link>
           {!collapsed && (
             <button

@@ -70,21 +70,25 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    let cancelled = false;
     setLoading(true);
 
     Promise.all([
       supabase.from('dashboard_items').select('*').eq('user_id', user.id),
       supabase.from('schedule_entries').select('*').eq('user_id', user.id),
     ]).then(([itemsRes, schedulesRes]) => {
+      if (cancelled) return;
       if (itemsRes.error) throw itemsRes.error;
       if (schedulesRes.error) throw schedulesRes.error;
       setItems((itemsRes.data ?? []).map(rowToItem));
       setSchedules((schedulesRes.data ?? []).map(rowToSchedule));
     }).catch(() => {
-      toast.error('Failed to load dashboard data');
+      if (!cancelled) toast.error('Failed to load dashboard data');
     }).finally(() => {
-      setLoading(false);
+      if (!cancelled) setLoading(false);
     });
+
+    return () => { cancelled = true; };
   }, [user]);
 
   const openModal = useCallback(() => setIsModalOpen(true), []);
@@ -203,6 +207,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         days: entry.days,
         start_time: entry.startTime,
         end_time: entry.endTime,
+        location: entry.location || null,
       });
       if (error) {
         setSchedules((prev) => prev.filter((s) => s.id !== entry.id));
@@ -287,5 +292,6 @@ function rowToSchedule(row: Record<string, unknown>): ScheduleEntry {
     days: row.days as number[],
     startTime: row.start_time as string,
     endTime: row.end_time as string,
+    location: (row.location as string) || undefined,
   };
 }

@@ -43,7 +43,7 @@ export function Footer() {
               className="flex items-center gap-2.5"
               whileHover={{ scale: 1.02 }}
             >
-              <img src="/logo.png" alt="OptiPlan" className="h-12 w-auto" />
+              <img src="/logo2.png" alt="OptiPlan" className="h-12 w-auto" />
             </motion.div>
 
             <p className="text-sm text-opti-text-secondary leading-relaxed max-w-sm">
@@ -117,24 +117,16 @@ export function Footer() {
           </p>
 
           <div className="flex items-center gap-6">
-            {/* Status Indicator */}
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/5 border border-green-500/10">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-[10px] uppercase font-medium text-green-500/80 tracking-wider">
-                All Systems Normal
-              </span>
-            </div>
-
             {/* Back to Top */}
-            <motion.a
-              href="#hero"
+            <motion.button
+              onClick={() => document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth' })}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="flex items-center gap-1.5 text-xs font-mono text-opti-text-secondary/60 hover:text-opti-accent transition-colors"
             >
               Back to top
               <ArrowUpRight className="w-3 h-3" />
-            </motion.a>
+            </motion.button>
           </div>
         </div>
       </div>

@@ -5,6 +5,12 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 export type ThemeKey = 'purple' | 'blue' | 'green' | 'orange' | 'rose' | 'cyan' | 'highVisibility' | 'warm' | 'monochrome';
 export type TextScale = 'sm' | 'md' | 'lg' | 'xl';
 export type ColorMode = 'dark' | 'light' | 'grey';
+export type CurrencyCode = 'USD' | 'MYR';
+
+export const CURRENCY_CONFIG: Record<CurrencyCode, { symbol: string; locale: string }> = {
+  USD: { symbol: '$', locale: 'en-US' },
+  MYR: { symbol: 'RM', locale: 'ms-MY' },
+};
 
 export interface Settings {
   theme: ThemeKey;
@@ -13,6 +19,7 @@ export interface Settings {
   textScale: TextScale;
   reduceMotion: boolean;
   dyslexiaFont: boolean;
+  currency: CurrencyCode;
 }
 
 interface SettingsContextValue {
@@ -56,6 +63,7 @@ const DEFAULT_SETTINGS: Settings = {
   textScale: 'md',
   reduceMotion: false,
   dyslexiaFont: false,
+  currency: 'USD',
 };
 
 /** Returns true if user has existing localStorage settings */
@@ -122,7 +130,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
             setSettings(prev => ({ ...prev, ...adminDefaults }));
           }
         }
-      } catch { /* silently use hardcoded defaults */ }
+      } catch (err) {
+        console.warn('Failed to load admin settings, using defaults:', err);
+      }
     })();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

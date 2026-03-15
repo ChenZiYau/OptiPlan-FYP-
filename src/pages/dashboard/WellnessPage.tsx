@@ -86,8 +86,19 @@ function archiveIfNewDay(todayKey: string): JournalEntry[] {
   return past;
 }
 
-// Past 7 days mock mood log for the chart
-const MOOD_HISTORY = [null, null, null, null, null, null, null];
+/** Build mood history from localStorage for the past 7 days */
+function buildMoodHistory(): (number | null)[] {
+  const history: (number | null)[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    const stored = localStorage.getItem(`wellness-mood-${key}`);
+    history.push(stored !== null ? parseInt(stored, 10) : null);
+  }
+  return history;
+}
+
 const PAST_LABELS = (() => {
   const days: string[] = [];
   for (let i = 6; i >= 0; i--) {
@@ -110,7 +121,13 @@ export function WellnessPage() {
   const [journalOpen, setJournalOpen] = useState(false);
   const [managerOpen, setManagerOpen] = useState(false);
   const [journalText, setJournalText] = useState(() => localStorage.getItem(`wellness-journal-${todayKey}`) ?? '');
-  const [entries] = useState<JournalEntry[]>(() => archiveIfNewDay(todayKey));
+  const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [moodHistory, setMoodHistory] = useState<(number | null)[]>(buildMoodHistory);
+
+  // Archive previous day's journal on mount (outside useState to avoid side-effects in render)
+  useEffect(() => {
+    setEntries(archiveIfNewDay(todayKey));
+  }, [todayKey]);
   const [previewEntry, setPreviewEntry] = useState<JournalEntry | null>(null);
   const [saving, setSaving] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -258,7 +275,7 @@ export function WellnessPage() {
               {MOODS.map((mood, i) => (
                 <HoverTip key={i} label={`Log as ${mood.label}`}>
                   <button
-                    onClick={() => { setSelectedMood(i); toast.success(`Mood logged: ${mood.label} ${mood.emoji}`); }}
+                    onClick={() => { setSelectedMood(i); localStorage.setItem(`wellness-mood-${todayKey}`, String(i)); setMoodHistory(buildMoodHistory()); toast.success(`Mood logged: ${mood.label} ${mood.emoji}`); }}
                     className="flex-1 flex flex-col items-center gap-1.5 group min-w-0"
                   >
                     <div className={`w-full max-w-[3rem] aspect-square rounded-xl sm:rounded-2xl text-lg sm:text-2xl flex items-center justify-center transition-all ${
@@ -286,7 +303,7 @@ export function WellnessPage() {
           >
             <h3 className="text-sm font-semibold text-white mb-4">Mood This Week</h3>
             <div className="flex items-end justify-between gap-2 h-24">
-              {MOOD_HISTORY.map((mood, i) => {
+              {moodHistory.map((mood, i) => {
                 const height = mood !== null ? ((mood + 1) / 5) * 100 : 10;
                 const moodData = mood !== null ? MOODS[mood] : null;
                 return (
@@ -304,7 +321,7 @@ export function WellnessPage() {
                 );
               })}
             </div>
-            {MOOD_HISTORY.every(m => m === null) && (
+            {moodHistory.every(m => m === null) && (
               <p className="text-[10px] text-gray-600 text-center mt-2">Log your mood to see trends</p>
             )}
           </motion.div>
@@ -327,6 +344,9 @@ export function WellnessPage() {
             </div>
             <p className="text-xs text-gray-500 mb-4">{habitsComplete} of {habitsTotal} completed</p>
             <div className="space-y-2">
+              {habits.length === 0 && (
+                <p className="text-xs text-gray-500 text-center py-4">No habits yet. Click "Manage" to add some.</p>
+              )}
               {habits.map(habit => {
                 const done = completedHabits.has(habit.id);
                 return (

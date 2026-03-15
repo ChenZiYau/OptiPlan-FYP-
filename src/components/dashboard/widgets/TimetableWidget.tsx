@@ -12,9 +12,6 @@ function formatTime12h(time: string): string {
   return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
-// Static placeholder rooms for schedule entries that don't have a room field
-const ROOMS = ['Room 301', 'Room 204', 'Lab A2', 'Room 105', 'Lecture Hall B', 'Room 412'];
-
 export function TimetableWidget() {
   const { schedules } = useDashboard();
 
@@ -51,7 +48,7 @@ export function TimetableWidget() {
       ) : (
         <div className="space-y-0">
           {todayClasses.map((cls, idx) => (
-            <TimetableRow key={cls.id} entry={cls} room={ROOMS[idx % ROOMS.length]} isLast={idx === todayClasses.length - 1} />
+            <TimetableRow key={cls.id} entry={cls} isLast={idx === todayClasses.length - 1} />
           ))}
         </div>
       )}
@@ -59,7 +56,7 @@ export function TimetableWidget() {
   );
 }
 
-function TimetableRow({ entry, room, isLast }: { entry: ScheduleEntry; room: string; isLast: boolean }) {
+function TimetableRow({ entry, isLast }: { entry: ScheduleEntry; isLast: boolean }) {
   return (
     <div className="flex gap-3">
       {/* Timeline line + dot */}
@@ -69,13 +66,15 @@ function TimetableRow({ entry, room, isLast }: { entry: ScheduleEntry; room: str
       </div>
 
       {/* Content */}
-      <div className={`flex-1 pb-4 ${isLast ? '' : ''}`}>
+      <div className={`flex-1 pb-4`}>
         <p className="text-sm font-semibold text-white leading-tight">{entry.subjectName}</p>
-        <div className="flex items-center gap-3 mt-1">
-          <span className="text-[11px] text-gray-400 flex items-center gap-1">
-            <MapPin className="w-3 h-3" /> {room}
-          </span>
-        </div>
+        {entry.location && (
+          <div className="flex items-center gap-3 mt-1">
+            <span className="text-[11px] text-gray-400 flex items-center gap-1">
+              <MapPin className="w-3 h-3" /> {entry.location}
+            </span>
+          </div>
+        )}
         <div
           className="inline-block mt-1.5 px-2 py-0.5 rounded text-[10px] font-medium"
           style={{ backgroundColor: `${entry.color}15`, color: entry.color }}

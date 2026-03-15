@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Brain, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Brain, Loader2, Clock } from 'lucide-react';
 import { useStudyHub } from '@/contexts/StudyHubContext';
 import { useFlashcards } from '@/hooks/useFlashcards';
 import { HoverTip } from '@/components/HoverTip';
@@ -9,7 +9,7 @@ import type { FlashcardData } from '@/types/studyhub';
 
 export function FlashcardsTab() {
   const { activeNotebookId } = useStudyHub();
-  const { flashcards, loading, generating, error, generateFlashcards, updateMastery } = useFlashcards(activeNotebookId);
+  const { flashcards, loading, generating, error, generateFlashcards, updateMastery, rateLimitSeconds, isRateLimited } = useFlashcards(activeNotebookId);
   
   const [currentIndex, setCurrentIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -41,18 +41,25 @@ export function FlashcardsTab() {
         </p>
         <button
           onClick={generateFlashcards}
-          disabled={generating}
+          disabled={generating || isRateLimited}
           className="px-6 py-3 text-sm font-semibold rounded-xl bg-purple-500 hover:bg-purple-600 text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
-          {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
-          {generating ? 'Generating (Takes a moment)...' : 'Generate AI Flashcards'}
+          {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : isRateLimited ? <Clock className="w-4 h-4" /> : <Brain className="w-4 h-4" />}
+          {generating ? 'Generating (Takes a moment)...' : isRateLimited ? `Try again in ${rateLimitSeconds}s` : 'Generate AI Flashcards'}
         </button>
-        {error && <p className="text-xs text-red-400 mt-4">{error}</p>}
+        {isRateLimited && (
+          <p className="text-xs text-amber-400 mt-4 flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5" />
+            AI rate limit reached. You can generate again in {rateLimitSeconds}s
+          </p>
+        )}
+        {error && !isRateLimited && <p className="text-xs text-red-400 mt-4">{error}</p>}
       </div>
     );
   }
 
-  const card = flashcards[currentIndex];
+  const safeIndex = Math.min(currentIndex, flashcards.length - 1);
+  const card = flashcards[safeIndex];
   const masteredCount = flashcards.filter((c) => c.mastery_level === 'mastered').length;
   const progressPct = (masteredCount / flashcards.length) * 100;
 
@@ -62,6 +69,7 @@ export function FlashcardsTab() {
   }
 
   function handleRate(level: FlashcardData['mastery_level']) {
+    if (!card) return;
     updateMastery(card.id, level);
     goNext();
   }

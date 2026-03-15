@@ -257,7 +257,92 @@ function SlideStudy({ active, data }: SlideProps) {
   );
 }
 
-function SlideSummary({ active, data, cardRef }: SlideProps & { cardRef: React.RefObject<HTMLDivElement | null> }) {
+function SlideSummary({ active, data, cardRef, downloading }: SlideProps & { cardRef: React.RefObject<HTMLDivElement | null>, downloading?: boolean }) {
+  const stats = [
+    { label: 'Tasks Done', value: data.tasksCompleted.toString(), solidColor: '#c084fc' },
+    { label: 'Money Saved', value: `$${data.moneySaved}`, solidColor: '#34d399' },
+    { label: 'Cards Mastered', value: data.flashcardsMastered.toString(), solidColor: '#60a5fa' },
+    { label: 'Focus Hours', value: `${data.focusHours}h`, solidColor: '#fbbf24' },
+  ];
+
+  // Static version for html2canvas (no motion, inline styles only)
+  if (downloading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center px-6">
+        <div
+          ref={cardRef}
+          style={{
+            width: '100%',
+            maxWidth: '24rem',
+            background: 'linear-gradient(to bottom, #1a1040, #0B0A1A)',
+            borderRadius: '1rem',
+            border: '1px solid rgba(255,255,255,0.1)',
+            padding: '2rem',
+            textAlign: 'center',
+          }}
+        >
+          <div style={{ marginBottom: '1.5rem' }}>
+            <Sparkles style={{ width: 32, height: 32, color: '#c084fc', margin: '0 auto 0.5rem' }} />
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>Your Semester Wrapped</h2>
+            <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>Spring 2026</p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+            {stats.map(stat => (
+              <div
+                key={stat.label}
+                style={{
+                  borderRadius: '0.75rem',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  padding: '1rem',
+                  height: '6rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <span style={{ fontSize: '1.5rem', fontWeight: 700, color: stat.solidColor, lineHeight: 1.2, display: 'block' }}>
+                  {stat.value}
+                </span>
+                <span style={{ fontSize: '0.6875rem', color: '#9ca3af', marginTop: '0.25rem', display: 'block' }}>{stat.label}</span>
+              </div>
+            ))}
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              padding: '0.875rem 1rem',
+              borderRadius: '0.75rem',
+              background: 'rgba(245,158,11,0.15)',
+              border: '1px solid rgba(245,158,11,0.3)',
+              marginBottom: '1.5rem',
+            }}
+          >
+            <Trophy style={{ width: 20, height: 20, color: '#fbbf24' }} />
+            <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#fcd34d' }}>Top {data.percentile}% of OptiPlan Scholars</span>
+          </div>
+
+          <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '1.5rem' }}>
+            Longest streak: <span style={{ color: '#c084fc', fontWeight: 600 }}>{data.streakDays} days</span>
+          </p>
+
+          <div style={{ paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            <p style={{ fontSize: '0.625rem', color: '#4b5563', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              OptiPlan &middot; Plan Smarter, Live Better
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Animated version for on-screen display
   return (
     <div className="flex flex-col items-center justify-center h-full text-center px-6">
       <div ref={cardRef} className="w-full max-w-sm bg-gradient-to-b from-[#1a1040] to-[#0B0A1A] rounded-2xl border border-white/10 p-8 space-y-6">
@@ -285,11 +370,11 @@ function SlideSummary({ active, data, cardRef }: SlideProps & { cardRef: React.R
             { label: 'Cards Mastered', value: data.flashcardsMastered.toString(), color: 'from-blue-500 to-indigo-500' },
             { label: 'Focus Hours', value: `${data.focusHours}h`, color: 'from-amber-500 to-orange-500' },
           ].map(stat => (
-            <div key={stat.label} className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-3">
-              <p className={`text-2xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}>
+            <div key={stat.label} className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-4 text-center flex flex-col items-center justify-center h-24">
+              <span className={`block text-2xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`} style={{ lineHeight: 1.2 }}>
                 {stat.value}
-              </p>
-              <p className="text-[10px] text-gray-500 mt-1">{stat.label}</p>
+              </span>
+              <span className="block text-[11px] text-gray-400 mt-1" style={{ lineHeight: 1 }}>{stat.label}</span>
             </div>
           ))}
         </motion.div>
@@ -299,7 +384,7 @@ function SlideSummary({ active, data, cardRef }: SlideProps & { cardRef: React.R
           initial={{ opacity: 0, y: 10 }}
           animate={active ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.8 }}
-          className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30"
+          className="flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30"
         >
           <Trophy className="w-5 h-5 text-amber-400" />
           <span className="text-sm font-bold text-amber-300">Top {data.percentile}% of OptiPlan Scholars</span>
@@ -367,6 +452,10 @@ export function WrappedPage() {
   async function handleDownload() {
     if (!summaryRef.current || downloading) return;
     setDownloading(true);
+    
+    // Give React time to render the static capture version
+    await new Promise(resolve => setTimeout(resolve, 300));
+
     try {
       const canvas = await html2canvas(summaryRef.current, {
         backgroundColor: '#0B0A1A',
@@ -376,8 +465,9 @@ export function WrappedPage() {
       link.download = 'optiplan-wrapped-spring-2026.png';
       link.href = canvas.toDataURL();
       link.click();
-    } catch (err) {
-      console.error('Download failed:', err);
+    } catch {
+      const { toast } = await import('sonner');
+      toast.error('Download failed. Please try again.');
     }
     setDownloading(false);
   }
@@ -440,7 +530,7 @@ export function WrappedPage() {
               {current === 0 && <SlideProductivity active={current === 0} data={WRAPPED_DATA} />}
               {current === 1 && <SlideFinance active={current === 1} data={WRAPPED_DATA} />}
               {current === 2 && <SlideStudy active={current === 2} data={WRAPPED_DATA} />}
-              {current === 3 && <SlideSummary active={current === 3} data={WRAPPED_DATA} cardRef={summaryRef} />}
+              {current === 3 && <SlideSummary active={current === 3} data={WRAPPED_DATA} cardRef={summaryRef} downloading={downloading} />}
             </motion.div>
           </AnimatePresence>
 

@@ -2,14 +2,14 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { FileText, Loader2, AlertCircle, BookOpen, Sparkles } from 'lucide-react';
+import { FileText, Loader2, AlertCircle, BookOpen, Sparkles, Clock } from 'lucide-react';
 import { useStudyHub } from '@/contexts/StudyHubContext';
 import { useNotes } from '@/hooks/useNotes';
 import { supabase } from '@/lib/supabase';
 
 export function NotesTab() {
   const { activeNotebookId } = useStudyHub();
-  const { notes, loading, generating, error, generateNotes } = useNotes(activeNotebookId);
+  const { notes, loading, generating, error, generateNotes, rateLimitSeconds, isRateLimited } = useNotes(activeNotebookId);
   const [sourceCount, setSourceCount] = useState(0);
 
   useEffect(() => {
@@ -42,21 +42,33 @@ export function NotesTab() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => generateNotes()}
-          disabled={generating || sourceCount === 0}
+          disabled={generating || sourceCount === 0 || isRateLimited}
           className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-300 hover:bg-purple-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
         >
           {generating ? (
             <Loader2 className="w-4 h-4 animate-spin" />
+          ) : isRateLimited ? (
+            <Clock className="w-4 h-4" />
           ) : (
             <Sparkles className="w-4 h-4" />
           )}
           {generating
             ? 'Analyzing document chunks and generating notes...'
-            : sourceCount > 0
-              ? `Generate Notes from ${sourceCount} source${sourceCount !== 1 ? 's' : ''}`
-              : 'No sources uploaded yet'}
+            : isRateLimited
+              ? `Try again in ${rateLimitSeconds}s`
+              : sourceCount > 0
+                ? `Generate Notes from ${sourceCount} source${sourceCount !== 1 ? 's' : ''}`
+                : 'No sources uploaded yet'}
         </button>
       </div>
+
+      {/* Rate limit countdown */}
+      {isRateLimited && (
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-sm">
+          <Clock className="w-4 h-4 shrink-0" />
+          <span>AI rate limit reached. You can generate again in <strong>{rateLimitSeconds}s</strong></span>
+        </div>
+      )}
 
       {/* Error */}
       {error && (
