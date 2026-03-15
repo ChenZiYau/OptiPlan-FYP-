@@ -51,8 +51,8 @@ export function AboutOptiPlan() {
               </p>
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { icon: Calendar, label: 'Schedule' },
-                  { icon: BookOpen, label: 'Notes' },
+                  { icon: Calendar, label: 'Tasks' },
+                  { icon: BookOpen, label: 'Study Hub' },
                   { icon: Wallet, label: 'Budget' },
                 ].map(({ icon: Icon, label }) => (
                   <div key={label} className="text-center space-y-2">

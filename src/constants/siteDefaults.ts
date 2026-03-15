@@ -8,7 +8,7 @@ export const siteDefaults: Record<string, Record<string, unknown>> = {
     badge: '',
     headline: 'Make your days',
     subheadline:
-      'AI-powered daily planning that turns your calendar into a clear, actionable timeline. Plan less. Do more.',
+      'Your all-in-one student dashboard for tasks, schedules, finances, and wellness — with an AI chatbot that helps you manage it all. Plan less. Do more.',
     ctaPrimary: 'Get OptiPlan',
     ctaSecondary: 'See how it works',
     rotatingWords: ['productive', 'focused', 'organized', 'balanced', 'effortless'],
@@ -27,9 +27,9 @@ export const siteDefaults: Record<string, Record<string, unknown>> = {
       },
       {
         number: '02',
-        title: 'Lost Study Notes',
+        title: 'Inefficient Study Sessions',
         description:
-          'Important notes end up buried in random folders, group chats, or forgotten notebooks when exams arrive.',
+          'Students spend hours re-reading slides instead of actively studying. No one has time to manually create flashcards, quizzes, or summaries.',
       },
       {
         number: '03',
@@ -46,40 +46,40 @@ export const siteDefaults: Record<string, Record<string, unknown>> = {
       'A complete productivity suite designed to help students plan less and accomplish more.',
     items: [
       {
-        title: 'Smart Scheduling',
+        title: 'Task & Schedule Management',
         description:
-          'AI builds your optimal daily timeline around classes, deadlines, and personal commitments.',
+          'Organize your week with a visual timetable, manage tasks with Kanban boards, and track events and study sessions — all in one place.',
         checklist: [
-          'Auto-sync with university calendar',
-          'Deadline & exam countdown alerts',
-          'Focus-block suggestions between classes',
+          'Weekly timetable with color-coded subjects',
+          'Kanban board with drag-and-drop',
+          'AI chatbot for quick task creation',
         ],
         backContent:
-          'OptiPlan analyzes your class timetable, assignment due dates, and energy patterns to generate a personalized daily schedule. It learns which study slots work best for you and automatically blocks focus time before exams.',
+          'Build your weekly class schedule with multi-day support and 8 color options. Manage tasks, events, and study sessions with a Kanban board or list view. Filter by status, importance, or type — or just tell the AI chatbot what you need and it creates it for you.',
       },
       {
-        title: 'Study Notes',
+        title: 'AI Study Hub',
         description:
-          'Capture, organize, and search your notes in one place — linked to your schedule.',
+          'Upload your documents and let AI generate study notes, flashcards, quizzes, and interactive mind maps — all from your own material.',
         checklist: [
-          'Rich-text & markdown editor',
-          'Auto-tag by course and topic',
-          'Full-text search across all notes',
+          'AI-generated notes, flashcards, and quizzes',
+          'Interactive mind maps with expandable nodes',
+          'Supports PDF, PPTX, DOCX, and more',
         ],
         backContent:
-          'Every note is automatically linked to the class or study session where you created it. Tag by course, search by keyword, and review everything in one timeline — no more digging through folders the night before an exam.',
+          'Upload your lecture slides, PDFs, or documents and the AI extracts and chunks the content automatically. Then generate structured study notes, flashcards with spaced repetition tracking, multiple-choice quizzes with explanations, and interactive mind maps — all powered by Groq\'s Llama model.',
       },
       {
         title: 'Budget Tracking',
         description:
-          'See where your money goes with zero-effort expense logging and weekly spending reports.',
+          'See where your money goes with quick expense logging and category breakdowns.',
         checklist: [
-          'Quick-add expenses in two taps',
-          'Category breakdown charts',
-          'Weekly & monthly spending alerts',
+          'Quick-add expenses via modal or AI chatbot',
+          'Category breakdown donut charts',
+          'Budget limits with progress tracking',
         ],
         backContent:
-          'Set a weekly budget, snap receipts or quick-add expenses, and get a clear breakdown by category. OptiPlan sends gentle alerts before you overshoot, so you can make it to the end of the month without surprises.',
+          'Set monthly budgets per category, log expenses with a quick modal or through the AI chatbot, and see clear breakdowns with donut charts and spending trends. Track daily, weekly, and monthly spending at a glance.',
       },
     ],
   },
@@ -87,25 +87,25 @@ export const siteDefaults: Record<string, Record<string, unknown>> = {
     badge: 'How it works',
     title: 'Three steps to a calmer day',
     subtitle:
-      'Getting started is simple. Connect your tools, start focusing, and end each day with clarity.',
+      'Getting started is simple. Sign up, set up your dashboard, and start getting things done.',
     items: [
       {
         number: '01',
-        title: 'Connect',
+        title: 'Set Up',
         description:
-          'Link your calendars and task apps in seconds. OptiPlan integrates seamlessly with Google Calendar, Outlook, Notion, and more.',
+          'Create your account and add your class schedule, tasks, and budget categories. The dashboard is ready in minutes.',
       },
       {
         number: '02',
-        title: 'Focus',
+        title: 'Organize',
         description:
-          'Start a focus session with one tap. We silence notifications, block distractions, and track your progress automatically.',
+          'Manage your tasks with Kanban boards, track spending by category, and build daily habits — or let the AI chatbot handle it through conversation.',
       },
       {
         number: '03',
-        title: 'Reflect',
+        title: 'Grow',
         description:
-          'Close the day with a personalized summary. See what you accomplished, what\'s next, and jot down a quick reflection.',
+          'Earn XP for every action, unlock achievements, track your mood and habits, and review your semester progress with Wrapped.',
       },
     ],
   },
@@ -118,8 +118,8 @@ export const siteDefaults: Record<string, Record<string, unknown>> = {
     badge: 'Meet the Creator',
     title: 'Built by a student, for students',
     paragraphs: [
-      'OptiPlan started as a side project during finals week. I was drowning in scattered schedules, lost notes, and mystery bank charges — and I knew other students felt the same way.',
-      'So I built the tool I wish I\'d had freshman year: one place to plan your day, organize your notes, and actually see where your money goes. No bloat, no learning curve — just the essentials done right.',
+      'OptiPlan started as a side project during finals week. I was drowning in scattered schedules, untracked spending, and hours wasted re-reading slides — and I knew other students felt the same way.',
+      'So I built the tool I wish I\'d had freshman year: one place to manage your tasks, generate study material with AI, and track your budget. No bloat, no learning curve — just the essentials done right.',
     ],
     signature: '— The OptiPlan Team',
   },
@@ -127,14 +127,14 @@ export const siteDefaults: Record<string, Record<string, unknown>> = {
     badge: 'About OptiPlan',
     title: 'One app to replace them all',
     subtitle:
-      'Schedule, notes, and budget — unified in a single student-first platform.',
+      'Tasks, AI study tools, and budget — unified in a single student-first platform.',
     heading: 'Designed around the student day',
     description:
-      'OptiPlan connects your class schedule, study notes, and spending in one dashboard so you always know what\'s next — and what\'s left in your wallet.',
+      'OptiPlan brings your tasks, class schedule, AI-powered study tools, and spending into one dashboard so you always know what\'s next — and what\'s left in your wallet.',
     checklist: [
       'Replace 3+ apps with one dashboard',
       'Built specifically for student workflows',
-      'Works offline for library study sessions',
+      'AI chatbot that creates tasks, expenses, and schedules through conversation',
     ],
   },
   faqs: {
@@ -143,34 +143,34 @@ export const siteDefaults: Record<string, Record<string, unknown>> = {
     subtitle: 'Everything you need to know about OptiPlan.',
     items: [
       {
-        question: 'How does OptiPlan integrate with my existing tools?',
+        question: 'What features does OptiPlan include?',
         answer:
-          'OptiPlan connects seamlessly with Google Calendar, Outlook, Apple Calendar, Notion, Asana, and Trello. Simply authorize the connection and we\'ll sync your events and tasks automatically. Changes are reflected in real-time across all platforms.',
+          'OptiPlan includes task management with Kanban boards, a weekly class timetable, finance tracking with category budgets, wellness tools (mood, habits, journaling), a gamification system with 100 achievements, collaboration features, an AI chatbot for quick creation, and a semester-in-review Wrapped feature.',
       },
       {
         question: 'Is my data secure and private?',
         answer:
-          'Absolutely. We use end-to-end encryption for all your data. We never sell your information, show ads, or train AI models on your personal data. Your privacy is our top priority.',
+          'Yes. Your data is stored securely with Supabase and is only accessible to you. We never sell your information, show ads, or share your personal data with third parties. Your privacy is our top priority.',
       },
       {
         question: 'Can I use OptiPlan for team collaboration?',
         answer:
-          'Yes! OptiPlan Teams allows you to share schedules, coordinate meetings, and manage projects together. Each team member maintains their privacy while enabling seamless collaboration.',
+          'Yes! OptiPlan includes collaboration features where you can create groups, share tasks, exchange resources and links, and chat with group members.',
       },
       {
         question: 'What platforms does OptiPlan support?',
         answer:
-          'OptiPlan is available on iOS, Android, macOS, Windows, and as a web app. Your data syncs instantly across all your devices, so you can plan on your phone and focus on your desktop.',
+          'OptiPlan is a web application that works in any modern browser on desktop, tablet, or mobile. Just sign up and access your dashboard from anywhere.',
       },
       {
-        question: 'How does the AI scheduling work?',
+        question: 'How does the AI chatbot work?',
         answer:
-          'Our AI analyzes your calendar patterns, task priorities, and energy levels to suggest optimal schedules. It learns from your preferences over time and gets smarter with every adjustment you make.',
+          'The AI chatbot lets you create tasks, log expenses, add schedule entries, and manage collaboration — all through natural conversation. Just type something like "$15 on lunch" or "Calculus class on Monday at 2pm" and it handles the rest.',
       },
       {
-        question: 'Is there a free trial available?',
+        question: 'Is OptiPlan free to use?',
         answer:
-          'Yes! We offer a 30-day free trial with full access to all features. No credit card required. After the trial, you can choose a plan that fits your needs or continue with our free tier.',
+          'Yes! OptiPlan is completely free with full access to all features. Sign up and start using it right away — no credit card required.',
       },
     ],
   },
@@ -181,42 +181,42 @@ export const siteDefaults: Record<string, Record<string, unknown>> = {
     items: [
       {
         quote:
-          'OptiPlan replaced three apps for me. My schedule, notes, and budget are finally in one place — I actually feel organized for the first time since freshman year.',
+          'OptiPlan replaced three apps for me. My timetable, tasks, and budget are finally in one place — I actually feel organized for the first time since freshman year.',
         name: 'Sarah Martinez',
         role: 'Junior, Business Administration',
         initials: 'SM',
       },
       {
         quote:
-          'The smart scheduling alone is worth it. It figured out my best study windows and I pulled my GPA up a full point last semester.',
+          'The Kanban board and timetable are a game-changer. Dragging tasks between columns and seeing my whole week color-coded keeps me on track effortlessly.',
         name: 'James Chen',
         role: 'Senior, Computer Science',
         initials: 'JC',
       },
       {
         quote:
-          'I used to blow through my monthly budget by week two. The spending alerts keep me honest without feeling restrictive.',
+          'I used to blow through my monthly budget by week two. Setting category budgets and seeing the donut chart breakdown keeps me honest without feeling restrictive.',
         name: 'Emma Park',
         role: 'Sophomore, Pre-Med',
         initials: 'EP',
       },
       {
         quote:
-          'The burnout protection is real. OptiPlan flags when my study blocks are too intense and forces me to schedule breaks. It\'s genuinely saving my sanity this rotation.',
+          'The wellness tracker is surprisingly helpful. Daily mood check-ins and habit streaks keep me accountable, and journaling before bed has become my new routine.',
         name: 'Alex Chen',
         role: 'Med Student, Year 2',
         initials: 'AC',
       },
       {
         quote:
-          'As a visual person, I love the interface. Seeing my freelance deadlines alongside my internship tasks in one colorful timeline makes prioritizing so much easier.',
+          'As a visual person, I love the interface. The Kanban board with color-coded tasks and the weekly timetable make prioritizing so much easier.',
         name: 'Priya Patel',
         role: 'Graphic Design Intern',
         initials: 'PP',
       },
       {
         quote:
-          'I connected my Google Calendar and my budgeting app. The sync is flawless. Finally having a single source of truth for my entire life is a game-changer.',
+          'The AI chatbot is my favorite feature. I just type "$12 on coffee" or "Math class Monday 2pm" and it creates everything for me. So much faster than filling out forms.',
         name: 'Marcus Johnson',
         role: 'Engineering, Year 3',
         initials: 'MJ',

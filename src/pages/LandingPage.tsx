@@ -3,7 +3,6 @@ import { Navbar } from '@/sections/Navbar';
 import { Hero } from '@/sections/Hero';
 import { Problem } from '@/sections/Problem';
 import { Features } from '@/sections/Features';
-import { Tutorial } from '@/sections/Tutorial';
 import { Testimonials } from '@/sections/Testimonials';
 import { AboutCreator } from '@/sections/AboutCreator';
 import { AboutOptiPlan } from '@/sections/AboutOptiPlan';
@@ -83,7 +82,6 @@ export function LandingPage() {
       {/* Main Content */}
       <main className="relative z-10">
         {isVisible('hero') && <Hero />}
-        {isVisible('steps') && <Tutorial />}
       </main>
 
       {/* Sections from Problem onwards with MeshGradient background */}

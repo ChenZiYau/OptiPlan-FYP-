@@ -13,44 +13,44 @@ export interface Feature {
 export const features: Feature[] = [
   {
     icon: Calendar,
-    title: 'Smart Scheduling',
+    title: 'Task & Schedule Management',
     description:
-      'AI builds your optimal daily timeline around classes, deadlines, and personal commitments.',
+      'Organize your week with a visual timetable, manage tasks with Kanban boards, and track events and study sessions — all in one place.',
     color: 'from-violet-400 to-purple-500',
     checklist: [
-      'Auto-sync with university calendar',
-      'Deadline & exam countdown alerts',
-      'Focus-block suggestions between classes',
+      'Weekly timetable with color-coded subjects',
+      'Kanban board with drag-and-drop',
+      'AI chatbot for quick task creation',
     ],
     backContent:
-      'OptiPlan analyzes your class timetable, assignment due dates, and energy patterns to generate a personalized daily schedule. It learns which study slots work best for you and automatically blocks focus time before exams.',
+      'Build your weekly class schedule with multi-day support and 8 color options. Manage tasks, events, and study sessions with a Kanban board or list view. Filter by status, importance, or type — or just tell the AI chatbot what you need and it creates it for you.',
   },
   {
     icon: BookOpen,
-    title: 'Study Notes',
+    title: 'AI Study Hub',
     description:
-      'Capture, organize, and search your notes in one place — linked to your schedule.',
+      'Upload your documents and let AI generate study notes, flashcards, quizzes, and interactive mind maps — all from your own material.',
     color: 'from-emerald-400 to-teal-500',
     checklist: [
-      'Rich-text & markdown editor',
-      'Auto-tag by course and topic',
-      'Full-text search across all notes',
+      'AI-generated notes, flashcards, and quizzes',
+      'Interactive mind maps with expandable nodes',
+      'Supports PDF, PPTX, DOCX, and more',
     ],
     backContent:
-      'Every note is automatically linked to the class or study session where you created it. Tag by course, search by keyword, and review everything in one timeline — no more digging through folders the night before an exam.',
+      'Upload your lecture slides, PDFs, or documents and the AI extracts and chunks the content automatically. Then generate structured study notes, flashcards with spaced repetition tracking, multiple-choice quizzes with explanations, and interactive mind maps — all powered by Groq\'s Llama model.',
   },
   {
     icon: Wallet,
     title: 'Budget Tracking',
     description:
-      'See where your money goes with zero-effort expense logging and weekly spending reports.',
+      'See where your money goes with quick expense logging and category breakdowns.',
     color: 'from-amber-400 to-orange-500',
     checklist: [
-      'Quick-add expenses in two taps',
-      'Category breakdown charts',
-      'Weekly & monthly spending alerts',
+      'Quick-add expenses via modal or AI chatbot',
+      'Category breakdown donut charts',
+      'Budget limits with progress tracking',
     ],
     backContent:
-      'Set a weekly budget, snap receipts or quick-add expenses, and get a clear breakdown by category. OptiPlan sends gentle alerts before you overshoot, so you can make it to the end of the month without surprises.',
+      'Set monthly budgets per category, log expenses with a quick modal or through the AI chatbot, and see clear breakdowns with donut charts and spending trends. Track daily, weekly, and monthly spending at a glance.',
   },
 ];

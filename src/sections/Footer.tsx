@@ -47,7 +47,7 @@ export function Footer() {
             </motion.div>
 
             <p className="text-sm text-opti-text-secondary leading-relaxed max-w-sm">
-              AI-powered daily planning built for students. Focus on what
+              All-in-one productivity dashboard built for students. Focus on what
               matters most — we handle the rest.
             </p>
 
