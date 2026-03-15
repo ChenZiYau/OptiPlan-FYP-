@@ -61,8 +61,8 @@ function getGroq(): Groq {
   return groq;
 }
 
-// Groq request timeout: 8s on Vercel Hobby (leaves 2s buffer within 10s maxDuration), 120s local
-const GROQ_TIMEOUT = isVercel ? 8_000 : 120_000;
+// Groq request timeout: 25s on Vercel (leaves 5s buffer within 30s maxDuration), 120s local
+const GROQ_TIMEOUT = isVercel ? 25_000 : 120_000;
 
 // Groq free-tier (on_demand) has 6000 TPM. Reserve tokens for system prompt + response.
 // ~4 chars per token is a rough estimate. We cap user content to stay safely under.
@@ -817,7 +817,8 @@ Return ONLY strict JSON with no markdown fencing, in this exact format:
 {"flashcards": [{"front": "Question or concept?", "back": "Answer or definition.", "citation": "Short text excerpt proving the answer.", "source_chunk_id": "The Chunk ID provided in the text"}]}
 
 RULES:
-- Include 10-15 high-quality flashcards.
+- Include 8-12 high-quality flashcards.
+- Keep answers concise (1-2 sentences max).
 - Base questions ONLY on the provided document chunks.
 - "source_chunk_id" MUST be the exact Chunk ID string provided above each chunk.
 - Do NOT wrap in \`\`\`json blocks. Return raw JSON.`;
@@ -866,6 +867,7 @@ app.post("/api/generate-flashcards", async (req, res) => {
             { role: "user", content: `DOCUMENT CHUNKS:\n\n${contextText}` },
           ],
           temperature: 0.3,
+          max_tokens: 2048,
           response_format: { type: "json_object" },
         },
         { timeout: GROQ_TIMEOUT },
