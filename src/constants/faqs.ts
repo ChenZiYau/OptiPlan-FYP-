@@ -5,33 +5,33 @@ export interface FAQ {
 
 export const faqs: FAQ[] = [
   {
-    question: 'How does OptiPlan integrate with my existing tools?',
+    question: 'What features does OptiPlan include?',
     answer:
-      "OptiPlan connects seamlessly with Google Calendar, Outlook, Apple Calendar, Notion, Asana, and Trello. Simply authorize the connection and we'll sync your events and tasks automatically. Changes are reflected in real-time across all platforms.",
+      'OptiPlan includes task management with Kanban boards, a weekly class timetable, finance tracking with category budgets, wellness tools (mood, habits, journaling), a gamification system with 100 achievements, collaboration features, an AI chatbot for quick creation, and a semester-in-review Wrapped feature.',
   },
   {
     question: 'Is my data secure and private?',
     answer:
-      'Absolutely. We use end-to-end encryption for all your data. We never sell your information, show ads, or train AI models on your personal data. Your privacy is our top priority.',
+      'Yes. Your data is stored securely with Supabase and is only accessible to you. We never sell your information, show ads, or share your personal data with third parties. Your privacy is our top priority.',
   },
   {
     question: 'Can I use OptiPlan for team collaboration?',
     answer:
-      'Yes! OptiPlan Teams allows you to share schedules, coordinate meetings, and manage projects together. Each team member maintains their privacy while enabling seamless collaboration.',
+      'Yes! OptiPlan includes collaboration features where you can create groups, share tasks, exchange resources and links, and chat with group members.',
   },
   {
     question: 'What platforms does OptiPlan support?',
     answer:
-      'OptiPlan is available on iOS, Android, macOS, Windows, and as a web app. Your data syncs instantly across all your devices, so you can plan on your phone and focus on your desktop.',
+      'OptiPlan is a web application that works in any modern browser on desktop, tablet, or mobile. Just sign up and access your dashboard from anywhere.',
   },
   {
-    question: 'How does the AI scheduling work?',
+    question: 'How does the AI chatbot work?',
     answer:
-      'Our AI analyzes your calendar patterns, task priorities, and energy levels to suggest optimal schedules. It learns from your preferences over time and gets smarter with every adjustment you make.',
+      'The AI chatbot lets you create tasks, log expenses, add schedule entries, and manage collaboration — all through natural conversation. Just type something like "$15 on lunch" or "Calculus class on Monday at 2pm" and it handles the rest.',
   },
   {
-    question: 'Is there a free trial available?',
+    question: 'Is OptiPlan free to use?',
     answer:
-      'Yes! We offer a 30-day free trial with full access to all features. No credit card required. After the trial, you can choose a plan that fits your needs or continue with our free tier.',
+      'Yes! OptiPlan is completely free with full access to all features. Sign up and start using it right away — no credit card required.',
   },
 ];

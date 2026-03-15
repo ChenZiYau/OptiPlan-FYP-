@@ -62,16 +62,25 @@ export function FloatingChatWidget() {
       sender: 'user',
       text
     };
-    
-    setMessages(prev => [...prev, userMsg]);
+
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
     setIsTyping(true);
 
     try {
+      // Build conversation history for multi-turn context
+      const history = updatedMessages
+        .filter(m => m.sender === 'user' || m.sender === 'bot')
+        .map(m => ({
+          role: m.sender === 'user' ? 'user' as const : 'assistant' as const,
+          text: typeof m.text === 'string' ? m.text : '',
+        }));
+
       const apiBase = import.meta.env.VITE_API_URL || '/api';
       const response = await fetch(`${apiBase}/landing-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, history: history.slice(0, -1) }),
       });
 
       if (!response.ok) throw new Error('API request failed');

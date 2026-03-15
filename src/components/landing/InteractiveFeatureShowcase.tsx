@@ -150,16 +150,25 @@ export function InteractiveFeatureShowcase() {
       sender: 'user',
       text
     };
-    
-    setMessages(prev => [...prev, userMsg]);
+
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
     setIsTyping(true);
 
     try {
+      // Build conversation history for multi-turn context
+      const history = updatedMessages
+        .filter(m => m.sender === 'user' || (m.sender === 'bot' && typeof m.text === 'string'))
+        .map(m => ({
+          role: m.sender === 'user' ? 'user' as const : 'assistant' as const,
+          text: typeof m.text === 'string' ? m.text : '',
+        }));
+
       const apiBase = import.meta.env.VITE_API_URL || '/api';
       const response = await fetch(`${apiBase}/landing-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, history: history.slice(0, -1) }),
       });
 
       if (!response.ok) throw new Error('API request failed');
@@ -179,7 +188,7 @@ export function InteractiveFeatureShowcase() {
       const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
         sender: 'bot',
-        text: "Oops, my AI brain seems to be disconnected right now. Can I help you with the features on the left instead?"
+        text: "Hmm, I couldn't connect to the AI right now. Try clicking one of the features on the left, or ask me again in a moment!"
       };
       setMessages(prev => [...prev, errorMsg]);
     } finally {

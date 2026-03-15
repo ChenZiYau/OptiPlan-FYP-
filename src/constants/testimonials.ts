@@ -8,42 +8,42 @@ export interface Testimonial {
 export const testimonials: Testimonial[] = [
   {
     quote:
-      'OptiPlan replaced three apps for me. My schedule, notes, and budget are finally in one place — I actually feel organized for the first time since freshman year.',
+      'OptiPlan replaced three apps for me. My timetable, tasks, and budget are finally in one place — I actually feel organized for the first time since freshman year.',
     name: 'Sarah Martinez',
     role: 'Junior, Business Administration',
     initials: 'SM',
   },
   {
     quote:
-      'The smart scheduling alone is worth it. It figured out my best study windows and I pulled my GPA up a full point last semester.',
+      'The Kanban board and timetable are a game-changer. Dragging tasks between columns and seeing my whole week color-coded keeps me on track effortlessly.',
     name: 'James Chen',
     role: 'Senior, Computer Science',
     initials: 'JC',
   },
   {
     quote:
-      'I used to blow through my monthly budget by week two. The spending alerts keep me honest without feeling restrictive.',
+      'I used to blow through my monthly budget by week two. Setting category budgets and seeing the donut chart breakdown keeps me honest without feeling restrictive.',
     name: 'Emma Park',
     role: 'Sophomore, Pre-Med',
     initials: 'EP',
   },
   {
     quote:
-      'The burnout protection is real. OptiPlan flags when my study blocks are too intense and forces me to schedule breaks. It\'s genuinely saving my sanity this rotation.',
+      'The wellness tracker is surprisingly helpful. Daily mood check-ins and habit streaks keep me accountable, and journaling before bed has become my new routine.',
     name: 'Alex Chen',
     role: 'Med Student, Year 2',
     initials: 'AC',
   },
   {
     quote:
-      'As a visual person, I love the interface. Seeing my freelance deadlines alongside my internship tasks in one colorful timeline makes prioritizing so much easier.',
+      'As a visual person, I love the interface. The Kanban board with color-coded tasks and the weekly timetable make prioritizing so much easier.',
     name: 'Priya Patel',
     role: 'Graphic Design Intern',
     initials: 'PP',
   },
   {
     quote:
-      'I connected my Google Calendar and my budgeting app. The sync is flawless. Finally having a "single source of truth" for my entire life is a game-changer.',
+      'The AI chatbot is my favorite feature. I just type "$12 on coffee" or "Math class Monday 2pm" and it creates everything for me. So much faster than filling out forms.',
     name: 'Marcus Johnson',
     role: 'Engineering, Year 3',
     initials: 'MJ',

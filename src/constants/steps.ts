@@ -1,4 +1,4 @@
-import { Link2, Focus, BookOpen } from 'lucide-react';
+import { Settings, LayoutDashboard, TrendingUp } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export interface Step {
@@ -13,28 +13,28 @@ export interface Step {
 export const steps: Step[] = [
   {
     number: '01',
-    icon: Link2,
-    title: 'Connect',
+    icon: Settings,
+    title: 'Set Up',
     description:
-      'Link your calendars and task apps in seconds. OptiPlan integrates seamlessly with Google Calendar, Outlook, Notion, and more.',
+      'Create your account and add your class schedule, tasks, and budget categories. The dashboard is ready in minutes.',
     color: 'text-opti-accent',
     bgColor: 'bg-opti-accent/10',
   },
   {
     number: '02',
-    icon: Focus,
-    title: 'Focus',
+    icon: LayoutDashboard,
+    title: 'Organize',
     description:
-      'Start a focus session with one tap. We silence notifications, block distractions, and track your progress automatically.',
+      'Manage your tasks with Kanban boards, track spending by category, and build daily habits — or let the AI chatbot handle it through conversation.',
     color: 'text-emerald-400',
     bgColor: 'bg-emerald-400/10',
   },
   {
     number: '03',
-    icon: BookOpen,
-    title: 'Reflect',
+    icon: TrendingUp,
+    title: 'Grow',
     description:
-      "Close the day with a personalized summary. See what you accomplished, what's next, and jot down a quick reflection.",
+      'Earn XP for every action, unlock achievements, track your mood and habits, and review your semester progress with Wrapped.',
     color: 'text-amber-400',
     bgColor: 'bg-amber-400/10',
   },

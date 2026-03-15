@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
-import { chatWithNotebook, RateLimitError } from '@/services/studyhub-api';
+import { chatWithNotebook } from '@/services/studyhub-api';
 import { useRateLimit } from '@/hooks/useRateLimit';
 import type { ChatMessageData } from '@/types/studyhub';
 
