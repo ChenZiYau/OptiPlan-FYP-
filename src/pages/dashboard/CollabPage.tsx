@@ -2132,106 +2132,108 @@ function NewScheduleTaskModal({
         onClick={onClose}
         className="fixed inset-0 bg-black/60 z-50"
       />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-        className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg"
-      >
-        <div className="bg-[#141414] border border-[#1F1F1F] rounded-2xl shadow-xl shadow-black/40 overflow-hidden">
-          {/* Modal Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-            <h3 className="text-base font-medium text-zinc-100">New Task</h3>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-white/5 text-gray-500 hover:text-white transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Modal Body */}
-          <div className="px-6 py-5 space-y-4">
-            {/* NAME */}
-            <div>
-              <label className={labelCls}>Name</label>
-              <input
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder="Task name..."
-                className={inputCls}
-                autoFocus
-              />
-            </div>
-
-            {/* PRIORITY */}
-            <div>
-              <label className={labelCls}>Priority</label>
-              <select
-                value={priority}
-                onChange={e => setPriority(e.target.value)}
-                className={inputCls + ' appearance-none cursor-pointer'}
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+          className="w-full max-w-lg"
+        >
+          <div className="bg-[#141414] border border-[#1F1F1F] rounded-2xl shadow-xl shadow-black/40 overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
+              <h3 className="text-base font-medium text-zinc-100">New Task</h3>
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded-lg hover:bg-white/5 text-gray-500 hover:text-white transition-colors"
               >
-                <option value="None">None</option>
-                <option value="Low">Low</option>
-                <option value="Medium">Medium</option>
-                <option value="High">High</option>
-              </select>
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            {/* START DATE & END DATE */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* Modal Body */}
+            <div className="px-6 py-5 space-y-4">
+              {/* NAME */}
               <div>
-                <label className={labelCls}>Start Date</label>
+                <label className={labelCls}>Name</label>
                 <input
-                  type="date"
-                  value={startDate}
-                  onChange={e => setStartDate(e.target.value)}
-                  className={inputCls + ' cursor-pointer'}
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="Task name..."
+                  className={inputCls}
+                  autoFocus
                 />
               </div>
+
+              {/* PRIORITY */}
               <div>
-                <label className={labelCls}>End Date</label>
+                <label className={labelCls}>Priority</label>
+                <select
+                  value={priority}
+                  onChange={e => setPriority(e.target.value)}
+                  className={inputCls + ' appearance-none cursor-pointer'}
+                >
+                  <option value="None">None</option>
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                </select>
+              </div>
+
+              {/* START DATE & END DATE */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Start Date</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={e => setStartDate(e.target.value)}
+                    className={inputCls + ' cursor-pointer'}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>End Date</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={e => setEndDate(e.target.value)}
+                    className={inputCls + ' cursor-pointer'}
+                  />
+                </div>
+              </div>
+
+              {/* ESTIMATED TIME */}
+              <div>
+                <label className={labelCls}>Estimated Time</label>
                 <input
-                  type="date"
-                  value={endDate}
-                  onChange={e => setEndDate(e.target.value)}
-                  className={inputCls + ' cursor-pointer'}
+                  value={estimatedTime}
+                  onChange={e => setEstimatedTime(e.target.value)}
+                  placeholder="e.g. 2 hours"
+                  className={inputCls}
                 />
               </div>
             </div>
 
-            {/* ESTIMATED TIME */}
-            <div>
-              <label className={labelCls}>Estimated Time</label>
-              <input
-                value={estimatedTime}
-                onChange={e => setEstimatedTime(e.target.value)}
-                placeholder="e.g. 2 hours"
-                className={inputCls}
-              />
+            {/* Modal Footer */}
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-white/[0.06]">
+              <button
+                onClick={onClose}
+                className="px-5 py-2.5 text-sm rounded-lg border border-white/10 text-gray-400 hover:bg-white/5 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreate}
+                disabled={isCreating || !name.trim() || !startDate || !endDate}
+                className="px-5 py-2.5 text-sm font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {isCreating ? 'Creating...' : 'Create Task'}
+              </button>
             </div>
           </div>
-
-          {/* Modal Footer */}
-          <div className="flex justify-end gap-2 px-6 py-4 border-t border-white/[0.06]">
-            <button
-              onClick={onClose}
-              className="px-5 py-2.5 text-sm rounded-lg border border-white/10 text-gray-400 hover:bg-white/5 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleCreate}
-              disabled={isCreating || !name.trim() || !startDate || !endDate}
-              className="px-5 py-2.5 text-sm font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {isCreating ? 'Creating...' : 'Create Task'}
-            </button>
-          </div>
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
     </>,
     document.body
   );
@@ -2495,13 +2497,14 @@ function ResourceVault({ selectedProject, members }: { selectedProject: GroupPro
               onClick={() => setShowAddModal(false)}
               className="fixed inset-0 bg-black/60 z-50"
             />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md"
-            >
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                className="w-full max-w-md"
+              >
               <div className="bg-[#131127] border border-white/10 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden">
                 {/* Modal Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
@@ -2602,6 +2605,7 @@ function ResourceVault({ selectedProject, members }: { selectedProject: GroupPro
                 </div>
               </div>
             </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>
