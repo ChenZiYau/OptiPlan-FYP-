@@ -10,3 +10,7 @@ Thumbs.db
 test_embed.ts
 officeParserTemp/
 app/
+
+# Claude
+.claude/
+CLAUDE.md
