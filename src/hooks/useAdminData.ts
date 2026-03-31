@@ -139,37 +139,6 @@ export function useAdminStats() {
   return { stats, loading, error, refetch: fetchStats };
 }
 
-export function useRecentActivity() {
-  const uid = useSessionUid();
-  const [activities, setActivities] = useState<AdminActivityLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchActivities = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const { data, error: err } = await supabase
-        .from('admin_activity_log')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20);
-      if (err) throw err;
-      setActivities(data ?? []);
-    } catch {
-      setError('Failed to load activity');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (uid) fetchActivities();
-  }, [uid, fetchActivities]);
-
-  return { activities, loading, error, refetch: fetchActivities };
-}
-
 interface ActivityFilters {
   dateFrom?: string;
   dateTo?: string;

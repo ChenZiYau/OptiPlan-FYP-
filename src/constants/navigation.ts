@@ -78,21 +78,3 @@ export const navEntries: NavEntry[] = [
   },
 ];
 
-// ── Footer & social (unchanged) ──────────────────────────────────────────────
-
-export interface FooterLink {
-  label: string;
-  href: string;
-}
-
-export const footerLinks: Record<string, FooterLink[]> = {
-  product: [
-    { label: 'Features', href: '#features' },
-    { label: 'How It Works', href: '#how-it-works' },
-    { label: 'FAQ', href: '#faq' },
-  ],
-  resources: [
-    { label: 'Feedback', href: '#feedback' },
-    { label: 'About', href: '#about-creator' },
-  ],
-};

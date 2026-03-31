@@ -100,6 +100,43 @@ export const featureFlows: Record<string, { reply: React.ReactNode; icon: React.
   }
 };
 
+// ── Greeting / conversational pattern matcher ──────────────────────────────
+
+const GREETING_PATTERNS: { test: RegExp; response: string }[] = [
+  {
+    test: /^(hi|hello|hey|howdy|hola|sup|yo|hii+|helo+|what'?s? ?up)[\s!?.]*$/i,
+    response: "Hi there! I'm the OptiPlan assistant. I can show you around our features, like the Study Hub or Schedule Matcher. What would you like to explore?"
+  },
+  {
+    test: /^(how are you|how('?s| is) it going|how do you do|how('?re| are) things)[\s!?.]*$/i,
+    response: "I'm doing great, thanks for asking! I'm here to help you learn about OptiPlan. Want to hear about our Study Hub, Task Manager, or something else?"
+  },
+  {
+    test: /^(what is this|what('?s| is) optiplan|what does this do|what is this (app|site|website|platform))[\s!?.]*$/i,
+    response: "OptiPlan is a free, all-in-one student productivity platform! It includes a Study Hub, Schedule Matcher, Budget Tracker, and more — all powered by AI. Want me to walk you through a feature?"
+  },
+  {
+    test: /^(thanks?|thank you|thx|ty|cheers|appreciate it)[\s!?.]*$/i,
+    response: "You're welcome! Let me know if there's anything else you'd like to know about OptiPlan."
+  },
+  {
+    test: /^(bye|goodbye|see ya|cya|later|gtg|good ?bye)[\s!?.]*$/i,
+    response: "See you around! If you want to give OptiPlan a try, just click \"Get OptiPlan\" at the top of the page. It's completely free!"
+  },
+  {
+    test: /^(help|i need help|can you help)[\s!?.]*$/i,
+    response: "Of course! I can tell you about any of OptiPlan's features — Study Hub, Schedule Matcher, Budget Tracker, Wellness tools, and more. Just ask or click a feature button!"
+  },
+];
+
+export function getGreetingResponse(text: string): string | null {
+  const trimmed = text.trim();
+  for (const { test, response } of GREETING_PATTERNS) {
+    if (test.test(trimmed)) return response;
+  }
+  return null;
+}
+
 const INITIAL_MESSAGE: Message = {
   id: '0',
   sender: 'bot',
@@ -144,7 +181,6 @@ export function InteractiveFeatureShowcase() {
   const handleSendMessage = async (text: string) => {
     if (isTyping) return;
 
-    // 1. Add User Message
     const userMsg: Message = {
       id: Date.now().toString(),
       sender: 'user',
@@ -155,8 +191,43 @@ export function InteractiveFeatureShowcase() {
     setMessages(updatedMessages);
     setIsTyping(true);
 
+    // Check for a matching feature flow (case-insensitive partial match)
+    const lowerText = text.toLowerCase().trim();
+    const matchedFeature = Object.keys(featureFlows).find(name =>
+      lowerText.includes(name.toLowerCase())
+    );
+
+    if (matchedFeature) {
+      setTimeout(() => {
+        const botMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          sender: 'bot',
+          text: featureFlows[matchedFeature].reply
+        };
+        setMessages(prev => [...prev, botMsg]);
+        setIsTyping(false);
+        setActiveFeature(null);
+      }, 600);
+      return;
+    }
+
+    // Check for basic greetings / conversational inputs
+    const greeting = getGreetingResponse(lowerText);
+    if (greeting) {
+      setTimeout(() => {
+        const botMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          sender: 'bot',
+          text: greeting
+        };
+        setMessages(prev => [...prev, botMsg]);
+        setIsTyping(false);
+      }, 500);
+      return;
+    }
+
+    // Otherwise, send to the real AI backend
     try {
-      // Build conversation history for multi-turn context
       const history = updatedMessages
         .filter(m => m.sender === 'user' || (m.sender === 'bot' && typeof m.text === 'string'))
         .map(m => ({
@@ -164,22 +235,29 @@ export function InteractiveFeatureShowcase() {
           text: typeof m.text === 'string' ? m.text : '',
         }));
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30_000);
+
       const apiBase = import.meta.env.VITE_API_URL || '/api';
       const response = await fetch(`${apiBase}/landing-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, history: history.slice(0, -1) }),
+        signal: controller.signal,
       });
 
-      if (!response.ok) throw new Error('API request failed');
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => null);
+        throw new Error(errData?.error || `API ${response.status}`);
+      }
 
       const data = await response.json();
-      const botReply = data.reply || "I'm having trouble thinking right now!";
-
       const botMsg: Message = {
         id: (Date.now() + 1).toString(),
         sender: 'bot',
-        text: botReply
+        text: data.reply || "Could you rephrase that? I want to make sure I help you properly!"
       };
       setMessages(prev => [...prev, botMsg]);
 
@@ -188,7 +266,7 @@ export function InteractiveFeatureShowcase() {
       const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
         sender: 'bot',
-        text: "Hmm, I couldn't connect to the AI right now. Try clicking one of the features on the left, or ask me again in a moment!"
+        text: "I'm having a little trouble connecting to my server right now, but feel free to click the feature buttons on the left to see what OptiPlan can do!"
       };
       setMessages(prev => [...prev, errorMsg]);
     } finally {

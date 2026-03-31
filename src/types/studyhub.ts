@@ -18,16 +18,6 @@ export interface Source {
   created_at: string;
 }
 
-export interface Chunk {
-  id: string;
-  source_id: string;
-  notebook_id: string;
-  content: string;
-  chunk_index: number;
-  page_or_paragraph: string | null;
-  embedding: number[] | null; // vector(768)
-}
-
 export interface Citation {
   chunk_id: string;
   source_filename: string;

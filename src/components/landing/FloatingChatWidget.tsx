@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, X, Sparkles } from 'lucide-react';
 import { ChatWindow } from './ChatWindow';
 import type { Message } from './ChatWindow';
-import { featureFlows } from './InteractiveFeatureShowcase';
+import { featureFlows, getGreetingResponse } from './InteractiveFeatureShowcase';
 
 const INITIAL_MESSAGES: Message[] = [
   {
@@ -56,7 +56,6 @@ export function FloatingChatWidget() {
   const handleSendMessage = async (text: string) => {
     if (isTyping) return;
 
-    // 1. Add User Message
     const userMsg: Message = {
       id: Date.now().toString(),
       sender: 'user',
@@ -67,8 +66,42 @@ export function FloatingChatWidget() {
     setMessages(updatedMessages);
     setIsTyping(true);
 
+    // Check for a matching feature flow (case-insensitive partial match)
+    const lowerText = text.toLowerCase().trim();
+    const matchedFeature = Object.keys(featureFlows).find(name =>
+      lowerText.includes(name.toLowerCase())
+    );
+
+    if (matchedFeature) {
+      setTimeout(() => {
+        const botMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          sender: 'bot',
+          text: featureFlows[matchedFeature].reply
+        };
+        setMessages(prev => [...prev, botMsg]);
+        setIsTyping(false);
+      }, 600);
+      return;
+    }
+
+    // Check for basic greetings / conversational inputs
+    const greeting = getGreetingResponse(lowerText);
+    if (greeting) {
+      setTimeout(() => {
+        const botMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          sender: 'bot',
+          text: greeting
+        };
+        setMessages(prev => [...prev, botMsg]);
+        setIsTyping(false);
+      }, 500);
+      return;
+    }
+
+    // Otherwise, send to the real AI backend
     try {
-      // Build conversation history for multi-turn context
       const history = updatedMessages
         .filter(m => m.sender === 'user' || m.sender === 'bot')
         .map(m => ({
@@ -76,22 +109,29 @@ export function FloatingChatWidget() {
           text: typeof m.text === 'string' ? m.text : '',
         }));
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30_000);
+
       const apiBase = import.meta.env.VITE_API_URL || '/api';
       const response = await fetch(`${apiBase}/landing-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, history: history.slice(0, -1) }),
+        signal: controller.signal,
       });
 
-      if (!response.ok) throw new Error('API request failed');
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => null);
+        throw new Error(errData?.error || `API ${response.status}`);
+      }
 
       const data = await response.json();
-      const botReply = data.reply || "I'm having trouble thinking right now!";
-
       const botMsg: Message = {
         id: (Date.now() + 1).toString(),
         sender: 'bot',
-        text: botReply
+        text: data.reply || "Could you rephrase that? I want to make sure I help you properly!"
       };
       setMessages(prev => [...prev, botMsg]);
 
@@ -100,7 +140,7 @@ export function FloatingChatWidget() {
       const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
         sender: 'bot',
-        text: "Oops, my AI brain seems to be disconnected right now. Can I help you with the quick replies below instead?"
+        text: "I'm having a little trouble connecting to my server right now, but feel free to click the feature buttons above to see what OptiPlan can do!"
       };
       setMessages(prev => [...prev, errorMsg]);
     } finally {

@@ -3,9 +3,14 @@
     "api/index.ts": {
       "maxDuration": 30,
       "memory": 1024
+    },
+    "api/landing-chat.ts": {
+      "maxDuration": 30,
+      "memory": 256
     }
   },
   "rewrites": [
+    { "source": "/api/landing-chat", "destination": "/api/landing-chat" },
     { "source": "/api/(.*)", "destination": "/api" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

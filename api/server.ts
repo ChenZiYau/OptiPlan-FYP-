@@ -1156,12 +1156,15 @@ app.post("/api/landing-chat", async (req, res) => {
 
     messages.push({ role: "user", content: message });
 
-    const completion = await getGroq().chat.completions.create({
-      model: "llama-3.1-8b-instant",
-      messages,
-      max_tokens: 250,
-      temperature: 0.7,
-    });
+    const completion = await getGroq().chat.completions.create(
+      {
+        model: "llama-3.1-8b-instant",
+        messages,
+        max_tokens: 250,
+        temperature: 0.7,
+      },
+      { timeout: GROQ_TIMEOUT },
+    );
 
     const reply =
       completion.choices?.[0]?.message?.content ||

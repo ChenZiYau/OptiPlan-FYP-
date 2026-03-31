@@ -34,14 +34,6 @@ export interface AdminNavItem {
   icon: LucideIcon;
 }
 
-export interface RecentActivity {
-  id: string;
-  user_name: string;
-  user_email: string;
-  action: string;
-  created_at: string;
-}
-
 export interface AdminActivityLog {
   id: string;
   admin_id: string;
