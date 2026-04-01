@@ -100,47 +100,10 @@ export const featureFlows: Record<string, { reply: React.ReactNode; icon: React.
   }
 };
 
-// ── Greeting / conversational pattern matcher ──────────────────────────────
-
-const GREETING_PATTERNS: { test: RegExp; response: string }[] = [
-  {
-    test: /^(hi|hello|hey|howdy|hola|sup|yo|hii+|helo+|what'?s? ?up)[\s!?.]*$/i,
-    response: "Hi there! I'm the OptiPlan assistant. I can show you around our features, like the Study Hub or Schedule Matcher. What would you like to explore?"
-  },
-  {
-    test: /^(how are you|how('?s| is) it going|how do you do|how('?re| are) things)[\s!?.]*$/i,
-    response: "I'm doing great, thanks for asking! I'm here to help you learn about OptiPlan. Want to hear about our Study Hub, Task Manager, or something else?"
-  },
-  {
-    test: /^(what is this|what('?s| is) optiplan|what does this do|what is this (app|site|website|platform))[\s!?.]*$/i,
-    response: "OptiPlan is a free, all-in-one student productivity platform! It includes a Study Hub, Schedule Matcher, Budget Tracker, and more — all powered by AI. Want me to walk you through a feature?"
-  },
-  {
-    test: /^(thanks?|thank you|thx|ty|cheers|appreciate it)[\s!?.]*$/i,
-    response: "You're welcome! Let me know if there's anything else you'd like to know about OptiPlan."
-  },
-  {
-    test: /^(bye|goodbye|see ya|cya|later|gtg|good ?bye)[\s!?.]*$/i,
-    response: "See you around! If you want to give OptiPlan a try, just click \"Get OptiPlan\" at the top of the page. It's completely free!"
-  },
-  {
-    test: /^(help|i need help|can you help)[\s!?.]*$/i,
-    response: "Of course! I can tell you about any of OptiPlan's features — Study Hub, Schedule Matcher, Budget Tracker, Wellness tools, and more. Just ask or click a feature button!"
-  },
-];
-
-export function getGreetingResponse(text: string): string | null {
-  const trimmed = text.trim();
-  for (const { test, response } of GREETING_PATTERNS) {
-    if (test.test(trimmed)) return response;
-  }
-  return null;
-}
-
 const INITIAL_MESSAGE: Message = {
   id: '0',
   sender: 'bot',
-  text: "Hey there! I'm the OptiPlan AI. Click any of the features on the left to learn how we can supercharge your student life!"
+  text: "Hey there! I'm the OptiPlan AI. Click any of the features on the left, or type any question!"
 };
 
 export function InteractiveFeatureShowcase() {
@@ -150,29 +113,22 @@ export function InteractiveFeatureShowcase() {
 
   const handleFeatureClick = (featureName: string) => {
     if (isTyping || activeFeature === featureName) return;
-
     setActiveFeature(featureName);
-    
-    // 1. Add User Message
-    const userMsg: Message = {
+
+    setMessages(prev => [...prev, {
       id: Date.now().toString(),
       sender: 'user',
       text: `Tell me about ${featureName}`
-    };
-    
-    setMessages(prev => [...prev, userMsg]);
+    }]);
     setIsTyping(true);
 
-    // 2. Simulate AI thinking / typing delay (800ms)
     setTimeout(() => {
       const flowData = featureFlows[featureName];
-      const botMsg: Message = {
+      setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         sender: 'bot',
         text: flowData ? flowData.reply : "I'm still learning about that feature!"
-      };
-      
-      setMessages(prev => [...prev, botMsg]);
+      }]);
       setIsTyping(false);
       setActiveFeature(null);
     }, 800);
@@ -181,65 +137,26 @@ export function InteractiveFeatureShowcase() {
   const handleSendMessage = async (text: string) => {
     if (isTyping) return;
 
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      sender: 'user',
-      text
-    };
-
+    const userMsg: Message = { id: Date.now().toString(), sender: 'user', text };
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
     setIsTyping(true);
 
-    // Check for a matching feature flow (case-insensitive partial match)
-    const lowerText = text.toLowerCase().trim();
-    const matchedFeature = Object.keys(featureFlows).find(name =>
-      lowerText.includes(name.toLowerCase())
-    );
+    // Build conversation history for multi-turn context
+    const history = updatedMessages
+      .filter(m => typeof m.text === 'string')
+      .map(m => ({
+        role: m.sender === 'user' ? 'user' as const : 'assistant' as const,
+        text: m.text as string,
+      }));
 
-    if (matchedFeature) {
-      setTimeout(() => {
-        const botMsg: Message = {
-          id: (Date.now() + 1).toString(),
-          sender: 'bot',
-          text: featureFlows[matchedFeature].reply
-        };
-        setMessages(prev => [...prev, botMsg]);
-        setIsTyping(false);
-        setActiveFeature(null);
-      }, 600);
-      return;
-    }
-
-    // Check for basic greetings / conversational inputs
-    const greeting = getGreetingResponse(lowerText);
-    if (greeting) {
-      setTimeout(() => {
-        const botMsg: Message = {
-          id: (Date.now() + 1).toString(),
-          sender: 'bot',
-          text: greeting
-        };
-        setMessages(prev => [...prev, botMsg]);
-        setIsTyping(false);
-      }, 500);
-      return;
-    }
-
-    // Otherwise, send to the real AI backend
     try {
-      const history = updatedMessages
-        .filter(m => m.sender === 'user' || (m.sender === 'bot' && typeof m.text === 'string'))
-        .map(m => ({
-          role: m.sender === 'user' ? 'user' as const : 'assistant' as const,
-          text: typeof m.text === 'string' ? m.text : '',
-        }));
-
+      // Send EVERY message to Groq — let the LLM handle it
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30_000);
+      const timeoutId = setTimeout(() => controller.abort(), 25_000);
 
       const apiBase = import.meta.env.VITE_API_URL || '/api';
-      const response = await fetch(`${apiBase}/landing-chat`, {
+      const res = await fetch(`${apiBase}/landing-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, history: history.slice(0, -1) }),
@@ -247,41 +164,36 @@ export function InteractiveFeatureShowcase() {
       });
 
       clearTimeout(timeoutId);
+      if (!res.ok) throw new Error(`API ${res.status}`);
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => null);
-        throw new Error(errData?.error || `API ${response.status}`);
-      }
+      const data = await res.json();
+      if (!data.reply) throw new Error('Empty reply');
 
-      const data = await response.json();
-      const botMsg: Message = {
+      setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         sender: 'bot',
-        text: data.reply || "Could you rephrase that? I want to make sure I help you properly!"
-      };
-      setMessages(prev => [...prev, botMsg]);
-
-    } catch (error) {
-      console.error("LLM Chat Error:", error);
-      const errorMsg: Message = {
+        text: data.reply,
+      }]);
+    } catch (err) {
+      console.error('Landing chat error:', err);
+      setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         sender: 'bot',
-        text: "I'm having a little trouble connecting to my server right now, but feel free to click the feature buttons on the left to see what OptiPlan can do!"
-      };
-      setMessages(prev => [...prev, errorMsg]);
+        text: "Sorry, I couldn't reach the server just now. Please try again in a moment!",
+      }]);
     } finally {
       setIsTyping(false);
+      setActiveFeature(null);
     }
   };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch my-16">
-      {/* Left Column: Feature Buttons — defines the row height */}
       <div className="space-y-3">
         <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
           <Bot className="w-6 h-6 text-indigo-400" /> Let's Chat Features
         </h3>
-        
+
         <div className="flex flex-col gap-3">
           {Object.entries(featureFlows).map(([name, { icon }]) => (
             <div
@@ -304,7 +216,6 @@ export function InteractiveFeatureShowcase() {
         </div>
       </div>
 
-      {/* Right Column: Chat Window — locked to left column height, scrolls internally */}
       <div className="relative h-[500px] lg:h-auto mt-8 lg:mt-0">
         <div className="lg:absolute lg:inset-0">
           <ChatWindow
