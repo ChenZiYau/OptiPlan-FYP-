@@ -250,6 +250,55 @@
 .dashboard-shell.color-mode-light .hover\:bg-white\/\[0\.06\]:hover { background-color: rgba(0, 0, 0, 0.04) !important; }
 .dashboard-shell.color-mode-light .hover\:text-gray-300:hover       { color: #374151 !important; }
 
+/* ── Additional backgrounds (sidebar, header, cards, pages) ──────────── */
+.dashboard-shell.color-mode-light .bg-\[\#0A0A0A\]      { background-color: #FFFFFF !important; }
+.dashboard-shell.color-mode-light .bg-\[\#0A0A0A\]\/80  { background-color: rgba(255, 255, 255, 0.8) !important; }
+.dashboard-shell.color-mode-light .bg-\[\#0a0a0a\]      { background-color: #FFFFFF !important; }
+.dashboard-shell.color-mode-light .bg-\[\#1A1A1A\]      { background-color: #F0F0F5 !important; }
+.dashboard-shell.color-mode-light .bg-\[\#141414\]      { background-color: #F5F5FA !important; }
+.dashboard-shell.color-mode-light .bg-\[\#111111\]      { background-color: #FFFFFF !important; }
+.dashboard-shell.color-mode-light .bg-\[\#07040A\]      { background-color: #F8F9FA !important; }
+.dashboard-shell.color-mode-light .bg-\[\#07040A\]\/80  { background-color: rgba(248, 249, 250, 0.8) !important; }
+.dashboard-shell.color-mode-light .bg-zinc-700           { background-color: #E0E0E8 !important; }
+
+/* ── Additional borders ───────────────────────────────────────────────── */
+.dashboard-shell.color-mode-light .border-\[\#1F1F1F\]  { border-color: #E0E0E8 !important; }
+.dashboard-shell.color-mode-light .border-\[\#2A2A2A\]  { border-color: #E0E0E8 !important; }
+.dashboard-shell.color-mode-light .border-\[\#1A1A1A\]  { border-color: #E0E0E8 !important; }
+.dashboard-shell.color-mode-light .border-\[\#0B0A1A\]  { border-color: #E0E0E8 !important; }
+
+/* ── Text (zinc-* → dark readable colors) ────────────────────────────── */
+.dashboard-shell.color-mode-light .text-zinc-100         { color: #1A1A2E !important; }
+.dashboard-shell.color-mode-light .text-zinc-200         { color: #1F2937 !important; }
+.dashboard-shell.color-mode-light .text-zinc-300         { color: #374151 !important; }
+.dashboard-shell.color-mode-light .text-zinc-400         { color: #4B5563 !important; }
+.dashboard-shell.color-mode-light .text-zinc-500         { color: #6B7280 !important; }
+.dashboard-shell.color-mode-light .text-zinc-600         { color: #9CA3AF !important; }
+
+/* ── Additional hover states ─────────────────────────────────────────── */
+.dashboard-shell.color-mode-light .hover\:text-white:hover       { color: #1A1A2E !important; }
+.dashboard-shell.color-mode-light .hover\:bg-\[\#1A1A1A\]:hover  { background-color: #E8E8F0 !important; }
+.dashboard-shell.color-mode-light .hover\:bg-zinc-700:hover      { background-color: #D8D8E0 !important; }
+.dashboard-shell.color-mode-light .hover\:text-zinc-300:hover    { color: #374151 !important; }
+
+/* ── Ring offsets ─────────────────────────────────────────────────────── */
+.dashboard-shell.color-mode-light .ring-offset-\[\#18162e\] { --tw-ring-offset-color: #FFFFFF !important; }
+.dashboard-shell.color-mode-light .ring-offset-\[\#111111\] { --tw-ring-offset-color: #FFFFFF !important; }
+
+/* ── Gradient stops (Wrapped page) ───────────────────────────────────── */
+.dashboard-shell.color-mode-light .from-\[\#1a1040\]    { --tw-gradient-from: #EDE9F6 !important; }
+.dashboard-shell.color-mode-light .to-\[\#0B0A1A\]      { --tw-gradient-to: #F8F9FA !important; }
+
+/* ── Placeholder text ─────────────────────────────────────────────────── */
+.dashboard-shell.color-mode-light .placeholder\:text-gray-500::placeholder    { color: #9CA3AF !important; }
+.dashboard-shell.color-mode-light .placeholder\:text-gray-500\/50::placeholder { color: rgba(156, 163, 175, 0.5) !important; }
+
+/* ── Select dropdown options (dark bg fix) ────────────────────────────── */
+.dashboard-shell.color-mode-light select option {
+  background-color: #FFFFFF !important;
+  color: #1A1A2E !important;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    GREY MODE — Global Dashboard Overrides
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -319,6 +368,39 @@
 .dashboard-shell.color-mode-grey textarea::placeholder {
   color: #8A8A9A !important;
 }
+
+/* ── Additional backgrounds (sidebar, header, cards, pages) ──────────── */
+.dashboard-shell.color-mode-grey .bg-\[\#0A0A0A\]      { background-color: #2A2A38 !important; }
+.dashboard-shell.color-mode-grey .bg-\[\#0A0A0A\]\/80  { background-color: rgba(42, 42, 56, 0.8) !important; }
+.dashboard-shell.color-mode-grey .bg-\[\#0a0a0a\]      { background-color: #2A2A38 !important; }
+.dashboard-shell.color-mode-grey .bg-\[\#1A1A1A\]      { background-color: #3A3A4A !important; }
+.dashboard-shell.color-mode-grey .bg-\[\#141414\]      { background-color: #353545 !important; }
+.dashboard-shell.color-mode-grey .bg-\[\#111111\]      { background-color: #2D2D3A !important; }
+.dashboard-shell.color-mode-grey .bg-\[\#07040A\]      { background-color: #252530 !important; }
+.dashboard-shell.color-mode-grey .bg-\[\#07040A\]\/80  { background-color: rgba(37, 37, 48, 0.8) !important; }
+
+/* ── Additional borders ───────────────────────────────────────────────── */
+.dashboard-shell.color-mode-grey .border-\[\#1F1F1F\]  { border-color: #4A4A5A !important; }
+.dashboard-shell.color-mode-grey .border-\[\#2A2A2A\]  { border-color: #4A4A5A !important; }
+.dashboard-shell.color-mode-grey .border-\[\#1A1A1A\]  { border-color: #4A4A5A !important; }
+.dashboard-shell.color-mode-grey .border-\[\#0B0A1A\]  { border-color: #4A4A5A !important; }
+
+/* ── Text (zinc-*) ───────────────────────────────────────────────────── */
+.dashboard-shell.color-mode-grey .text-zinc-100         { color: #E5E5E5 !important; }
+.dashboard-shell.color-mode-grey .text-zinc-200         { color: #D1D5DB !important; }
+.dashboard-shell.color-mode-grey .text-zinc-300         { color: #C0C0C8 !important; }
+.dashboard-shell.color-mode-grey .text-zinc-400         { color: #A0A0B0 !important; }
+.dashboard-shell.color-mode-grey .text-zinc-500         { color: #8A8A9A !important; }
+.dashboard-shell.color-mode-grey .text-zinc-600         { color: #6A6A7A !important; }
+
+/* ── Additional hover states ─────────────────────────────────────────── */
+.dashboard-shell.color-mode-grey .hover\:bg-\[\#1A1A1A\]:hover  { background-color: #424252 !important; }
+.dashboard-shell.color-mode-grey .hover\:bg-zinc-700:hover      { background-color: #4A4A5A !important; }
+.dashboard-shell.color-mode-grey .hover\:text-zinc-300:hover    { color: #D1D5DB !important; }
+
+/* ── Ring offsets ─────────────────────────────────────────────────────── */
+.dashboard-shell.color-mode-grey .ring-offset-\[\#18162e\] { --tw-ring-offset-color: #3A3A4A !important; }
+.dashboard-shell.color-mode-grey .ring-offset-\[\#111111\] { --tw-ring-offset-color: #2D2D3A !important; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    LANDING PAGE LIGHT MODE
